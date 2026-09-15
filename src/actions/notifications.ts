@@ -82,7 +82,8 @@ export async function sendNotification(
 
     const title = (input.title || "").trim();
     if (title.length < 3) return { ok: false, error: "عنوان الإشعار قصير جدًا" };
-    if (!["IMPORTANT", "ANNOUNCEMENT", "TASK", "INFO"].includes(input.type)) {
+    const VALID_TYPES = ["IMPORTANT", "WELCOME", "ANNOUNCEMENT", "TASK", "INFO"];
+    if (!VALID_TYPES.includes(input.type)) {
       return { ok: false, error: "نوع الإشعار غير صحيح" };
     }
 
@@ -103,17 +104,14 @@ export async function sendNotification(
       if (isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
     }
 
-    // التحقق من الجمهور قبل الإرسال
+    // التحقق من الجمهور قبل الإرسال (حتى لو 0 حالياً، يُحفظ الإشعار ليصل للطلاب الجدد فور تسجيلهم)
     const target: StudentTarget = { ...DEFAULT_TARGET, ...parseTarget(JSON.stringify(input.target)) };
     const reached = await findTargetedStudentIds(target);
-    if (reached.length === 0) {
-      return { ok: false, error: "لا يوجد طلاب مطابقون لهذا الاستهداف — راجع الفلاتر" };
-    }
 
     const notification = await db.notification.create({
       data: {
         type: input.type,
-        pinned: !!input.pinned || input.type === "IMPORTANT", // «مهم» يثبت تلقائيًا
+        pinned: !!input.pinned || input.type === "IMPORTANT" || input.type === "WELCOME", // «مهم» والترحيب يثبتان تلقائيًا
         title,
         body: (input.body || "").trim() || null,
         buttons: buttonsJson,
@@ -218,7 +216,8 @@ export async function updateNotification(
 
     const title = (input.title || "").trim();
     if (title.length < 3) return { ok: false, error: "عنوان الإشعار قصير جدًا" };
-    if (!["IMPORTANT", "ANNOUNCEMENT", "TASK", "INFO"].includes(input.type)) {
+    const VALID_TYPES = ["IMPORTANT", "WELCOME", "ANNOUNCEMENT", "TASK", "INFO"];
+    if (!VALID_TYPES.includes(input.type)) {
       return { ok: false, error: "نوع الإشعار غير صحيح" };
     }
 
@@ -239,14 +238,11 @@ export async function updateNotification(
       if (isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
     }
 
-    // التحقق من الجمهور الجديد
+    // التحقق من الجمهور الجديد (يُحفظ حتى لو 0 طالب حالياً)
     const target: StudentTarget = { ...DEFAULT_TARGET, ...parseTarget(JSON.stringify(input.target)) };
     const reached = await findTargetedStudentIds(target);
-    if (reached.length === 0) {
-      return { ok: false, error: "لا يوجد طلاب مطابقون لهذا الاستهداف — راجع الفلاتر" };
-    }
 
-    const pinned = !!input.pinned || input.type === "IMPORTANT"; // «مهم» يثبت تلقائيًا
+    const pinned = !!input.pinned || input.type === "IMPORTANT" || input.type === "WELCOME"; // «مهم» والترحيب يثبتان تلقائيًا
 
     await db.notification.update({
       where: { id: notificationId },

@@ -168,7 +168,11 @@ export function NotificationComposer({
       // وضع الإنشاء
       const res = await sendNotification(payload);
       if (res.ok) {
-        toast.success(`تم الإرسال إلى ${res.reached} طالبًا ✓`);
+        if (res.reached === 0) {
+          toast.success("تم إرسال وحفظ الإشعار بنجاح (سيصل لجميع الطلاب الحاليين والجدد المطابقين للاستهداف) ✓");
+        } else {
+          toast.success(`تم الإرسال بنجاح — يصل الآن إلى ${res.reached} طالبًا ويصل لأي طالب جديد يطابق الفلتر ✓`);
+        }
         setV((p) => ({ ...p, title: "", body: "" }));
         setButtons([{ label: "", url: "", newTab: true }]);
         setImage("");
@@ -294,23 +298,26 @@ export function NotificationComposer({
               onClick={() => {
                 setV((p) => ({
                   ...p,
-                  type: "ANNOUNCEMENT",
+                  type: "WELCOME",
                   pinned: true,
-                  title: "دليل الطالب الجديد والتعليمات الهامة 📋",
-                  body: "أهلاً بك في اللجنة التكنولوجية! ننصحك بالاطلاع على نظام النقاط والورش المتاحة وطريقة تأكيد حضورك في الفعاليات.",
+                  title: "دليل الطلاب والتعليمات الهامة 📋",
+                  body: "أهلاً بكم جميعاً في اللجنة التكنولوجية! ننصحكم بالاطلاع على نظام النقاط والورش المتاحة واللوائح وطريقة تأكيد حضوركم في الفعاليات.",
                 }));
-                setGrades(["FIRST"]);
+                setGrades([]);
+                setGenders([]);
+                setSections([]);
                 setButtons([
-                  { label: "تصفح الفعاليات والورش", url: "/panel", newTab: false },
+                  { label: "تصفح الفعاليات والورش", url: "/activities", newTab: false },
+                  { label: "لوائح وتعليمات اللجنة", url: "/#rules", newTab: false },
                 ]);
-                toast.success("تم تجهيز دليل الطالب الجديد (استهداف الفرقة الأولى)");
+                toast.success("تم تجهيز دليل الطلاب (يستهدف جميع الطلاب الحاليين والجدد)");
               }}
               className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3 text-start text-xs font-bold text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-colors"
             >
               <span className="text-xl">📋</span>
               <div>
-                <p className="font-extrabold text-emerald-200">دليل الطلاب الجدد</p>
-                <p className="text-[10px] text-zinc-400">نصائح وإرشادات الفرقة الأولى</p>
+                <p className="font-extrabold text-emerald-200">دليل الطلاب والتعليمات</p>
+                <p className="text-[10px] text-zinc-400">نصائح وإرشادات لكل الطلاب (حاليين وجدد)</p>
               </div>
             </button>
           </div>

@@ -31,6 +31,7 @@ export type StudentNotificationsResult = {
   notifications: StudentNotification[];
   unreadCount: number;
   pinnedBanner: StudentNotification | null; // الإشعار المثبت غير المُغفَل الأحدث
+  pinnedBanners: StudentNotification[]; // قائمة البنرات المثبتة والترحيبية الأحدث (حتى 3)
   pendingImportant: number;
 };
 
@@ -103,13 +104,14 @@ export async function getStudentNotifications(user: {
   }
 
   const unreadCount = visible.filter((n) => !n.readAt).length;
-  const pendingImportant = visible.filter((n) => !n.readAt && (n.pinned || n.type === "IMPORTANT")).length;
-  // البنر: أول إشعار مثبت (أو نوع IMPORTANT) غير مُغفَل — الأحدث أولًا
-  const bannerCandidate = visible.find(
-    (n) => (n.pinned || n.type === "IMPORTANT") && !n.dismissedAt && (!n.expiresAt || n.expiresAt > now)
-  );
+  const pendingImportant = visible.filter((n) => !n.readAt && (n.pinned || n.type === "IMPORTANT" || n.type === "WELCOME")).length;
+  // البنرات: الإشعارات المثبتة أو المهمة أو الترحيبية غير المُغفَلة — الأحدث أولًا
+  const pinnedBanners = visible.filter(
+    (n) => (n.pinned || n.type === "IMPORTANT" || n.type === "WELCOME") && !n.dismissedAt && (!n.expiresAt || n.expiresAt > now)
+  ).slice(0, 3);
+  const bannerCandidate = pinnedBanners[0] ?? null;
 
-  return { notifications: visible, unreadCount, pinnedBanner: bannerCandidate ?? null, pendingImportant };
+  return { notifications: visible, unreadCount, pinnedBanner: bannerCandidate, pinnedBanners, pendingImportant };
 }
 
 // تعليم إشعار كمقروء (عند فتحه أو الضغط على CTA)

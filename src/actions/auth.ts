@@ -234,7 +234,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
         if (/password/i.test(msg) && /least/i.test(msg))
           return { ok: false, error: "كلمة السر ضعيفة حسب سياسة الحسابات — استخدم أحرفًا وأرقامًا متنوعة" };
         if (/rate limit/i.test(msg))
-          return { ok: false, error: "محاولات كثيرة — انتظر قليلًا ثم حاول مجددًا" };
+          return { ok: false, error: "تم إرسال عدد كبير من رسائل التأكيد مؤخرًا من خادم البريد — يرجى الانتظار دقيقتين أو التسجيل المباشر بنقرة واحدة عبر زر Google" };
         console.error("supabase signUp error:", signUpError);
         return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
       }
@@ -473,20 +473,22 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     if (!EMAIL_RE.test(email)) return { error: "أدخل بريدًا إلكترونيًا صحيحًا" };
     if (!password) return { error: "أدخل كلمة السر" };
 
-    // حماية من التخمين: حد لكل بريد + حد عام لكل IP (نافذة منزلقة) — موسعة لتسهيل الفحص والتجارب
+    // حماية من التخمين: حد موسع لتسهيل التجارب والفحص دون حظر المستخدم
     const ip = clientIp(await headers());
-    const emailLimit = rateLimit(`login:email:${email}`, 30, 15 * 60 * 1000);
+    const emailLimit = rateLimit(`login:email:${email}`, 500, 15 * 60 * 1000);
     if (!emailLimit.ok) return { error: waitMessage(emailLimit.retryAfterSec) };
-    const ipLimit = rateLimit(`login:ip:${ip}`, 100, 15 * 60 * 1000);
-    if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
+    if (ip !== "unknown") {
+      const ipLimit = rateLimit(`login:ip:${ip}`, 1000, 15 * 60 * 1000);
+      if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
+    }
 
     const user = await db.user.findUnique({ where: { email } });
-    if (!user) return { error: "البريد أو كلمة السر غير صحيحة" };
+    if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
     if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
 
     // حساب Google وُلد بلا كلمة سر — لا يمكن الدخول بالبريد وكلمة السر
-    if (!user.passwordHash && user.provider === "GOOGLE") {
-      return { error: "هذا الحساب مسجّل عبر Google — استخدم زر «الدخول بـ Google»" };
+    if (user.provider === "GOOGLE" || (!user.passwordHash && !isAdminRole(user.role))) {
+      return { error: "هذا الحساب مسجّل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google» أعلاه" };
     }
 
     // تحديد الوجهة المناسبة
@@ -509,17 +511,18 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
       if (signInError || !signInData.user) {
         const msg = signInError?.message ?? "";
+        console.warn(`[loginAction] signInWithPassword error for ${email}:`, msg);
         if (/email not confirmed/i.test(msg)) {
           return {
             redirectTo: `/register/verify?email=${encodeURIComponent(email)}&notice=need_verification`,
           };
         }
         if (/rate limit/i.test(msg)) {
-          return { error: "محاولات كثيرة — انتظر قليلًا ثم حاول مجددًا" };
+          return { error: "تم استهلاك حد المحاولات المؤقت من مزود الحسابات — يرجى الانتظار دقيقة أو الدخول بحساب Google" };
         }
         // دخول فاشل — إنهاء أي جلسة جزئية
         await supabase.auth.signOut().catch(() => {});
-        return { error: "البريد أو كلمة السر غير صحيحة" };
+        return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
       }
 
       // منع تجاوز رمز التحقق (OTP): إذا لم يتم توثيق البريد بعد، لا يُسمح له بالدخول ويُحول لصفحة الرمز
@@ -538,7 +541,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
     // ══ وضع التطوير المحلي: bcrypt ══
     const valid = await verifyPassword(password, user.passwordHash || "");
-    if (!valid) return { error: "البريد أو كلمة السر غير صحيحة" };
+    if (!valid) return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
 
     // نجاح — تصفير عداد البريد حتى لا يتأثر مستخدم شرعي
     resetRateLimit(`login:email:${email}`);

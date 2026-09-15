@@ -70,11 +70,11 @@ export function VideoSection() {
 
                   {/* الشريط العلوي */}
                   <div className="absolute start-4 top-4 z-10 flex items-center gap-2 sm:start-5 sm:top-5">
-                    <span className="rounded-full border border-white/20 bg-zinc-950/90 px-3.5 py-1.5 text-[11px] font-extrabold text-white shadow-lg backdrop-blur-md sm:text-xs">
+                    <span className="rounded-full bg-night/75 px-3.5 py-1.5 text-[11px] font-bold text-zinc-100 backdrop-blur-md sm:text-xs">
                       {isEn ? "TECHNOLOGY COMMITTEE" : "اللجنة التكنولوجية"}
                     </span>
                     {hasVideo && (
-                      <span className="hidden rounded-full border border-gold/60 bg-zinc-950/90 px-3 py-1.5 font-latin text-[10px] font-bold tracking-[0.22em] text-gold-light shadow-lg backdrop-blur-md sm:inline-block">
+                      <span className="hidden rounded-full border border-gold/50 bg-night/80 px-3 py-1.5 font-latin text-[10px] font-semibold tracking-[0.22em] text-gold-light backdrop-blur-md sm:inline-block">
                         PROMO
                       </span>
                     )}
@@ -97,7 +97,7 @@ export function VideoSection() {
                       {/* هالة خارجية بيضاء شفافة تضمن البروز في الوضع النهاري */}
                       <span
                         aria-hidden="true"
-                        className="absolute -inset-2 rounded-full bg-white/30 opacity-80 backdrop-blur-[2px] transition-opacity group-hover:opacity-100 dark:bg-white/10"
+                        className="absolute -inset-2 rounded-full bg-white/25 opacity-70 backdrop-blur-[2px] transition-opacity group-hover:opacity-100 dark:bg-white/10"
                       />
                       {hasVideo && !prefersReducedMotion && (
                         <span
@@ -107,7 +107,7 @@ export function VideoSection() {
                       )}
                       <span
                         aria-hidden="true"
-                        className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_10px_35px_-8px_rgba(201,164,92,0.9),inset_0_1px_0_rgba(255,255,255,0.45)] ring-4 ring-white/70 dark:ring-white/15"
+                        className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_10px_35px_-8px_rgba(201,164,92,0.9),inset_0_1px_0_rgba(255,255,255,0.45)] ring-4 ring-white/60 dark:ring-white/15"
                       >
                         <Play
                           className="h-6 w-6 -translate-x-[1px] fill-current sm:h-8 sm:w-8"
@@ -115,7 +115,7 @@ export function VideoSection() {
                         />
                       </span>
                     </motion.button>
-                    <span className="mt-5 rounded-full border border-white/20 bg-zinc-950/95 px-5 py-2 text-xs font-extrabold text-white shadow-[0_10px_30px_rgba(0,0,0,0.8)] backdrop-blur-md sm:text-sm">
+                    <span className="mt-5 rounded-full bg-night/75 px-4 py-1.5 text-xs font-bold text-zinc-100 backdrop-blur-md sm:text-sm">
                       {hasVideo ? (isEn ? "Watch Video" : "شاهد الفيديو") : (isEn ? "Coming Soon" : soonLabel)}
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export function VideoSection() {
                   {hasVideo && duration && (
                     <span
                       dir="ltr"
-                      className="absolute bottom-4 end-4 z-10 rounded-md border border-white/20 bg-zinc-950/90 px-2.5 py-1 font-latin text-[11px] font-bold tracking-wider text-white shadow-md backdrop-blur-md sm:bottom-5 sm:end-5 sm:text-xs"
+                      className="absolute bottom-4 end-4 z-10 rounded-md bg-night/80 px-2.5 py-1 font-latin text-[11px] font-semibold tracking-wider text-zinc-100 backdrop-blur-md sm:bottom-5 sm:end-5 sm:text-xs"
                     >
                       {duration}
                     </span>

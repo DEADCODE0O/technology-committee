@@ -180,12 +180,18 @@ export default async function StudentDashboardPage() {
       openTaskCount={openTasks.length}
     >
       <div className="space-y-6">
-        {/* ── بنر الإشعار المهم المثبت ── */}
-        {notifications.pinnedBanner && (
+        {/* ── بنرات الإشعارات المهمة والترحيبية المثبتة ── */}
+        {notifications.pinnedBanners && notifications.pinnedBanners.length > 0 ? (
+          <div className="space-y-3">
+            {notifications.pinnedBanners.map((banner) => (
+              <NotificationBanner key={banner.id} notification={banner} />
+            ))}
+          </div>
+        ) : notifications.pinnedBanner ? (
           <div>
             <NotificationBanner notification={notifications.pinnedBanner} />
           </div>
-        )}
+        ) : null}
 
         {/* ── الترحيب + التقدم في سطر واحد ── */}
         <section className="relative overflow-hidden rounded-3xl border border-gold/20 bg-surface p-6 sm:p-7">
