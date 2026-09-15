@@ -50,7 +50,7 @@ export function VideoSection() {
               className="absolute -bottom-4 left-4 right-4 -z-10 h-full rounded-2xl border border-gold/20 sm:-bottom-5 sm:left-6 sm:right-6 sm:rounded-3xl"
             />
 
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-black/[0.08] dark:border-white/[0.08] bg-black shadow-[0_25px_60px_-20px_rgba(32,29,25,0.35)] dark:shadow-[0_45px_100px_-30px_rgba(0,0,0,0.9)] sm:rounded-3xl">
+            <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/[0.08] bg-black shadow-[0_45px_100px_-30px_rgba(0,0,0,0.9)] sm:rounded-3xl">
               {/* ── حالة ما قبل التشغيل: Poster سينمائي ── */}
               {!playing && (
                 <>
@@ -61,11 +61,11 @@ export function VideoSection() {
                     sizes="(max-width: 1024px) 100vw, 1024px"
                     className="object-cover"
                   />
-                  {/* تدرجات تعتيم احترافية — تُبقى غلاف الفيديو سينمائيًا في الوضعين */}
-                  <div aria-hidden="true" className="absolute inset-0 bg-night/45 dark:bg-night/35" />
+                  {/* تدرجات تعتيم احترافية — موحدة وثابتة في الوضعين */}
+                  <div aria-hidden="true" className="absolute inset-0 bg-night/35" />
                   <div
                     aria-hidden="true"
-                    className="absolute inset-0 bg-gradient-to-t from-night/90 via-night/20 to-night/30 dark:from-night/85 dark:via-transparent dark:to-night/25"
+                    className="absolute inset-0 bg-gradient-to-t from-night/85 via-transparent to-night/25"
                   />
 
                   {/* الشريط العلوي */}
@@ -80,7 +80,7 @@ export function VideoSection() {
                     )}
                   </div>
 
-                  {/* زر التشغيل الذهبي — حلقة مضيئة مزدوجة تبرز فوق أي خلفية */}
+                  {/* زر التشغيل الذهبي — حلقة مضيئة مزدوجة موحدة في الوضعين */}
                   <div className="absolute inset-0 z-10 flex flex-col items-center justify-center">
                     <motion.button
                       type="button"
@@ -94,10 +94,10 @@ export function VideoSection() {
                         hasVideo ? "cursor-pointer" : "cursor-default"
                       }`}
                     >
-                      {/* هالة خارجية بيضاء شفافة تضمن البروز في الوضع النهاري */}
+                      {/* هالة ناعمة موحدة */}
                       <span
                         aria-hidden="true"
-                        className="absolute -inset-2 rounded-full bg-white/25 opacity-70 backdrop-blur-[2px] transition-opacity group-hover:opacity-100 dark:bg-white/10"
+                        className="absolute -inset-2 rounded-full bg-white/10 opacity-70 backdrop-blur-[2px] transition-opacity group-hover:opacity-100"
                       />
                       {hasVideo && !prefersReducedMotion && (
                         <span
@@ -107,7 +107,7 @@ export function VideoSection() {
                       )}
                       <span
                         aria-hidden="true"
-                        className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_10px_35px_-8px_rgba(201,164,92,0.9),inset_0_1px_0_rgba(255,255,255,0.45)] ring-4 ring-white/60 dark:ring-white/15"
+                        className="relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_10px_35px_-8px_rgba(201,164,92,0.9),inset_0_1px_0_rgba(255,255,255,0.45)] ring-4 ring-white/15"
                       >
                         <Play
                           className="h-6 w-6 -translate-x-[1px] fill-current sm:h-8 sm:w-8"

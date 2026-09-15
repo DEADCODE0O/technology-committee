@@ -198,10 +198,9 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
       const res = await registerStudent(data);
       if (res.ok) {
         if (res.needsEmailConfirm) {
-          toast.success("تم تجهيز الحساب ورمز التحقق (OTP) 📩");
-          const codeParam = res.fallbackCode ? `&code=${encodeURIComponent(res.fallbackCode)}` : "";
+          toast.success("تم إرسال رمز التحقق (OTP) إلى بريدك الإلكتروني 📩");
           router.push(
-            `/register/verify?email=${encodeURIComponent(data.email)}${codeParam}${
+            `/register/verify?email=${encodeURIComponent(data.email)}${
               returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
             }`
           );

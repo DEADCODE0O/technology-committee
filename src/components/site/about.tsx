@@ -26,7 +26,7 @@ export function About() {
                 aria-hidden="true"
                 className="absolute -bottom-4 -left-4 h-full w-full rounded-2xl border border-gold/25 sm:-bottom-5 sm:-left-5"
               />
-              <div className="relative overflow-hidden rounded-2xl border border-border shadow-xl">
+              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] shadow-[0_30px_70px_-20px_rgba(0,0,0,0.8)]">
                 <Image
                   src={about.image}
                   alt={caption}
@@ -37,9 +37,9 @@ export function About() {
                 />
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-t from-night/85 via-night/20 to-transparent"
                 />
-                <span className="absolute bottom-3.5 start-4 text-[11px] font-bold text-white drop-shadow-sm sm:text-xs">
+                <span className="absolute bottom-3.5 start-4 text-[11px] font-bold text-zinc-100 drop-shadow-sm sm:text-xs">
                   {caption}
                 </span>
               </div>

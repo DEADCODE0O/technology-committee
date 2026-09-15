@@ -62,7 +62,7 @@ export type RegisterData = {
   talentDescription?: string;
 };
 
-export type ActionResult = { ok: boolean; error?: string; needsEmailConfirm?: boolean; email?: string; fallbackCode?: string };
+export type ActionResult = { ok: boolean; error?: string; needsEmailConfirm?: boolean; email?: string };
 
 const gradeValues = GRADES.map((g) => g.value as string);
 const sectionValues = SECTIONS.map((s) => s.value as string);
@@ -196,21 +196,11 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
         const supaAdmin = getSupabaseAdmin();
         if (supaAdmin) {
           const { data: supaUser } = await supaAdmin.auth.admin.getUserById(existing.id);
-          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نولّد رمز تفعيل جديد وننقله لشاشة التفعيل
+          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نعيد إرسال الرمز وننقله لشاشة التفعيل
           if (supaUser?.user && !supaUser.user.email_confirmed_at && !supaUser.user.confirmed_at) {
-            let fallbackCode: string | undefined;
-            const gen = await supaAdmin.auth.admin.generateLink({
-              type: "signup",
-              email,
-              password: data.password,
-            } as any);
-            if (!gen.error && gen.data?.properties?.email_otp) {
-              fallbackCode = gen.data.properties.email_otp;
-            } else {
-              const supabase = await createSupabaseServerClient();
-              if (supabase) await supabase.auth.resend({ type: "signup", email }).catch(() => {});
-            }
-            return { ok: true, needsEmailConfirm: true, email, fallbackCode };
+            const supabase = await createSupabaseServerClient();
+            if (supabase) await supabase.auth.resend({ type: "signup", email }).catch(() => {});
+            return { ok: true, needsEmailConfirm: true, email };
           }
         }
       }
@@ -259,7 +249,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
                 email,
                 password: data.password,
               } as any);
-              return { ok: true, needsEmailConfirm: true, email, fallbackCode: resendGen.data?.properties?.email_otp };
+              return { ok: true, needsEmailConfirm: true, email };
             }
             return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
           } else {
@@ -354,7 +344,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       });
 
       // إرجاع النتيجة للتوجيه لصفحة تأكيد الـ OTP
-      return { ok: true, needsEmailConfirm: true, email, fallbackCode };
+      return { ok: true, needsEmailConfirm: true, email };
     }
 
     // ══ وضع التطوير المحلي: bcrypt + جلسة JWT ══
@@ -487,56 +477,43 @@ export async function resendSignupOtp({
   email,
 }: {
   email: string;
-}): Promise<{ ok: boolean; error?: string; fallbackCode?: string }> {
+}): Promise<{ ok: boolean; error?: string }> {
   try {
     const normEmail = normalizeEmail(email || "");
     if (!normEmail || !EMAIL_RE.test(normEmail)) {
       return { ok: false, error: "البريد الإلكتروني غير صحيح" };
     }
 
-    // حد لمنع الإغراق: طلب واحد كل 10 ثوانٍ (مريح للتجارب)
-    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 10 * 1000);
+    // حد لمنع الإغراق: طلب واحد كل 15 ثانية
+    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 15 * 1000);
     if (!limit.ok) {
       return { ok: false, error: `يرجى الانتظار ${limit.retryAfterSec} ثانية قبل طلب رمز جديد` };
     }
 
     if (isSupabaseConfigured()) {
       const supabase = await createSupabaseServerClient();
-      let sentOk = false;
-      if (supabase) {
-        const { error } = await supabase.auth.resend({
-          type: "signup",
-          email: normEmail,
-        });
-        if (!error) {
-          sentOk = true;
-        } else {
-          console.log("resend notice/error:", error.message);
+      if (!supabase) return { ok: false, error: "تعذر الاتصال بخدمة المصادقة" };
+
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: normEmail,
+      });
+
+      if (error) {
+        console.error("resendOtp error:", error);
+        const msg = error.message || "";
+        if (/rate limit/i.test(msg)) {
+          return { ok: false, error: "تم إرسال رمز مؤخراً — يرجى مراجعة بريدك الإلكتروني أو الانتظار دقيقة" };
         }
+        return { ok: false, error: "تعذر إعادة إرسال الرمز حالياً — يرجى المحاولة بعد قليل" };
       }
 
-      if (sentOk) {
-        return { ok: true };
-      }
-
-      // في حال تعذر الإرسال أو قيود خادم البريد، نولّد رمز التحقق فورياً عبر supaAdmin
-      const supaAdmin = getSupabaseAdmin();
-      if (supaAdmin) {
-        const gen = await supaAdmin.auth.admin.generateLink({
-          type: "signup",
-          email: normEmail,
-        } as any);
-        if (!gen.error && gen.data?.properties?.email_otp) {
-          return { ok: true, fallbackCode: gen.data.properties.email_otp };
-        }
-      }
-
-      return { ok: false, error: "تعذر إعادة إرسال الرمز حالياً — يرجى المحاولة بعد قليل" };
+      return { ok: true };
     }
 
     // وضع التطوير المحلي
     console.log(`[DEV MODE] Resent verification OTP to ${normEmail}: 123456`);
-    return { ok: true, fallbackCode: "123456" };
+    return { ok: true };
   } catch (err) {
     console.error("resendSignupOtp error:", err);
     return { ok: false, error: "حدث خطأ غير متوقع — حاول مرة أخرى" };
