@@ -70,11 +70,11 @@ export function VideoSection() {
 
                   {/* الشريط العلوي */}
                   <div className="absolute start-4 top-4 z-10 flex items-center gap-2 sm:start-5 sm:top-5">
-                    <span className="rounded-full bg-night/75 px-3.5 py-1.5 text-[11px] font-bold text-zinc-100 backdrop-blur-md sm:text-xs">
+                    <span className="rounded-full bg-night/75 px-3.5 py-1.5 text-[11px] font-bold text-white backdrop-blur-md sm:text-xs">
                       {isEn ? "TECHNOLOGY COMMITTEE" : "اللجنة التكنولوجية"}
                     </span>
                     {hasVideo && (
-                      <span className="hidden rounded-full border border-gold/50 bg-night/80 px-3 py-1.5 font-latin text-[10px] font-semibold tracking-[0.22em] text-gold-light backdrop-blur-md sm:inline-block">
+                      <span className="hidden rounded-full border border-gold/50 bg-night/80 px-3 py-1.5 font-latin text-[10px] font-semibold tracking-[0.22em] text-white backdrop-blur-md sm:inline-block">
                         PROMO
                       </span>
                     )}
@@ -115,7 +115,7 @@ export function VideoSection() {
                         />
                       </span>
                     </motion.button>
-                    <span className="mt-5 rounded-full bg-night/75 px-4 py-1.5 text-xs font-bold text-zinc-100 backdrop-blur-md sm:text-sm">
+                    <span className="mt-5 rounded-full bg-night/75 px-4 py-1.5 text-xs font-bold text-white backdrop-blur-md sm:text-sm">
                       {hasVideo ? (isEn ? "Watch Video" : "شاهد الفيديو") : (isEn ? "Coming Soon" : soonLabel)}
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export function VideoSection() {
                   {hasVideo && duration && (
                     <span
                       dir="ltr"
-                      className="absolute bottom-4 end-4 z-10 rounded-md bg-night/80 px-2.5 py-1 font-latin text-[11px] font-semibold tracking-wider text-zinc-100 backdrop-blur-md sm:bottom-5 sm:end-5 sm:text-xs"
+                      className="absolute bottom-4 end-4 z-10 rounded-md bg-night/80 px-2.5 py-1 font-latin text-[11px] font-semibold tracking-wider text-white backdrop-blur-md sm:bottom-5 sm:end-5 sm:text-xs"
                     >
                       {duration}
                     </span>

@@ -117,7 +117,7 @@ export function Gallery() {
               >
                 <ZoomIn className="h-4 w-4" />
               </span>
-              <span className="absolute inset-x-0 bottom-0 p-3 text-start text-[11px] font-bold text-zinc-100 drop-shadow-md sm:p-4 sm:text-xs">
+              <span className="absolute inset-x-0 bottom-0 p-3 text-start text-[11px] font-bold text-white drop-shadow-md sm:p-4 sm:text-xs">
                 {item.caption}
               </span>
             </motion.button>
@@ -209,7 +209,7 @@ export function Gallery() {
 
             {/* التعليق */}
             <div className="relative z-10 px-6 pb-6 pt-2 text-center sm:pb-8">
-              <p className="text-sm font-bold text-zinc-100 sm:text-base">
+              <p className="text-sm font-bold text-white sm:text-base">
                 {items[activeIndex].caption}
               </p>
               <p className="mt-1.5 font-latin text-[10px] font-medium tracking-[0.3em] text-gold/50">

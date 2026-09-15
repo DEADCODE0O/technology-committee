@@ -39,7 +39,7 @@ export function About() {
                   aria-hidden="true"
                   className="absolute inset-0 bg-gradient-to-t from-night/85 via-night/20 to-transparent"
                 />
-                <span className="absolute bottom-3.5 start-4 text-[11px] font-bold text-zinc-100 drop-shadow-sm sm:text-xs">
+                <span className="absolute bottom-3.5 start-4 text-[11px] font-bold text-white drop-shadow-sm sm:text-xs">
                   {caption}
                 </span>
               </div>
