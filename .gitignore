@@ -30,22 +30,14 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — أسرار البيئة لا تُرفع للمستودع أبدًا:
-# الإعدادات المحلية في .env (نسخها من .env.example)
-# وأسرار الإنتاج تُضبط كمتغيرات بيئة في لوحة Vercel.
-.env
-.env.*
+# env files — ملاحظة مهمة:
+# .env مُتتبع هنا «مقصودًا» لأنه إعداد تشغيل محلي للمنصة (مسار قاعدة SQLite
+# + سر تطوير محلي) ولازم يصل مع الكود عند النشر عبر المنصة نفسها.
+# أما أسرار الإنتاج الحقيقية (Vercel/Supabase) فتُضبط كمتغيرات بيئة في لوحة الاستضافة.
+.env.local
+.env.*.local
+!.env
 !.env.example
-
-# قواعد البيانات المحلية (بيانات مستخدمين — لا تُرفع أبدًا)
-db/*.db
-db/*.db-journal
-*.sqlite
-*.sqlite3
-
-# ملفات مرفوعة وقت التشغيل
-public/uploads/
-uploads/
 
 # vercel
 .vercel
@@ -64,10 +56,6 @@ test
 prompt
 
 server.log
-# ملفات تشغيل مؤقتة (مراقبة/تشغيل محلي)
-scripts/*-pid.txt
-scripts/prod-started-at.txt
-*.bak
 # Skills directory
 /skills/
 # صور مرفوعة وقت التشغيل (محليًا)

@@ -6,8 +6,6 @@ import type { NextConfig } from "next";
 // ═══════════════════════════════════════════════════════════════
 
 const nextConfig: NextConfig = {
-  // إخراج standalone للتشغيل المحلي/الذاتي فقط —
-  // على Vercel يُترك undefined ليتكفل نظامهم بالتغليف الصحيح
   output: process.env.VERCEL ? undefined : "standalone",
   // الإنتاج يجب أن يفشل البناء عند وجود أخطاء TypeScript — لا تجاهل
   typescript: {

@@ -1,162 +1,280 @@
-# 🚀 دليل النشر — منصة اللجنة التكنولوجية (Vercel + Supabase)
+# 🚀 دليل النشر المجاني — منصة اللجنة التكنولوجية
 
-البنية الرسمية: **Vercel (استضافة) + Supabase (قاعدة بيانات + مصادقة + تخزين)**.
-المصادقة: **بريد + OTP إجباري للتأكيد** و**الدخول بـ Google** — كلاهما مُدار من Supabase Auth.
-
-> ✅ منذ هذه النسخة: ملف الترحيل كامل (40 جدولاً) ويُطبَّق تلقائيًا بأمر واحد،
-> وسكربت `prebuild` يختار مزوّد قاعدة البيانات (PostgreSQL/SQLite) تلقائيًا حسب
-> `DATABASE_URL` — لا حاجة لأي تبديل يدوي للمخطط.
+النشر الحالي مبني على (**Vercel + Supabase**) مع إبقاء المصادقة والبيانات والتخزين في Supabase.
+النسخة المجانية الحالية تعتمد على **Google OAuth أو Email/Password فقط**؛ لا يوجد SMS OTP في مسار التسجيل.
 
 ---
 
-## نظرة سريعة على البنية
+## البنية الرسمية (ما الذي يتغير في هذه النسخة)
 
 | الطبقة | التقنية | ملاحظات |
 |---|---|---|
-| الاستضافة | **Vercel** | Next.js serverless — البناء يعمل بأمر `npm run build` مباشرة |
-| قاعدة البيانات | **Supabase PostgreSQL** عبر **Prisma** | ترحيل كامل: 40 جدولاً بـ `db:migrate:deploy` |
-| المصادقة | **Supabase Auth** | بريد + OTP (رمز 6 أرقام) + Google OAuth |
-| الهوية | UUID من `auth.users` | نفسه مفتاح صف `User` في التطبيق |
-| الصور | **Supabase Storage** | bucket عام باسم `workshops` |
+| الاستضافة | **Vercel** | Next.js serverless |
+| قاعدة البيانات | **Supabase PostgreSQL** عبر **Prisma** | المصدر الوحيد للحقيقة |
+| المصادقة | **Supabase Auth** | بريد + كلمة سر، Google OAuth، استعادة كلمة السر، الجلسات |
+| الهوية | UUID من `auth.users` | نفسه مفتاح صف المستخدم في التطبيق |
+| الصور | **Supabase Storage** | bucket عام `workshops` |
+| الهاتف | حفظ رقم الهاتف فقط | SMS OTP مؤجل لمرحلة لاحقة عند الحاجة |
+
+> ✅ الإنتاج موجّه إلى **Supabase PostgreSQL + Supabase Auth + Supabase Storage + Prisma**.
+> لا يوجد اعتماد إنتاجي على SQLite أو نظام Auth مخصص.
+> حسابات الطلاب: Google أو Email/Password. حسابات الإدارة تستخدم البريد وكلمة السر.
 
 ---
 
-## الخطوة ١ — مشروع Supabase (٥ دقائق)
+## ما ستحتاجه
 
-1. [supabase.com](https://supabase.com) → **New Project** → الاسم `tech-committee` → منطقة قريبة (مثل `Frankfurt`) → كلمة سر قوية للقاعدة → Create.
-2. بعدجهاز المشروع، من **Project Settings → API** انسخ:
-   - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
-   - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `service_role` (سري!) → `SUPABASE_SERVICE_ROLE_KEY`
-3. من **Project Settings → Database** انسخ (بعد استبدال `[YOUR-PASSWORD]`):
-   - **Connection Pooling → Session mode** (منفذ `6543` عبر `pooler.supabase.com`) → `DATABASE_URL`
-   - **Connection string → URI** (منفذ `5432`) → `DIRECT_URL`
-4. من القائمة الجانبية **Storage → New bucket** → الاسم `workshops` → فعّل **Public bucket**.
+- حساب **GitHub** مجاني → [github.com](https://github.com) (لرفع الكود — وسجّل به في الخدمتين التاليتين)
+- حساب **Supabase** مجاني → [supabase.com](https://supabase.com) (قاعدة + مصادقة + تخزين)
+- حساب **Vercel** مجاني → [vercel.com](https://vercel.com) (الاستضافة)
+- (اختياري) حساب **Google Cloud** مجاني → لتفعيل الدخول بـ Google للطلاب
 
-## الخطوة ٢ — إعداد المصادقة (OTP + Google) — أهم خطوة
+---
 
-### أ) تفعيل OTP إجباري لتأكيد البريد
-1. **Authentication → Providers → Email**:
-   - **"Confirm email"**: ✅ **مفعّل** (هذا ما يجعل المنصة ترسل رمز OTP 6 أرقام
-     عند التسجيل ويمنع الدخول قبل تأكيده — كما هو مطلوب تمامًا).
-   - **"Secure email change"**: مفعّل.
-2. **Authentication → Email Templates → Confirm signup** — الصق هذا القالب
-   (يعرض **رمزًا من 6 أرقام** بدلاً من الرابط):
+## الخطوة ١ — مشروع Supabase (قاعدة + مصادقة + تخزين) — ٥ دقائق
 
-   **Subject:**
+1. افتح [supabase.com](https://supabase.com) → **New Project** → اسمه `tech-committee`
+   → منطقة قريبة (مثلاً `Frankfurt`) → كلمة سر قوية لقاعدة البيانات → Create
+2. بعد إنشاء المشروع، من **Project Settings → API** انسخ:
+   - `Project URL` → سيكون `NEXT_PUBLIC_SUPABASE_URL`
+   - `anon public` → سيكون `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` (سري!) → سيكون `SUPABASE_SERVICE_ROLE_KEY`
+3. من **Project Settings → Database** انسخ اتصالين (بعد استبدال `[YOUR-PASSWORD]` بكلمة سر القاعدة):
+   - **Connection string → URI** (المباشر، منفذ `5432` على `db.<ref>.supabase.co`) → `DIRECT_URL`
+   - **Connection Pooling → Session mode** (منفذ `5432` على `pooler.supabase.com`) → `DATABASE_URL`
+4. من القائمة الجانبية **Storage → New bucket**:
+   - الاسم: `workshops` — ونشّط **Public bucket**
+
+> 💡 حدود الخطة المجانية تتغير مع الوقت؛ راجع صفحة خطط Supabase الحالية قبل فتح المنصة على نطاق واسع.
+
+---
+
+## الخطوة ٢ — إعداد المصادقة داخل Supabase — ٣ دقائق
+
+### أ) الإعدادات الأساسية
+
+1. **Authentication → URL Configuration**:
+   - **Site URL**: `https://اسم-مشروعك.vercel.app` (رابطك بعد النشر على Vercel)
+   - **Additional Redirect URLs**: أضف
+     `https://اسم-مشروعك.vercel.app/auth/**`
+     وأيضًا `http://localhost:3000/auth/**` (للتجربة المحلية)
+2. **Authentication → Providers → Email**: مفعّل افتراضيًا
+   - **"Confirm email"**: فعّله (Enabled) لإلزام الطلاب بتأكيد البريد عبر كود OTP 6 أرقام.
+   - **"Secure email change"**: Enabled.
+
+### ج) ضبط قالب كود التحقق (OTP Template) المكون من 6 أرقام
+
+لضمان وصول كود مكون من 6 أرقام للطالب بدلاً من الرابط التقليدي:
+1. اذهب إلى **Supabase Dashboard → Authentication → Email Templates**.
+2. اختر قالب **Confirm signup**.
+3. في خانة **Subject** اكتب:
    ```text
    رمز التحقق من البريد — اللجنة التكنولوجية
    ```
-   **Message (Body):**
+4. في خانة **Message (Body)** الصق هذا القالب المجهز (يدعم متغير `{{ .Token }}` الرسمي من Supabase):
    ```html
    <div dir="rtl" style="font-family: Arial, sans-serif; background-color: #0c0d12; color: #f4f4f5; padding: 40px 20px; text-align: center;">
      <div style="max-width: 500px; margin: 0 auto; background: #181924; border: 1px solid rgba(201,164,92,0.3); border-radius: 24px; padding: 32px;">
        <h1 style="color: #c9a45c; font-size: 24px; margin-bottom: 8px;">اللجنة التكنولوجية</h1>
        <p style="color: #a1a1aa; font-size: 14px; margin-top: 0;">أهلاً بك معنا! لتأكيد بريدك الإلكتروني وإكمال تفعيل حسابك، استخدم رمز التحقق التالي:</p>
+       
        <div style="margin: 28px 0; background: #0c0d12; border: 2px dashed #c9a45c; border-radius: 16px; padding: 18px;">
          <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #facc15; font-family: monospace;">{{ .Token }}</span>
        </div>
+       
        <p style="color: #71717a; font-size: 12px; line-height: 1.6;">
          هذا الرمز صالح لمدة محدودة. إذا لم تقم بإنشاء حساب في منصة اللجنة التكنولوجية، يمكنك تجاهل هذه الرسالة بأمان.
        </p>
      </div>
    </div>
    ```
-3. احفظ **Save Changes**.
+5. اضغط **Save Changes**.
 
-> 💡 كيف يعمل المسار في المنصة: الطالب يسجل → يصلته رسالة بالرمز → صفحة
-> `/register/verify` تطلب الـ6 أرقام → **لا دخول قبل صحة الرمز** (محاولة الدخول قبل
-> التأكيد تحوّله تلقائيًا لنفس صفحة التحقق). إعادة الإرسال متاحة بعد 60 ثانية.
->
-> ⚠️ حد البريد المدمج في الخطة المجانية منخفض (~4 رسائل/ساعة تقريبًا). عند
-> الإطلاق الفعلي اربط SMTP خاصًا بك من Authentication → SMTP Settings لرفع الحد.
+---
 
-### ب) تفعيل الدخول بـ Google
-Google OAuth يُدار **بالكامل من Supabase** — لا مفاتيح في الكود أو Vercel:
-1. [console.cloud.google.com](https://console.cloud.google.com) → أنشئ مشروعًا → **OAuth consent screen** (External → اسم التطبيق: «اللجنة التكنولوجية» → Save).
-2. **Credentials → Create Credentials → OAuth Client ID** → Web application → أضف في **Authorized redirect URIs**:
-   ```text
+### د) التحقق من البريد وحظر الإيميلات المؤقتة (Anti-Disposable Protection)
+المنصة مزودة تلقائيًا بنظام فحص ذكي للبريد الإلكتروني:
+- **المزودات المقبولة**: Google (Gmail), Microsoft (Outlook, Hotmail), Yahoo, Apple (iCloud), Proton, وأي بريد جامعي أو تعليمي رسمي (`.edu`, `.edu.eg`).
+- **المحظور تمامًا**: جميع خدمات البريد المؤقت والمهمل (مثل Mohmal, 10MinuteMail, TempMail, Guerrilla, Yopmail, إلخ) لمنع الحسابات الوهمية والتلاعب بالنقاط والشهادات.
+
+### ب) الدخول بـ Google (اختياري لكن موصى به للطلاب)
+
+> Google OAuth يُدار **بالكامل من Supabase** — لا مفاتيح Google في الكود أو Vercel إطلاقًا.
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → أنشئ مشروعًا → **OAuth consent screen**
+   (External → اسم التطبيق: «اللجنة التكنولوجية» → Save)
+2. **Credentials → Create Credentials → OAuth Client ID** → Web application → أضف في
+   **Authorized redirect URIs**:
+   ```
    https://<project-ref>.supabase.co/auth/v1/callback
    ```
-3. انسخ **Client ID** و**Client Secret** → **Supabase → Authentication → Providers → Google** → الصقهما → Save.
+3. انسخ **Client ID** و **Client Secret** → **Supabase → Authentication → Providers → Google** → الصقهما → Save
 
-> زر «الدخول بـ Google» يظهر تلقائيًا في صفحات الدخول والتسجيل، ومستخدم Google
-> الجديد يُحوَّل لإكمال بياناته الدراسية ثم لوحته. حسابات الإدارة تدخل بالبريد وكلمة السر فقط.
+> الطلاب سيرَون زر «الدخول بحساب Google»، وسيكملون بياناتهم الدراسية بعد أول دخول.
+> حسابات الإدارة تدخل بالبريد وكلمة السر فقط (للأمان — محظورة من Google).
 
-### ج) روابط العودة (URL Configuration)
-**Authentication → URL Configuration**:
-- **Site URL**: رابطك على Vercel (مثل `https://tech-committee.vercel.app`)
-- **Additional Redirect URLs**: أضف
-  `https://اسم-مشروعك.vercel.app/auth/**` و `http://localhost:3000/auth/**`
+---
 
-## الخطوة ٣ — تهيئة القاعدة (أمر واحد)
+## الخطوة ٣ — رفع الكود على GitHub
 
-على جهازك مع ضبط المتغيرات في `.env` (أو مرة واحدة من Vercel عبر Terminal):
+```bash
+git init
+git add .
+git commit -m "منصة أنشطة اللجنة التكنولوجية"
+git branch -M main
+git remote add origin https://github.com/USERNAME/tech-committee-platform.git
+git push -u origin main
+```
+
+> ⚠️ تأكد أن `.env` غير مرفوع (في `.gitignore` أصلًا — آمن). اختر Private (بيانات طلاب لاحقًا).
+
+---
+
+## الخطوة ٤ — تهيئة قاعدة Supabase
+
+بعد ضبط `DATABASE_URL` و`DIRECT_URL`:
 
 ```bash
 npm install
-npm run db:migrate:deploy   # ينشئ الـ40 جدولاً كاملة
-npm run db:seed             # حساب SUPER_ADMIN + قواعد النقاط + الشارات
+npm run db:generate
+npm run db:migrate:deploy
+npm run db:seed
 ```
 
-ثم رقِّ نفسك إلى مدير أعلى:
+ملف الـmigration موجود داخل `prisma/migrations/` ولا يحتاج تبديل SQLite/PostgreSQL.
+
+### إنشاء حساب SUPER_ADMIN
+
+1. سجّل حسابًا عاديًا بالبريد من `/register`.
+2. بعد إنشاء الحساب، من Supabase SQL Editor أو Prisma حدّد دوره:
+
 ```sql
--- من Supabase SQL Editor بعد تسجيل حسابك العادي من /register
-update public."User" set role = 'SUPER_ADMIN' where email = '<بريدك-هنا>';
+update public."User"
+set role = 'SUPER_ADMIN'
+where email = '<بريدك-هنا>';
 ```
 
-> 🧹 **لو جرّبت نشرًا سابقًا فاشلًا** على نفس مشروع Supabase: امسح القاعدة أولًا
-> من SQL Editor ثم طبّق الترحيل النظيف:
-> ```sql
-> drop schema public cascade; create schema public;
-> grant usage on schema public to postgres, anon, authenticated, service_role;
-> grant all privileges on all tables in schema public to postgres, anon, authenticated, service_role;
-> ```
+3. سجّل الخروج ثم الدخول إلى `/admin/login`.
 
-## الخطوة ٤ — النشر على Vercel
+## الخطوة ٥ — النشر على Vercel
 
-1. **Add New → Project → Import** مستودع GitHub الخاص بالمنصة.
-2. (الفحص التلقائي يكفي — لا تغيّر Build Command؛ `npm run build` يتكفل بكل شيء.)
-3. **Settings → Environment Variables** — أضف:
+أضف في Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SITE_URL`.
+`AUTH_SECRET` مطلوب فقط لو قررت إبقاء وضع التطوير المحلي القديم؛ لا تعتمد عليه في Supabase Auth.
 
-| المتغير | القيمة |
-|---|---|
-| `DATABASE_URL` | رابط Session Pooler (منفذ 6543) من Supabase |
-| `DIRECT_URL` | رابط الاتصال المباشر (منفذ 5432) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | مفتاح anon public |
-| `SUPABASE_SERVICE_ROLE_KEY` | مفتاح service_role (سري) |
-| `SUPABASE_BUCKET` | `workshops` |
-| `AUTH_SECRET` | سر عشوائي 32+ حرفًا (`openssl rand -base64 48`) |
-| `NEXT_PUBLIC_SITE_URL` | `https://اسم-مشروعك.vercel.app` |
+ثم Deploy. سكربت البناء الحالي هو `prisma generate && next build`.
 
-4. **Deploy** — أول بناء يستغرق ~3-5 دقائق.
+### Google OAuth
 
-## الخطوة ٥ — اختبار ما بعد النشر (٥ دقائق)
+من Supabase → Authentication → Providers → Google ضَع Client ID/Secret،
+واجعل Redirect URI في Google هو:
 
 ```text
-1) /register → طالب جديد → تصلك رسالة برمز 6 أرقام → أدخله → لوحة الطالب
-2) جرّب الدخول قبل تأكيد الرمز → يُحوَّلك تلقائيًا لصفحة التحقق ✅ (لا دخول بلا OTP)
-3) زر «الدخول بـ Google» → إكمال البيانات → لوحة الطالب
-4) «نسيت كلمة السر» → بريد استعادة → كلمة جديدة → دخول
-5) /admin/login → حسابك المروَّج → أنشئ أول نشاط وجلسة
-6) حجز جلسة → QR حضور → نقاط تلقائية
+https://<project-ref>.supabase.co/auth/v1/callback
 ```
+
+وفي Supabase URL Configuration أضف رابط التطبيق ومسار `/auth/callback`.
+
+### Storage
+
+أنشئ bucket عام باسم `workshops` للصور وقوالب Excel العامة. ملفات القوالب حساسة من ناحية المحتوى،
+لذلك ارفعها عبر الـserver route فقط ولا تضع service role في المتصفح.
+
+## الخطوة ٦ — اختبار قبل الإطلاق
+
+```text
+1) Register: الاسم عربي + 3 أسماء، فرقة، شعبة، جنس، هاتف
+2) Google: تسجيل → إكمال الملف → العودة للمسار المطلوب
+3) Workshop: deadline يغلق الطلاب والضيوف، والإدارة تستطيع الإضافة يدويًا
+4) Data Request: إجابة تحفظ في StudentData وتُعاد تعبئتها عند الطلب التالي
+5) Excel: تصدير الورشة بفلاتر + تصدير قاعدة الطلاب كاملة بفلاتر
+6) Admin: تغيير كلمة السر يعمل عبر Supabase Auth
+7) Mobile: راجع 390px وعدم وجود horizontal overflow
+```
+
+## بعد النشر — أول ٥ دقائق (اختبار سريع)
+
+1. `/register` → سجّل طالبًا تجريبيًا → وصلك بريد تفعيل؟ (إن كان مفعّلًا) → ادخل → لوحة الطالب
+2. جرّب زر **الدخول بـ Google** → أكمل بياناتك الدراسية → لوحة الطالب
+3. جرّب **نسيت كلمة السر** → وصل بريد برابط → عيّن كلمة جديدة → ادخل بها
+4. `/admin/login` → ادخل بحسابك المروّج → أنشئ أول ورشة (صورة من المكتبة أو رفع مباشر)
+5. جرّب: حجز ورشة → QR حضور → +10 نقاط تلقائية
 
 ---
 
 ## أسئلة شائعة
 
-**الرمز لم يصل؟** راجع مجلد Spam، ثم زر «إعادة الإرسال» بعد 60 ثانية. إن تكرر: تحقق من قالب الرسالة (خطوة ٢-أ) وحد SMTP.
+**طالب نسي كلمة السر؟**
+رابط «نسيت كلمة السر؟» في صفحة الدخول يرسل له بريد استعادة تلقائي (Supabase Auth) —
+بلا تدخل منك. أو: الإدارة → الطلاب → تعديل → تعيين كلمة سر جديدة.
 
-**التسجيل يقول «معطل من Supabase»؟** Authentication → Providers → Email → Enable Signup مفعّل.
+**عندي حساب Google فقط؟**
+يدخل بزر Google مباشرة، ويقدر يعيّن كلمة سر لاحقًا من «ملفي → تغيير كلمة السر».
 
-**خطأ اتصال بالقاعدة على Vercel؟** تأكد أن `DATABASE_URL` هو رابط الـPooler (6543) وليس المنفذ 5432 (المحجوز للترحيلات فقط عبر `DIRECT_URL`).
+**ليه مفيش SMS OTP حاليًا؟**
+النسخة المجانية تستخدم Google أو Email/Password فقط. توثيق SMS مؤجل لمرحلة لاحقة حتى لا تصبح تكلفة الرسائل شرطًا لفتح المنصة.
 
-**أشغل نسخة محلية؟** `cp .env.example .env` واترك `DATABASE_URL` بقيمة SQLite الافتراضية — وضع التطوير يعمل بالكامل بدون Supabase (رمز OTP للتجربة: `123456`).
+**الصور فين بتتخزن؟**
+Supabase Storage (bucket `workshops` عام — صور الورش غير حساسة). مجاني حتى 1GB.
 
-**ماذا تغيّر في هذه النسخة عن السابقة؟**
-- ترحيل قاعدة البيانات أصبح **كاملاً** (40 جدولاً — النسخة السابقة كانت تنشئ 18 فقط وهو سبب انهيار النشر السابق).
-- `prebuild` يبدّل مزوّد Prisma تلقائيًا حسب `DATABASE_URL` (لا تحرير يدوي للمخطط).
-- مسار رفع صور الأنشطة `/api/admin/upload` أُعيد بناؤه (Supabase Storage إنتاجًا / مجلد محلي تطويرًا).
-- `.env` و`db/*.db` لم يعودا يُرفعان إلى GitHub إطلاقًا.
+**الضيوف بياخدوا نقاط؟**
+لا — النقاط والشارات للأعضاء فقط. الضيوف يظهرون في المشاركين والحضور وExcel.
+
+**أشغل نسخة محلية للتطوير؟**
+استخدم نفس Supabase project أو مشروع Supabase محلي. المخطط الحالي PostgreSQL دائمًا ولا يوجد أمر لتبديله إلى SQLite.
+
+**حذف مستخدم من Supabase Auth؟**
+بياناته التاريخية (تسجيلات/حضور/نقاط) محفوظة للمراجعة — الصف المرتبط بها لا يُحذف
+تلقائيًا، وإدراج حساب جديد بنفس البريد يُربط بسجلاته عند الحاجة.
+
+---
+
+## ملخص البنية النهائية
+
+| الطبقة | التقنية | الخطة المجانية |
+|---|---|---|
+| الاستضافة | Vercel Hobby | كافية لمنصة لجنة جامعية |
+| قاعدة البيانات | Supabase Postgres (Prisma) | 500MB |
+| المصادقة | Supabase Auth (بريد + Google) | 50K MAU |
+| تخزين الصور | Supabase Storage | 1GB |
+| الهاتف | رقم محفوظ في ملف الطالب | SMS OTP مؤجل |
+| التصدير | ExcelJS على السيرفر | — |
+
+---
+
+## جوجل درايف — استغلال مساحة حسابك (يعمل الآن بلا أي إعداد)
+
+المنصة تدعم روابط جوجل درايف في ثلاثة مواضع:
+1. **زر CTA في الإشعارات** — «انضم للجروب» أو «افتح المادة» (رابط واتساب/تليجرام/درايف)
+2. **مواد المحاضرات** — لكل محاضرة رابط مواد بزر أنيق (يُكتشف نوعه تلقائيًا)
+3. **صورة النشاط** — رابط صورة من درايف يُعرض مباشرة (يتحوّل تلقائيًا لصورة معاينة)
+
+**خطوات مشاركة ملف من درايف حسابك:**
+1. ارفع الملف على Google Drive
+2. كليك يمين ← «مشاركة» ← «أي شخص لديه الرابط» (Viewer)
+3. انسخ الرابط والصقه في المنصة
+
+**مكتبة درايف** (الإدارة ← مكتبة درايف): احفظ الروابط المتكررة مرة واحدة واستخدمها بضغطة
+في الإشعارات والمحاضرات.
+
+**الرفع المباشر من المنصة (اختياري لاحقًا):** جاهز هيكليًا — يتطلب إنشاء Google Cloud
+OAuth Client وضبط `GOOGLE_DRIVE_CLIENT_ID` و`GOOGLE_DRIVE_CLIENT_SECRET` ثم
+تفعيل Google Drive API. حتى ذلك الحين وضع الروابط يعمل بالكامل.
+
+## الإشعارات المهمة (بنر + مركز دائم)
+
+- إرسال: الإدارة ← الإشعارات ← اختر النوع «مهم» (يثبت تلقائيًا)
+- يظهر للطالب بنرًا ذهبيًا أعلى لوحته حتى يضغط «تم»
+- **يبقى دائمًا** في مركز إشعاراته (قسم «مهم — دائمًا هنا») — يرجع للرابط وقتما شاء
+- الاستهداف: فرقات/شعب/جنس/حضور/مواهب/مشاركو تنفيذ محدد + معاينة العدد قبل الإرسال
+- CTA: عنوان + رابط (أيقونة واتساب/تليجرام/درايف/نماذج/GitHub/يوتيوب تلقائيًا)
+
+## البنية الجديدة: Program → Activity → Run → Session
+
+- **البرنامج** (اختياري): تصنيف أعلى — 5 برامج افتراضية قابلة للتعديل
+- **النشاط**: كورس/ورشة/فعالية — وصف وصورة وبرنامج ثابت
+- **التنفيذ/الدفعة**: مواعيد ومقاعد وطلاب مستقلون — عليه التسجيل والنقاط والأسئلة
+- **المحاضرة**: لكل تنفيذ — حضور QR مستقل + مواد + رابط بث
+- حالة التنفيذ (قادم/جارٍ/منتهٍ) تُشتق من التواريخ تلقائيًا — والسيرفر يحكم دائمًا
+- دورة التسجيل المستقلة: فتح/إغلاق/بداية/نهاية + وضع الإغلاق (تاريخ/عدد/أيهما/يدوي)
+- تجاوز الإدارة: إضافة بعد الإغلاق أو فوق السعة + ترقية قائمة الانتظار (قابل للتعطيل لكل تنفيذ)
