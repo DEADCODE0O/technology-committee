@@ -548,7 +548,10 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
     if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
 
-    // حساب Google وُلد بلا كلمة سر — لا يمكن الدخول بالبريد وكلمة السر
+    // حسابات التواصل الاجتماعي وُلدت بلا كلمة سر — لا يمكن الدخول بالبريد وكلمة السر
+    if (user.provider === "FACEBOOK") {
+      return { error: "هذا الحساب مسجّل عبر Facebook — يرجى استخدام زر «تسجيل الدخول بحساب Facebook» أعلاه" };
+    }
     if (user.provider === "GOOGLE" || (!user.passwordHash && !isAdminRole(user.role))) {
       return { error: "هذا الحساب مسجّل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google» أعلاه" };
     }

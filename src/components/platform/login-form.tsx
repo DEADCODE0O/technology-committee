@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Loader2, LogIn, Eye, EyeOff } from "lucide-react";
 import { loginAction, type LoginState } from "@/actions/auth";
 import { GoogleButton } from "@/components/platform/google-button";
+import { FacebookButton } from "@/components/platform/facebook-button";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -38,10 +39,11 @@ export function LoginForm({
 
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
-      <div className="rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
+      <div className="space-y-2.5 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
         <GoogleButton returnTo={returnTo} enabled={googleEnabled} label="تسجيل الدخول بحساب Google" />
-        <p className="mt-2 text-center text-[11px] leading-5 text-zinc-500">
-          تسجيل دخول سريع وآمن بنقرة واحدة دون الحاجة لكتابة كلمة السر
+        <FacebookButton returnTo={returnTo} label="تسجيل الدخول بحساب Facebook" />
+        <p className="mt-1 text-center text-[11px] leading-5 text-zinc-500">
+          تسجيل دخول فوري وآمن بنقرة واحدة بدون الحاجة لانتظار كود البريد
         </p>
       </div>
 

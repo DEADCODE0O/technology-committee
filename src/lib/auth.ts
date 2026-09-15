@@ -125,9 +125,18 @@ export async function resolveSupabaseAppUser(
   if (byId) return byId;
 
   const metadata = (authUser.user_metadata ?? {}) as Record<string, unknown>;
-  const googleSub = typeof metadata.sub === "string" ? metadata.sub : null;
+  const rawProvider = (authUser.app_metadata?.provider || "").toUpperCase();
+  const isFacebook = rawProvider === "FACEBOOK";
+  const isGoogle = rawProvider === "GOOGLE" || Boolean(metadata.iss && String(metadata.iss).includes("google"));
+  const userProvider = isFacebook ? "FACEBOOK" : isGoogle ? "GOOGLE" : "EMAIL";
+
+  const googleSub = isGoogle && typeof metadata.sub === "string" ? metadata.sub : null;
   const email = (authUser.email ?? "").toLowerCase();
-  const avatar = typeof metadata.picture === "string" ? metadata.picture : null;
+  const avatar = typeof metadata.picture === "string" 
+    ? metadata.picture 
+    : typeof metadata.avatar_url === "string" 
+      ? metadata.avatar_url 
+      : null;
 
   // 2) googleId
   if (googleSub) {
@@ -143,7 +152,7 @@ export async function resolveSupabaseAppUser(
         where: { id: byEmail.id },
         data: {
           googleId: googleSub ?? byEmail.googleId,
-          provider: googleSub ? "GOOGLE" : byEmail.provider,
+          provider: userProvider !== "EMAIL" ? userProvider : byEmail.provider,
           avatarUrl: avatar ?? byEmail.avatarUrl,
         },
       });
@@ -157,7 +166,7 @@ export async function resolveSupabaseAppUser(
         id: authUser.id,
         email: email || `${authUser.id}@no-email.supabase`,
         passwordHash: null,
-        provider: googleSub ? "GOOGLE" : "EMAIL",
+        provider: userProvider,
         googleId: googleSub,
         avatarUrl: avatar,
         role: ROLES.STUDENT,
@@ -165,10 +174,10 @@ export async function resolveSupabaseAppUser(
       },
     });
     await logAudit({
-      action: googleSub ? "STUDENT_REGISTERED_GOOGLE" : "STUDENT_REGISTERED",
+      action: userProvider === "FACEBOOK" ? "STUDENT_REGISTERED_FACEBOOK" : userProvider === "GOOGLE" ? "STUDENT_REGISTERED_GOOGLE" : "STUDENT_REGISTERED",
       entity: "STUDENT",
       entityId: created.id,
-      summary: `حساب جديد عبر Supabase Auth${googleSub ? " (Google)" : ""}: ${email}`,
+      summary: `حساب جديد عبر Supabase Auth (${userProvider}): ${email}`,
     });
     return created;
   } catch {
