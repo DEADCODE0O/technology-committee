@@ -27,29 +27,6 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
         ],
       },
-      {
-        // نقاط الدخول — مسح كاش المتصفح للموقع بالكامل عند أول تحميل ناجح
-        // (يضمن ألا يعلق أي زائر على نسخة قديمة معطوبة مهما حدث)
-        source: "/login",
-        headers: [
-          { key: "Clear-Site-Data", value: '"cache"' },
-          { key: "Cache-Control", value: "private, no-cache, no-store, max-age=0, must-revalidate" },
-        ],
-      },
-      {
-        source: "/welcome",
-        headers: [
-          { key: "Clear-Site-Data", value: '"cache"' },
-          { key: "Cache-Control", value: "private, no-cache, no-store, max-age=0, must-revalidate" },
-        ],
-      },
-      {
-        source: "/",
-        headers: [
-          { key: "Clear-Site-Data", value: '"cache"' },
-          { key: "Cache-Control", value: "private, no-cache, no-store, max-age=0, must-revalidate" },
-        ],
-      },
     ];
   },
   experimental: {
