@@ -13,14 +13,14 @@ export const dynamic = "force-dynamic";
 export default async function RegisterVerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; returnTo?: string; notice?: string }>;
+  searchParams: Promise<{ email?: string; returnTo?: string; notice?: string; code?: string }>;
 }) {
   const user = await getCurrentUser();
   if (user) {
     redirect(isAdminRole(user.role) ? "/admin" : "/panel");
   }
 
-  const { email, returnTo, notice } = await searchParams;
+  const { email, returnTo, notice, code } = await searchParams;
 
   // إذا لم يكن هناك بريد محدد، العودة لصفحة التسجيل
   if (!email) {
@@ -71,7 +71,7 @@ export default async function RegisterVerifyPage({
             </p>
           </div>
 
-          <OtpVerifyForm email={email} returnTo={returnTo} notice={notice} />
+          <OtpVerifyForm email={email} returnTo={returnTo} notice={notice} initialCode={code} />
         </div>
       </div>
     </div>

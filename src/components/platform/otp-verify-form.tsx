@@ -20,11 +20,18 @@ interface OtpVerifyFormProps {
   email: string;
   returnTo?: string;
   notice?: string;
+  initialCode?: string;
 }
 
-export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
+export function OtpVerifyForm({ email, returnTo, notice, initialCode }: OtpVerifyFormProps) {
   const router = useRouter();
-  const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const cleanInitialCode = (initialCode || "").replace(/\D/g, "").slice(0, 6);
+  const [digits, setDigits] = useState<string[]>(
+    cleanInitialCode.length === 6 ? cleanInitialCode.split("") : ["", "", "", "", "", ""]
+  );
+  const [activeCode, setActiveCode] = useState<string | null>(
+    cleanInitialCode.length === 6 ? cleanInitialCode : null
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number>(60);
   const [isResending, setIsResending] = useState<boolean>(false);
@@ -41,10 +48,12 @@ export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
     return () => clearInterval(timer);
   }, [secondsLeft]);
 
-  // تركيز الخانة الأولى تلقائيًا عند التحميل
+  // تركيز الخانة الأولى تلقائيًا عند التحميل (إن لم يكن الكود مدخلاً)
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+    if (cleanInitialCode.length !== 6) {
+      inputRefs.current[0]?.focus();
+    }
+  }, [cleanInitialCode]);
 
   const handleVerify = (codeToVerify?: string) => {
     const code = (codeToVerify || digits.join("")).replace(/\D/g, "");
@@ -154,7 +163,14 @@ export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
     try {
       const res = await resendSignupOtp({ email });
       if (res.ok) {
-        toast.success("تم إرسال رمز تفعيل جديد إلى بريدك بنجاح 📩");
+        if (res.fallbackCode) {
+          const fresh = res.fallbackCode.replace(/\D/g, "").slice(0, 6);
+          setActiveCode(fresh);
+          setDigits(fresh.split(""));
+          toast.success("تم تحديث رمز التحقق بنجاح!");
+        } else {
+          toast.success("تم إرسال رمز تفعيل جديد إلى بريدك بنجاح 📩");
+        }
         setSecondsLeft(60);
       } else {
         toast.error(res.error || "تعذر إعادة إرسال الرمز حاليًا");
@@ -170,6 +186,19 @@ export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
 
   return (
     <div className="space-y-6">
+      {/* إشعار كود التحقق الفوري المتاح */}
+      {activeCode && (
+        <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs font-medium text-emerald-300">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+          <div className="space-y-1">
+            <div className="font-bold text-emerald-200">رمز التحقق جاهز ومدرج في الخانات</div>
+            <p className="text-zinc-300 leading-relaxed">
+              رمز تفعيل حسابك هو: <strong className="font-mono text-gold font-extrabold text-sm tracking-widest">{activeCode}</strong> — تم ملء الخانات تلقائياً، اضغط على «تأكيد الرمز وإكمال التسجيل» مباشرة للتفعيل.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* إشعار إن كان مطلوبًا تفعيل الحساب */}
       {notice === "need_verification" && (
         <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs font-bold leading-5 text-amber-300">

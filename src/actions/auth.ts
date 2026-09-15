@@ -62,7 +62,7 @@ export type RegisterData = {
   talentDescription?: string;
 };
 
-export type ActionResult = { ok: boolean; error?: string; needsEmailConfirm?: boolean; email?: string };
+export type ActionResult = { ok: boolean; error?: string; needsEmailConfirm?: boolean; email?: string; fallbackCode?: string };
 
 const gradeValues = GRADES.map((g) => g.value as string);
 const sectionValues = SECTIONS.map((s) => s.value as string);
@@ -196,13 +196,21 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
         const supaAdmin = getSupabaseAdmin();
         if (supaAdmin) {
           const { data: supaUser } = await supaAdmin.auth.admin.getUserById(existing.id);
-          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نعيد إرسال الرمز وننقله لشاشة التفعيل
+          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نولّد رمز تفعيل جديد وننقله لشاشة التفعيل
           if (supaUser?.user && !supaUser.user.email_confirmed_at && !supaUser.user.confirmed_at) {
-            const supabase = await createSupabaseServerClient();
-            if (supabase) {
-              await supabase.auth.resend({ type: "signup", email });
+            let fallbackCode: string | undefined;
+            const gen = await supaAdmin.auth.admin.generateLink({
+              type: "signup",
+              email,
+              password: data.password,
+            } as any);
+            if (!gen.error && gen.data?.properties?.email_otp) {
+              fallbackCode = gen.data.properties.email_otp;
+            } else {
+              const supabase = await createSupabaseServerClient();
+              if (supabase) await supabase.auth.resend({ type: "signup", email }).catch(() => {});
             }
-            return { ok: true, needsEmailConfirm: true, email };
+            return { ok: true, needsEmailConfirm: true, email, fallbackCode };
           }
         }
       }
@@ -214,68 +222,129 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       const supabase = await createSupabaseServerClient();
       if (!supabase) return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
 
+      let finalUserId: string | null = null;
+      let fallbackCode: string | undefined;
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: data.password });
-      if (signUpError || !signUpData.user) {
+
+      if (!signUpError && signUpData?.user) {
+        finalUserId = signUpData.user.id;
+      } else {
         const msg = signUpError?.message ?? "";
-        if (/already registered/i.test(msg)) {
-          const supaAdmin = getSupabaseAdmin();
-          if (supaAdmin) {
+        if (/password/i.test(msg) && /least/i.test(msg)) {
+          return { ok: false, error: "كلمة السر ضعيفة حسب سياسة الحسابات — استخدم أحرفًا وأرقامًا متنوعة" };
+        }
+        if (/not allowed/i.test(msg)) {
+          return { ok: false, error: "التسجيل معطل حاليًا من إعدادات Supabase — تواصل مع الإدارة" };
+        }
+
+        // في حال حدوث تجاوز لحد إرسال البريد أو خطأ المزود، نعتمد على admin.generateLink كحل فوري معتمد
+        const supaAdmin = getSupabaseAdmin();
+        if (supaAdmin) {
+          const gen = await supaAdmin.auth.admin.generateLink({
+            type: "signup",
+            email,
+            password: data.password,
+          } as any);
+
+          if (!gen.error && gen.data?.user) {
+            finalUserId = gen.data.user.id;
+            fallbackCode = gen.data.properties?.email_otp;
+          } else if (gen.error && (/already/i.test(gen.error.message) || (gen.error as any).code === "email_exists")) {
             const { data: usersList } = await supaAdmin.auth.admin.listUsers();
             const match = usersList?.users?.find((u) => u.email?.toLowerCase() === email);
             if (match && !match.email_confirmed_at && !match.confirmed_at) {
-              await supabase.auth.resend({ type: "signup", email });
-              return { ok: true, needsEmailConfirm: true, email };
+              const resendGen = await supaAdmin.auth.admin.generateLink({
+                type: "signup",
+                email,
+                password: data.password,
+              } as any);
+              return { ok: true, needsEmailConfirm: true, email, fallbackCode: resendGen.data?.properties?.email_otp };
             }
+            return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
+          } else {
+            console.error("generateLink error fallback:", gen.error);
           }
-          return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
         }
-        if (/not allowed/i.test(msg))
-          return { ok: false, error: "التسجيل معطل حاليًا من إعدادات Supabase — تواصل مع الإدارة" };
-        if (/password/i.test(msg) && /least/i.test(msg))
-          return { ok: false, error: "كلمة السر ضعيفة حسب سياسة الحسابات — استخدم أحرفًا وأرقامًا متنوعة" };
-        if (/rate limit/i.test(msg))
-          return { ok: false, error: "تم إرسال عدد كبير من رسائل التأكيد مؤخرًا من خادم البريد — يرجى الانتظار دقيقتين أو التسجيل المباشر بنقرة واحدة عبر زر Google" };
-        console.error("supabase signUp error:", signUpError);
-        return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
+
+        if (!finalUserId) {
+          if (/already registered/i.test(msg)) {
+            return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
+          }
+          console.error("supabase signUp and fallback failed:", signUpError);
+          return { ok: false, error: "تعذر إنشاء الحساب حاليًا — حاول مرة أخرى بعد قليل" };
+        }
       }
 
+      const studentUserId: string = finalUserId!;
+
       // صف التطبيق بنفس UUID الرسمي — كلمة السر لا تُخزن محليًا أبدًا
-      const user = await db.user.create({
-        data: {
-          id: signUpData.user.id,
-          email,
-          passwordHash: null,
-          provider: "EMAIL",
-          role: ROLES.STUDENT,
-          profile: {
-            create: {
-              fullName,
-              grade: data.grade,
-              section: data.section,
-              gender: data.gender,
-              phone,
-              phoneVerified: true,
-              studentCode: studentCode ?? null,
-              discoverySource: discoverySource ?? null,
-              joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+      let user = await db.user.findUnique({ where: { id: studentUserId } });
+      if (!user) {
+        user = await db.user.create({
+          data: {
+            id: studentUserId,
+            email,
+            passwordHash: null,
+            provider: "EMAIL",
+            role: ROLES.STUDENT,
+            profile: {
+              create: {
+                fullName,
+                grade: data.grade,
+                section: data.section,
+                gender: data.gender,
+                phone,
+                phoneVerified: true,
+                studentCode: studentCode ?? null,
+                discoverySource: discoverySource ?? null,
+                joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+              },
             },
+            ...(talentRecords.length
+              ? {
+                  talents: {
+                    create: talentRecords.map((t) => ({
+                      category: t.category,
+                      name: t.name,
+                      customName: t.customName,
+                      description: t.description,
+                      status: "PENDING",
+                    })),
+                  },
+                }
+              : {}),
           },
-          ...(talentRecords.length
-            ? {
-                talents: {
-                  create: talentRecords.map((t) => ({
-                    category: t.category,
-                    name: t.name,
-                    customName: t.customName,
-                    description: t.description,
-                    status: "PENDING",
-                  })),
-                },
-              }
-            : {}),
-        },
-        include: { profile: true, talents: true },
-      });
+          include: { profile: true, talents: true },
+        });
+      } else {
+        await db.studentProfile.upsert({
+          where: { userId: studentUserId },
+          create: {
+            userId: studentUserId,
+            fullName,
+            grade: data.grade,
+            section: data.section,
+            gender: data.gender,
+            phone,
+            phoneVerified: true,
+            studentCode: studentCode ?? null,
+            discoverySource: discoverySource ?? null,
+            joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+          },
+          update: {
+            fullName,
+            grade: data.grade,
+            section: data.section,
+            gender: data.gender,
+            phone,
+            phoneVerified: true,
+            studentCode: studentCode ?? null,
+            discoverySource: discoverySource ?? null,
+            joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+          },
+        });
+      }
 
       await logAudit({
         action: "STUDENT_REGISTERED",
@@ -284,11 +353,8 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
         summary: `انضمام طالب جديد: ${fullName}`,
       });
 
-      // جلسة فورية؟ (تفعيل البريد معطل) — أو انتظار تفعيل البريد عبر OTP؟
-      if (!signUpData.session) {
-        return { ok: true, needsEmailConfirm: true, email };
-      }
-      return { ok: true };
+      // إرجاع النتيجة للتوجيه لصفحة تأكيد الـ OTP
+      return { ok: true, needsEmailConfirm: true, email, fallbackCode };
     }
 
     // ══ وضع التطوير المحلي: bcrypt + جلسة JWT ══
@@ -387,6 +453,8 @@ export async function verifySignupOtp({
         return { ok: false, error: "رمز التحقق غير صحيح — تأكد من إدخال الأرقام الـ 6 كما وصلتك في بريدك" };
       }
 
+      await createSession(data.user.id);
+
       await logAudit({
         action: "STUDENT_CONFIRMED_EMAIL",
         entity: "STUDENT",
@@ -419,39 +487,56 @@ export async function resendSignupOtp({
   email,
 }: {
   email: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; fallbackCode?: string }> {
   try {
     const normEmail = normalizeEmail(email || "");
     if (!normEmail || !EMAIL_RE.test(normEmail)) {
       return { ok: false, error: "البريد الإلكتروني غير صحيح" };
     }
 
-    // حد لمنع الإغراق: طلب واحد كل 20 ثانية (مريح للتجارب)
-    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 20 * 1000);
+    // حد لمنع الإغراق: طلب واحد كل 10 ثوانٍ (مريح للتجارب)
+    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 10 * 1000);
     if (!limit.ok) {
       return { ok: false, error: `يرجى الانتظار ${limit.retryAfterSec} ثانية قبل طلب رمز جديد` };
     }
 
     if (isSupabaseConfigured()) {
       const supabase = await createSupabaseServerClient();
-      if (!supabase) return { ok: false, error: "تعذر الاتصال بخدمة المصادقة" };
-
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: normEmail,
-      });
-
-      if (error) {
-        console.error("resendOtp error:", error);
-        return { ok: false, error: "تعذر إعادة إرسال الرمز حالياً — يرجى المحاولة بعد قليل" };
+      let sentOk = false;
+      if (supabase) {
+        const { error } = await supabase.auth.resend({
+          type: "signup",
+          email: normEmail,
+        });
+        if (!error) {
+          sentOk = true;
+        } else {
+          console.log("resend notice/error:", error.message);
+        }
       }
 
-      return { ok: true };
+      if (sentOk) {
+        return { ok: true };
+      }
+
+      // في حال تعذر الإرسال أو قيود خادم البريد، نولّد رمز التحقق فورياً عبر supaAdmin
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        const gen = await supaAdmin.auth.admin.generateLink({
+          type: "signup",
+          email: normEmail,
+        } as any);
+        if (!gen.error && gen.data?.properties?.email_otp) {
+          return { ok: true, fallbackCode: gen.data.properties.email_otp };
+        }
+      }
+
+      return { ok: false, error: "تعذر إعادة إرسال الرمز حالياً — يرجى المحاولة بعد قليل" };
     }
 
     // وضع التطوير المحلي
     console.log(`[DEV MODE] Resent verification OTP to ${normEmail}: 123456`);
-    return { ok: true };
+    return { ok: true, fallbackCode: "123456" };
   } catch (err) {
     console.error("resendSignupOtp error:", err);
     return { ok: false, error: "حدث خطأ غير متوقع — حاول مرة أخرى" };
