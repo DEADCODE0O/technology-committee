@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>معاينة أطقم إطارات الصور الرمزية ثلاثية الأبعاد (3D VIP Frames Preview)</title>
+  <style>
+    body {
+      background: #09090b;
+      color: #f4f4f5;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 40px;
+    }
+    h1 {
+      text-align: center;
+      color: #f59e0b;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      text-align: center;
+      color: #a1a1aa;
+      margin-bottom: 40px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .frame-box {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 30px 0;
+    }
+    .avatar-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: #27272a;
+      border: 2px solid rgba(255,255,255,0.15);
+      position: relative;
+      z-index: 1;
+    }
+    .avatar-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .frame-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 2;
+      max-width: none;
+      max-height: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .level-tag {
+      position: absolute;
+      bottom: -6px;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #000;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 1px 8px;
+      border-radius: 12px;
+      z-index: 5;
+      border: 1px solid #fff;
+    }
+
+    @keyframes float-anim {
+      0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+      50% { transform: translate(-50%, -50%) translateY(-3px); }
+    }
+    @keyframes pulse-anim {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.02); }
+    }
+    .float { animation: float-anim 3.2s ease-in-out infinite; }
+    .pulse { animation: pulse-anim 2.5s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+  <h1>منظومة إطارات الـ VIP ثلاثية الأبعاد (3D Hyper-Realistic Game Frames)</h1>
+  <p class="sub">تم توليد الأصول بجودة ألعاب AAA ثلاثية الأبعاد مع فتحات دائرية شفافة لعرض صور الطلاب</p>
+
+  <div class="grid" id="container"></div>
+
+  <script>
+    const frames = [
+      { id: 'frame_golden_lion', name: 'أسد الفخامة الملكي الأسطوري', level: 50, scale: 2.33, glow: '#f59e0b', tier: 'divine', anim: 'float' },
+      { id: 'frame_royal_emperor', name: 'تاج الإمبراطور وصندوق الكنوز', level: 48, scale: 2.76, glow: '#eab308', tier: 'divine', anim: 'float' },
+      { id: 'frame_angelic_wings', name: 'أجنحة النور وهالة الماس', level: 45, scale: 2.92, glow: '#fbbf24', tier: 'mythic', anim: 'float' },
+      { id: 'frame_crimson_dragon', name: 'تنين اللهب القرمزي', level: 40, scale: 2.62, glow: '#ef4444', tier: 'mythic', anim: 'pulse' },
+      { id: 'frame_phoenix_blaze', name: 'صعود الفينيق واللهب الناري', level: 35, scale: 2.92, glow: '#f97316', tier: 'mythic', anim: 'pulse' },
+      { id: 'frame_cosmic_galaxy', name: 'سديم المجرة وزحل', level: 30, scale: 2.50, glow: '#a855f7', tier: 'legendary', anim: 'pulse' },
+      { id: 'frame_diamond_sapphire', name: 'تاج الألماس والياقوت الأزرق', level: 25, scale: 2.62, glow: '#3b82f6', tier: 'legendary', anim: 'float' },
+      { id: 'frame_emerald_vip', name: 'درع الزمرد الملكي والأجنحة', level: 20, scale: 2.76, glow: '#10b981', tier: 'legendary', anim: 'float' },
+      { id: 'frame_silver_knight', name: 'أجنحة الفارس الصقيعي', level: 15, scale: 2.92, glow: '#38bdf8', tier: 'epic', anim: 'float' },
+      { id: 'frame_neon_rainbow', name: 'طيف النيون والنجوم اللامعة', level: 10, scale: 2.45, glow: '#ec4899', tier: 'epic', anim: 'pulse' },
+      { id: 'frame_tech_quantum', name: 'النواة السيبرانية التكنولوجية', level: 5, scale: 2.85, glow: '#06b6d4', tier: 'epic', anim: 'pulse' },
+      { id: 'frame_bronze_gear', name: 'إكليل البرونز والتروس', level: 1, scale: 2.38, glow: '#d97706', tier: 'rare', anim: 'pulse' },
+      { id: 'frame_ramadan_crescent', name: 'هلال وفانوس رمضان الملكي', level: 1, scale: 2.62, glow: '#f59e0b', tier: 'mythic', anim: 'float', seasonal: 'رمضاني' }
+    ];
+
+    const sampleAvatars = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
+    ];
+
+    const container = document.getElementById('container');
+    frames.forEach((f, i) => {
+      const avatarSrc = sampleAvatars[i % sampleAvatars.length];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="frame-box">
+          <div class="avatar-circle">
+            <img src="${avatarSrc}" alt="Avatar">
+          </div>
+          <img 
+            src="/images/frames/${f.id}.png" 
+            class="frame-overlay ${f.anim}"
+            style="width: ${f.scale * 64}px; height: ${f.scale * 64}px; filter: drop-shadow(0 0 10px ${f.glow}80);"
+            alt="${f.name}"
+          >
+          <div class="level-tag">Lv.${f.level}</div>
+        </div>
+        <h3 style="margin: 4px 0 0 0; font-size: 16px;">${f.name}</h3>
+        <span class="badge" style="background: ${f.glow}20; color: ${f.glow}; border: 1px solid ${f.glow}50;">
+          ${f.seasonal ? 'موسمي مبارك' : 'مستوى ' + f.level} • ${f.tier.toUpperCase()}
+        </span>
+      `;
+      container.appendChild(card);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1011 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-cairo);
+  --font-latin: var(--font-outfit);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ── هوية اللجنة التكنولوجية ── */
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-pale: var(--gold-pale);
+  --color-gold-deep: var(--gold-deep);
+  --color-night: var(--night);
+  --color-surface: var(--surface);
+
+  /* ── نظام التدرجات الرمادية المتكيف ذكياً (Dynamic Neutral Hierarchy) ── */
+  --color-zinc-50: var(--zinc-50);
+  --color-zinc-100: var(--zinc-100);
+  --color-zinc-200: var(--zinc-200);
+  --color-zinc-300: var(--zinc-300);
+  --color-zinc-400: var(--zinc-400);
+  --color-zinc-500: var(--zinc-500);
+  --color-zinc-600: var(--zinc-600);
+  --color-zinc-700: var(--zinc-700);
+  --color-zinc-800: var(--zinc-800);
+  --color-zinc-900: var(--zinc-900);
+  --color-zinc-950: var(--zinc-950);
+}
+
+:root, .dark {
+  --radius: 0.875rem;
+  --background: #09090b;
+  --foreground: #f4f3ef;
+  --night: #09090b;
+  --surface: #0e0e12;
+  --card: #0e0e12;
+  --card-foreground: #f4f3ef;
+  --popover: #101014;
+  --popover-foreground: #f4f3ef;
+  --primary: #c9a45c;
+  --primary-foreground: #0b0b0d;
+  --secondary: #17171c;
+  --secondary-foreground: #f4f3ef;
+  --muted: #17171c;
+  --muted-foreground: #a3a099;
+  --accent: #1c1a14;
+  --accent-foreground: #e6cb8b;
+  --destructive: #e5484d;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #c9a45c;
+  --chart-1: #c9a45c;
+  --chart-2: #e6cb8b;
+  --chart-3: #8a6d33;
+  --chart-4: #a3a099;
+  --chart-5: #f2e5c4;
+  --sidebar: #0e0e12;
+  --sidebar-foreground: #f4f3ef;
+  --sidebar-primary: #c9a45c;
+  --sidebar-primary-foreground: #0b0b0d;
+  --sidebar-accent: #17171c;
+  --sidebar-accent-foreground: #f4f3ef;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #c9a45c;
+
+  --gold: #c9a45c;
+  --gold-light: #e6cb8b;
+  --gold-pale: #f2e5c4;
+  --gold-deep: #8a6d33;
+
+  /* رماديات الوضع الليلي الأصلي */
+  --zinc-50: #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-600: #52525b;
+  --zinc-700: #3f3f46;
+  --zinc-800: #27272a;
+  --zinc-900: #18181b;
+  --zinc-950: #09090b;
+
+  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(9,9,11,0.6) 100%);
+}
+
+.light {
+  --radius: 0.875rem;
+  /* ══ «الملكي العاجي» — لوحة نهارية فاخرة وفق المعايير العالمية ══
+     ورق عاجي دافئ + حبر غني + ذهب مصقول — بطاقات بيضاء مرتفعة بظلال ناعمة */
+  --background: #f6f4ee;
+  --foreground: #201d19;
+  --night: #09090b;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #201d19;
+  --popover: #ffffff;
+  --popover-foreground: #201d19;
+  --primary: #96711f;
+  --primary-foreground: #ffffff;
+  --secondary: #eeebe1;
+  --secondary-foreground: #29261f;
+  --muted: #efece3;
+  --muted-foreground: #5c574d;
+  --accent: #f7f1e2;
+  --accent-foreground: #71541c;
+  --destructive: #d92d20;
+  --border: rgba(32, 29, 25, 0.1);
+  --input: rgba(32, 29, 25, 0.13);
+  --ring: #96711f;
+  --chart-1: #96711f;
+  --chart-2: #6e4e12;
+  --chart-3: #b8892e;
+  --chart-4: #5c574d;
+  --chart-5: #f0e6cc;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #201d19;
+  --sidebar-primary: #96711f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f7f1e2;
+  --sidebar-accent-foreground: #29261f;
+  --sidebar-border: rgba(32, 29, 25, 0.1);
+  --sidebar-ring: #96711f;
+
+  --gold: #96711f;
+  --gold-light: #b8892e;
+  --gold-pale: #faf3e1;
+  --gold-deep: #6e4e12;
+
+  /* رماديات نهارية واضحة وعميقة تضمن قراءة ممتازة وهيراركي بصري راقي
+     (600/700 أدكن قليلًا لأنها تستخدم نصوصًا ثانوية صغيرة — تباين WCAG مضمون) */
+  --zinc-50: #121215;
+  --zinc-100: #18181c;
+  --zinc-200: #26262c;
+  --zinc-300: #3c3c44;
+  --zinc-400: #545460;
+  --zinc-500: #6b675e;
+  --zinc-600: #8a8478;
+  --zinc-700: #a29c90;
+  --zinc-800: #dedede;
+  --zinc-900: #ebebeb;
+  --zinc-950: #f4f4f6;
+
+  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(9,9,11,0.6) 100%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  html.light {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-background text-foreground;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    background: rgba(201, 164, 92, 0.35);
+    color: #f7f3e8;
+  }
+  .light ::selection {
+    background: rgba(150, 109, 33, 0.22);
+    color: #18181b;
+  }
+}
+
+/* ── شريط تمرير أنيق متكيف مع الوضعين ── */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+  border: 2px solid var(--background);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+html.dark {
+  scrollbar-color: #232328 #09090b;
+}
+html.light {
+  scrollbar-color: #d4d4d8 #fbfaf8;
+}
+
+/* ── أدوات الهوية البصرية ── */
+
+/* نص بتدرج ذهبي فاخر متكيف */
+.text-gold-gradient {
+  background: linear-gradient(160deg, #f5e9c8 8%, #e6cb8b 38%, #c9a45c 68%, #a9853f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.light .text-gold-gradient {
+  background: linear-gradient(135deg, #6b4b10 0%, #966d21 38%, #b58832 72%, #785315 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* لمعة ذهبية خفيفة للخلفيات الكبيرة */
+.gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(201, 164, 92, 0.13), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(201, 164, 92, 0.07), transparent 70%);
+}
+
+.light .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(150, 109, 33, 0.08), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(150, 109, 33, 0.04), transparent 70%);
+}
+
+/* طبقة حبيبات سينمائية خفيفة جدًا */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.light .noise-overlay {
+  opacity: 0.012;
+}
+
+/* خط زخرفي ذهبي رفيع */
+.gold-hairline {
+  background: linear-gradient(to left, transparent, rgba(201, 164, 92, 0.55), transparent);
+  height: 1px;
+}
+
+.light .gold-hairline {
+  background: linear-gradient(to left, transparent, rgba(150, 109, 33, 0.35), transparent);
+  height: 1px;
+}
+
+/* نبض ناعم لزر التشغيل */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes ping-soft {
+    0% {
+      transform: scale(1);
+      opacity: 0.45;
+    }
+    80%,
+    100% {
+      transform: scale(1.55);
+      opacity: 0;
+    }
+  }
+  .animate-ping-soft {
+    animation: ping-soft 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+
+/* احترام تفضيل تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── حل مشكلة القوائم المنسدلة وخلفيات الاختيار في الوضعين ── */
+select, option, optgroup {
+  color-scheme: dark;
+  background-color: #121217;
+  color: #f4f3ef;
+}
+
+select {
+  background-color: #121217;
+  color: #f4f3ef;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+select:focus {
+  border-color: #c9a45c !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(201, 164, 92, 0.25);
+}
+
+option {
+  background-color: #14141a;
+  color: #f4f3ef;
+  padding: 10px 14px;
+}
+
+option:hover,
+option:focus,
+option:checked {
+  background-color: #2a2518;
+  color: #e6cb8b;
+}
+
+.light select, .light option, .light optgroup {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #18181b;
+}
+
+.light select {
+  background-color: #ffffff;
+  color: #18181b;
+  border-color: rgba(24, 24, 27, 0.12);
+}
+
+.light select:focus {
+  border-color: #966d21 !important;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(150, 109, 33, 0.18);
+}
+
+.light option {
+  background-color: #ffffff;
+  color: #18181b;
+  padding: 10px 14px;
+}
+
+.light option:hover,
+.light option:focus,
+.light option:checked {
+  background-color: #fdf8ed;
+  color: #6b4b10;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   نظام وضع النهار «الملكي العاجي» (Royal Ivory Light System)
+   — طبقة تحويل شاملة للهيكل والبطاقات والحوارات والقوائم —
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1) شبكة الأمان: تحويل أي خلفية داكنة صلبة متبقية إلى سطح نهاري ── */
+.light .bg-\[\#060608\],
+.light .bg-\[\#0a0a0d\],
+.light .bg-\[\#0d0d12\],
+.light .bg-\[\#121217\],
+.light .bg-\[\#14141a\] {
+  background-color: #ffffff !important;
+}
+.light .bg-\[\#0a0a0d\]\/90 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.light .bg-surface {
+  background-color: #ffffff !important;
+}
+.light .bg-surface\/90 {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+}
+.light .bg-surface\/80 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+.light .bg-surface\/50 {
+  background-color: rgba(255, 255, 255, 0.72) !important;
+}
+
+/* تحويل الفئات الشفافة تلقائياً إلى ظلال ناعمة وحواف واضحة في وضع النهار */
+.light [class*="border-white\/"] {
+  border-color: rgba(32, 29, 25, 0.09) !important;
+}
+.light [class*="hover:border-white\/"]:hover {
+  border-color: rgba(150, 113, 31, 0.38) !important;
+}
+.light [class*="bg-white\/"] {
+  background-color: rgba(32, 29, 25, 0.028) !important;
+}
+.light [class*="hover:bg-white\/"]:hover {
+  background-color: rgba(150, 113, 31, 0.05) !important;
+}
+
+/* ── 2) نظام الارتفاع البصري (Elevation) — عنصر الهوية في الثيمات النهارية ── */
+.light [data-slot="card"],
+.light .rounded-3xl.border,
+.light .rounded-2xl.border {
+  box-shadow:
+    0 1px 2px rgba(32, 29, 25, 0.04),
+    0 3px 8px rgba(32, 29, 25, 0.03),
+    0 18px 40px -16px rgba(32, 29, 25, 0.14);
+  border-color: rgba(32, 29, 25, 0.1);
+}
+.light a[class*="rounded-2xl border"],
+.light a[class*="rounded-3xl border"],
+.light button[class*="rounded-2xl border"],
+.light button[class*="rounded-3xl border"] {
+  box-shadow: none;
+}
+.light [data-slot="dialog-content"],
+.light [data-slot="popover-content"],
+.light [data-slot="dropdown-menu-content"],
+.light [data-slot="select-content"],
+.light [data-slot="tooltip"] {
+  box-shadow:
+    0 4px 10px rgba(32, 29, 25, 0.04),
+    0 24px 60px -18px rgba(32, 29, 25, 0.22) !important;
+}
+.light [data-slot="dialog-overlay"] {
+  background-color: rgba(32, 29, 25, 0.32) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* ── 3) الهيرو النهاري الحقيقي — «النور الملكي» (Royal Daylight Hero) ──
+   حجاب عاجي حريري فوق الصورة السينمائية + نصوص حبرية وذهب مصقول */
+.hero-scrim {
+  background-color: rgba(9, 9, 11, 0.65);
+}
+.light .hero-scrim {
+  background-color: rgba(246, 243, 235, 0.82);
+  backdrop-filter: blur(3px) saturate(1.05);
+}
+.hero-vignette {
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(9, 9, 11, 0.6) 100%);
+}
+.light .hero-vignette {
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(246, 244, 238, 0.5) 100%);
+}
+.hero-top-blend {
+  background: linear-gradient(to bottom, rgba(9, 9, 11, 0.7), transparent);
+}
+.light .hero-top-blend {
+  background: linear-gradient(to bottom, rgba(246, 244, 238, 0.88), transparent);
+}
+.hero-logo-halo {
+  background: rgba(9, 9, 11, 0.7);
+}
+.light .hero-logo-halo {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.light #home h1 span:first-child {
+  color: #3d382e !important;
+  text-shadow: none;
+  letter-spacing: 0.02em;
+}
+.light #home .text-foreground {
+  color: #26221c !important;
+  text-shadow: none;
+}
+.light #home .text-muted-foreground {
+  color: #5c574d !important;
+}
+.light #home .text-zinc-200 {
+  color: #3d382e !important;
+}
+.light #home .text-zinc-300 {
+  color: #55503f !important;
+}
+.light #home .text-gold-deep {
+  color: #7a5a15 !important;
+}
+.light #home .text-gold\/75 {
+  color: rgba(110, 78, 18, 0.85) !important;
+}
+.light #home .border-border {
+  border-color: rgba(110, 78, 18, 0.28) !important;
+}
+.light #home a.border-border {
+  background-color: rgba(255, 255, 255, 0.66) !important;
+  color: #29261f !important;
+  box-shadow: 0 2px 10px rgba(32, 29, 25, 0.05);
+}
+.light #home a.border-border:hover {
+  border-color: rgba(150, 113, 31, 0.55) !important;
+  color: #6e4e12 !important;
+}
+.light #home .text-gold-gradient {
+  background: linear-gradient(160deg, #7a5a15 5%, #96711f 40%, #b8892e 72%, #7a5a15 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
+}
+.light #home img[class*="object-contain"] {
+  filter: drop-shadow(0 6px 18px rgba(32, 29, 25, 0.18));
+}
+
+/* ── إخفاء إطارات الصور الرمزية عند تعطيلها من الإعدادات ── */
+html[data-avatar-frames="hidden"] .avatar-frame-layer {
+  display: none !important;
+}
+
+/* ── شارات الحالات والمستويات المضيئة والأنيقة في الوضع النهاري ── */
+.light .bg-emerald-950\/90,
+.light .bg-emerald-950\/80,
+.light .bg-emerald-950\/70,
+.light .bg-emerald-950\/40 {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+  border-color: #a7f3d0 !important;
+}
+.light .text-emerald-300,
+.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.light .bg-rose-950\/90,
+.light .bg-rose-950\/80,
+.light .bg-rose-950\/40,
+.light .bg-red-950\/90,
+.light .bg-red-500\/\[0\.08\],
+.light .bg-red-500\/10 {
+  background-color: #fff1f2 !important;
+  color: #9f1239 !important;
+  border-color: #fecdd3 !important;
+}
+.light .text-rose-300,
+.light .text-red-300,
+.light .text-red-400 {
+  color: #be123c !important;
+}
+
+.light .bg-amber-950\/80,
+.light .bg-amber-950\/40,
+.light .bg-amber-900\/30 {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+  border-color: #fde68a !important;
+}
+.light .text-amber-400,
+.light .text-amber-500 {
+  color: #b45309 !important;
+}
+
+.light .bg-zinc-800\/80,
+.light .bg-zinc-800,
+.light .bg-zinc-700\/30 {
+  background-color: #f4f4f5 !important;
+  color: #27272a !important;
+  border-color: #e4e4e7 !important;
+}
+.light .text-zinc-300 {
+  color: #3f3f46 !important;
+}
+
+.light [class*="bg-cyan-950"] {
+  background-color: #ecfeff !important;
+  border-color: #a5f3fc !important;
+}
+.light [class*="text-cyan-300"] {
+  color: #0e7490 !important;
+}
+
+.light [class*="bg-blue-950"] {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+.light [class*="text-blue-300"] {
+  color: #1d4ed8 !important;
+}
+
+.light [class*="bg-purple-950"] {
+  background-color: #faf5ff !important;
+  border-color: #e9d5ff !important;
+}
+.light [class*="text-purple-300"] {
+  color: #7e22ce !important;
+}
+
+.light [class*="bg-yellow-950"] {
+  background-color: #fefce8 !important;
+  border-color: #fef08a !important;
+}
+.light [class*="text-yellow-300"] {
+  color: #a16207 !important;
+}
+
+.light [class*="bg-orange-950"] {
+  background-color: #fff7ed !important;
+  border-color: #fed7aa !important;
+}
+.light [class*="text-orange-300"] {
+  color: #c2410c !important;
+}
+
+/* ── منصة التتويج الأولمبية الملكية في الوضع النهاري ── */
+.light .via-\[\#14120e\],
+.light .via-\[\#16130b\],
+.light .to-\[\#14120e\] {
+  --tw-gradient-stops: var(--tw-gradient-from), #fffdf7 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+.light .from-zinc-800\/50.to-zinc-900\/80 {
+  background-image: linear-gradient(to bottom, #f7f1e2, #ece4d2) !important;
+  border-color: #e2d5b8 !important;
+}
+.light .from-amber-950\/40.to-zinc-900\/80 {
+  background-image: linear-gradient(to bottom, #ffedd5, #fed7aa) !important;
+  border-color: #fdba74 !important;
+}
+.light .from-gold\/20.via-gold\/10.to-night {
+  background-image: linear-gradient(to bottom, #fef3c7, #fde68a, #ffffff) !important;
+  border-color: #f59e0b !important;
+}
+
+/* ── تنعيم الظلال القاتمة في الوضع النهاري ── */
+.light [class*="shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)]"] {
+  box-shadow: 0 20px 45px -15px rgba(32, 29, 25, 0.08), 0 0 1px rgba(32, 29, 25, 0.12) !important;
+}
+.light [class*="shadow-[0_45px_100px_-30px_rgba(0,0,0,0.9)]"] {
+  box-shadow: 0 24px 55px -20px rgba(32, 29, 25, 0.16), 0 2px 8px rgba(32, 29, 25, 0.05) !important;
+}
+.light [class*="shadow-[0_30px_80px_-30px_rgba(0,0,0,0.95)]"] {
+  box-shadow: 0 20px 45px -15px rgba(32, 29, 25, 0.1), 0 0 1px rgba(32, 29, 25, 0.12) !important;
+}
+.light [class*="shadow-\[0_-8px_30px_rgba(0,0,0,0.6)\]"] {
+  box-shadow: 0 -4px 20px -5px rgba(24, 24, 27, 0.06), 0 -1px 0 rgba(24, 24, 27, 0.06) !important;
+}
+.light [class*="shadow-\[0_10px_40px_-15px_rgba(0,0,0,0.5)\]"] {
+  box-shadow: 0 10px 25px -10px rgba(24, 24, 27, 0.06), 0 1px 0 rgba(24, 24, 27, 0.05) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   نظام «تدرج مظهر الحساب الملكي» (Progressive Account Prestige)
+   الاسم يتحسن تدريجيًا مع المستوى: ذهبي → ملكي → إمبراطوري → كوني
+   ═══════════════════════════════════════════════════════════════ */
+
+/* التدرج الذهبي المصقول (مستوى 5+) */
+.account-name-gold {
+  background: linear-gradient(135deg, #966d21 0%, #c9982f 45%, #8a5f13 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .account-name-gold {
+  background: linear-gradient(135deg, #f5e9c8 0%, #e6cb8b 40%, #c9a45c 70%, #b18a45 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* التدرج الملكي (مستوى 8+) — ذهب ناري مع لمسة كهرمان */
+.account-name-royal {
+  background: linear-gradient(120deg, #7a5a15 0%, #b8892e 30%, #e0a83c 50%, #96711f 80%, #6e4e12 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .account-name-royal {
+  background: linear-gradient(120deg, #fde68a 0%, #f5cf6b 25%, #e6cb8b 50%, #d4a94e 75%, #f0d78c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* التدرج الإمبراطوري (مستوى 12+) — بنفسجي ملكي ملتقى بالذهب */
+.account-name-imperial {
+  background: linear-gradient(120deg, #6d28d9 0%, #9333ea 25%, #c084fc 45%, #e6cb8b 70%, #96711f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .account-name-imperial {
+  background: linear-gradient(120deg, #c084fc 0%, #e879f9 25%, #f5e9c8 50%, #e6cb8b 75%, #d97706 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* التدرج الماسي (مستوى 13) — أبيض ماسي ببريق بارد */
+.account-name-diamond {
+  background: linear-gradient(120deg, #64748b 0%, #94a3b8 20%, #e2e8f0 40%, #f8fafc 50%, #cbd5e1 65%, #64748b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.dark .account-name-diamond {
+  background: linear-gradient(120deg, #38bdf8 0%, #e0f2fe 30%, #ffffff 50%, #bae6fd 70%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* التدرج الكوني (المستوى الأقصى 14) — مجرّة كاملة */
+.account-name-cosmic {
+  background: linear-gradient(120deg, #0e7490 0%, #0891b2 18%, #7c3aed 38%, #c026d3 52%, #e6cb8b 72%, #06b6d4 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: cosmic-drift 9s linear infinite;
+}
+.dark .account-name-cosmic {
+  background: linear-gradient(120deg, #67e8f9 0%, #a5f3fc 15%, #c084fc 35%, #f0abfc 50%, #f5e9c8 70%, #67e8f9 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: cosmic-drift 9s linear infinite;
+}
+
+@keyframes cosmic-drift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+/* وهج الاسم (مستوى 7+) — خفيف في النهار ومتوهج في الليل */
+.account-name-glow {
+  filter: drop-shadow(0 0.5px 0.5px rgba(150, 113, 31, 0.35));
+}
+.dark .account-name-glow {
+  filter: drop-shadow(0 0 12px rgba(201, 164, 92, 0.45));
+}
+
+/* اللمعان المتحرك (مستوى 10+) — شعاع ضوء يمسح الاسم */
+.account-name-shimmer {
+  position: relative;
+  background-size: 200% 100%;
+  animation: name-shimmer-sweep 3.2s ease-in-out infinite;
+}
+@keyframes name-shimmer-sweep {
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+}
+
+/* نجمة القمة الكونية (مستوى 13+) */
+.account-name-star {
+  display: inline-flex;
+  color: #0e7490;
+  font-size: 0.7em;
+  animation: star-twinkle 2.4s ease-in-out infinite;
+}
+.dark .account-name-star {
+  color: #67e8f9;
+  text-shadow: 0 0 8px rgba(103, 232, 249, 0.8);
+}
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.5; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* احترام تقليل الحركة لكل تأثيرات المظهر المتدرج */
+@media (prefers-reduced-motion: reduce) {
+  .account-name-shimmer,
+  .account-name-cosmic,
+  .account-name-star {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   حركات إطارات الصور الرمزية المتحركة (Avatar Frame Animations)
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes frame-pulse {
+  0%, 100% {
+    opacity: 0.92;
+    filter: drop-shadow(0 0 5px var(--frame-glow, rgba(201, 164, 92, 0.5)));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px var(--frame-glow, rgba(201, 164, 92, 0.9))) brightness(1.08);
+  }
+}
+
+@keyframes frame-spin-slow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px var(--frame-glow, rgba(6, 182, 212, 0.6)));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--frame-glow, rgba(6, 182, 212, 0.95))) brightness(1.1);
+  }
+}
+
+@keyframes frame-spin-reverse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px var(--frame-glow, rgba(6, 182, 212, 0.6)));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--frame-glow, rgba(6, 182, 212, 0.95))) brightness(1.1);
+  }
+}
+
+@keyframes frame-fire-flicker {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.7)) brightness(1);
+  }
+  25% {
+    filter: drop-shadow(0 0 10px rgba(234, 88, 12, 0.85)) brightness(1.08);
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.65)) brightness(0.98);
+  }
+  75% {
+    filter: drop-shadow(0 0 12px rgba(225, 29, 72, 0.9)) brightness(1.12);
+  }
+}
+
+@keyframes frame-wings-float {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px var(--frame-glow, rgba(56, 189, 248, 0.6)));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--frame-glow, rgba(56, 189, 248, 0.95))) brightness(1.1);
+  }
+}
+
+@keyframes frame-shimmer-sweep {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px var(--frame-glow, rgba(255, 255, 255, 0.5))) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px var(--frame-glow, rgba(255, 255, 255, 0.85))) brightness(1.15);
+  }
+}
+
+@keyframes frame-neon-rainbow {
+  0% {
+    filter: hue-rotate(0deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.7));
+  }
+  50% {
+    filter: hue-rotate(180deg) drop-shadow(0 0 12px rgba(56, 189, 248, 0.85));
+  }
+  100% {
+    filter: hue-rotate(360deg) drop-shadow(0 0 8px rgba(236, 72, 153, 0.7));
+  }
+}
+
+@keyframes frame-orbit {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.6)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(192, 132, 252, 0.9)) brightness(1.12);
+  }
+}
+
+@keyframes frame-royal-crest {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.65)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(253, 224, 71, 0.95)) brightness(1.12);
+  }
+}
+
+.anim-frame-pulse {
+  animation: frame-pulse 3s ease-in-out infinite;
+}
+.anim-frame-spin {
+  animation: frame-spin-slow 3s ease-in-out infinite;
+}
+.anim-frame-spin-reverse {
+  animation: frame-spin-reverse 3s ease-in-out infinite;
+}
+.anim-frame-fire {
+  animation: frame-fire-flicker 2s ease-in-out infinite;
+}
+.anim-frame-wings {
+  animation: frame-wings-float 3s ease-in-out infinite;
+}
+.anim-frame-shimmer {
+  animation: frame-shimmer-sweep 4s ease-in-out infinite;
+}
+.anim-frame-neon {
+  animation: frame-neon-rainbow 8s linear infinite;
+}
+.anim-frame-orbit {
+  animation: frame-orbit 4s ease-in-out infinite;
+}
+.anim-frame-royal {
+  animation: frame-royal-crest 3.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ثيمات المناسبات العامة للموقع (Site-wide Seasonal Themes)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── رمضان المبارك ── */
+[data-site-theme="ramadan"] {
+  --color-gold: #10b981;
+  --color-gold-light: #34d399;
+  --color-gold-pale: #a7f3d0;
+  --color-gold-deep: #047857;
+  --primary: #10b981;
+  --ring: #10b981;
+}
+[data-site-theme="ramadan"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(16, 185, 129, 0.16), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(234, 179, 8, 0.08), transparent 70%);
+}
+
+/* ── عيد الفطر السعيد ── */
+[data-site-theme="eid_fitr"] {
+  --color-gold: #f59e0b;
+  --color-gold-light: #fbbf24;
+  --color-gold-pale: #fef08a;
+  --color-gold-deep: #b45309;
+  --primary: #f59e0b;
+  --ring: #f59e0b;
+}
+[data-site-theme="eid_fitr"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(245, 158, 11, 0.15), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(236, 72, 153, 0.08), transparent 70%);
+}
+
+/* ── عيد الأضحى المبارك ── */
+[data-site-theme="eid_adha"] {
+  --color-gold: #e11d48;
+  --color-gold-light: #fb7185;
+  --color-gold-pale: #fecdd3;
+  --color-gold-deep: #9f1239;
+  --primary: #e11d48;
+  --ring: #e11d48;
+}
+[data-site-theme="eid_adha"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(225, 29, 72, 0.14), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(217, 119, 6, 0.08), transparent 70%);
+}
+
+/* ── رأس السنة الميلادية (كوزميك) ── */
+[data-site-theme="new_year"] {
+  --color-gold: #38bdf8;
+  --color-gold-light: #7dd3fc;
+  --color-gold-pale: #e0f2fe;
+  --color-gold-deep: #0369a1;
+  --primary: #38bdf8;
+  --ring: #38bdf8;
+}
+[data-site-theme="new_year"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(56, 189, 248, 0.16), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(168, 85, 247, 0.09), transparent 70%);
+}
+
+/* ── رأس السنة الهجرية ── */
+[data-site-theme="hijri_new_year"] {
+  --color-gold: #d97706;
+  --color-gold-light: #f59e0b;
+  --color-gold-pale: #fde68a;
+  --color-gold-deep: #92400e;
+  --primary: #d97706;
+  --ring: #d97706;
+}
+[data-site-theme="hijri_new_year"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(217, 119, 6, 0.15), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(20, 184, 166, 0.08), transparent 70%);
+}
+
+/* ── اليوم الوطني ── */
+[data-site-theme="national_day"] {
+  --color-gold: #059669;
+  --color-gold-light: #34d399;
+  --color-gold-pale: #a7f3d0;
+  --color-gold-deep: #065f46;
+  --primary: #059669;
+  --ring: #059669;
+}
+[data-site-theme="national_day"] .gold-glow-bg {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(5, 150, 105, 0.18), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(250, 204, 21, 0.09), transparent 70%);
+}
+

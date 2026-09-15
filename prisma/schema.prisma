@@ -1,0 +1,848 @@
+// ═══════════════════════════════════════════════════════════════
+//  قاعدة بيانات منصة أنشطة اللجنة التكنولوجية
+//  البنية v5: Program → Activity → Run → Session
+//  • Run (التنفيذ/الدفعة): تكرار النشاط بمواعيد ومشاركين مستقلين
+//  • Session تظل وحدة التسجيل (مقاعد + نافذة + QR) وترث نافذة التنفيذ
+//  • مهام/مواسم/إنجازات/فرق/مجتمع/وسائط/مكافآت + كشف النادي
+//  الترحيل آمن: كل البيانات القائمة محفوظة كما هي
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── الحسابات والصلاحيات ─────────────────────────────────────
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  passwordHash      String? // اختياري — مستخدمو Google ليس لديهم كلمة سر
+  provider          String   @default("EMAIL") // EMAIL | GOOGLE
+  googleId          String?  @unique
+  avatarUrl         String?
+  avatarFrameId     String? // معرف إطار الصورة الرمزية المختار
+  profileThemeId    String? // معرف ثيم الحساب المختار
+  role              String   @default("STUDENT") // STUDENT | SUPER_ADMIN | ADMIN | WORKSHOP_MANAGER | CONTENT_MANAGER | VIEWER
+  status            String   @default("ACTIVE") // ACTIVE | SUSPENDED
+  // صلاحيات مخصصة تتجاوز افتراضي الدور — JSON: {"students":"manage","points":"view",...}
+  // null = اتباع افتراضي الدور تمامًا | قيمة لكل وحدة: "manage" | "view" | false
+  customPermissions String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  profile              StudentProfile?
+  registrations        Registration[]
+  talents              Talent[]
+  badges               StudentBadge[]
+  pointEvents          PointEvent[]       @relation("PointEventRecipient")
+  pointsAwarded        PointEvent[]       @relation("PointEventActor")
+  attendanceMarks      Attendance[]       @relation("AttendanceMarker")
+  dataResponses        DataResponse[]
+  studentData          StudentData[]
+  dataRequestsMade     DataRequest[]      @relation("DataRequestCreator")
+  notificationsCreated Notification[]     @relation("NotificationCreator")
+  notificationReads    NotificationRead[]
+  driveAssets          DriveAsset[]       @relation("DriveAssetCreator")
+
+  // ── v5 ──
+  tasksCreated         Task[]           @relation("TaskCreator")
+  taskAssignments      TaskAssignment[]
+  submissionsEvaluated TaskSubmission[] @relation("TaskSubmissionEvaluator")
+  questProgress        QuestProgress[]
+  teamMemberships      TeamMember[]
+  teamPointsGiven      TeamPointEvent[] @relation("TeamPointEventActor")
+  postsCreated         CommunityPost[]  @relation("CommunityPostCreator")
+  comments             Comment[]
+  postReactions        PostReaction[]
+  mediaAssetsCreated   MediaAsset[]     @relation("MediaAssetCreator")
+  rewardsReceived      StudentReward[]  @relation("StudentRewardRecipient")
+  rewardsGranted       StudentReward[]  @relation("StudentRewardAwarder")
+}
+
+// ─── ملف الطالب ──────────────────────────────────────────────
+
+model StudentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String // 3 كلمات على الأقل
+  grade           String // FIRST | SECOND | THIRD | FOURTH
+  section         String // IS | COMMERCIAL | TOURISM | LANGS
+  gender          String // MALE | FEMALE
+  phone           String // 01xxxxxxxxx
+  // حالة توثيق الهاتف عبر OTP — لا نثق أبدًا بمجرد قبول الواجهة للرقم
+  phoneVerified   Boolean  @default(true) // الهاتف لا يحتاج OTP في النسخة المجانية الحالية
+  studentCode     String? // اختياري — يُطلب فقط عند تفعيله من الإعدادات
+  discoverySource String? // TANSIQ | PARTY | LECTURES | MEMBER | ADS | OTHER
+  joinReasons     String? // JSON: ["LEARNING","TALENTS",...]
+  // ── الطلاب المميزون (يعرضهم الأدمن بأمان في الصفحة العامة) ──
+  featured        Boolean  @default(false)
+  featuredKind    String? // TOP_STUDENT | MOST_ACTIVE | OUTSTANDING_CONTRIBUTOR | CREATIVE | TOP_TEAM_MEMBER
+  featuredNote    String? // سطر تعريفي للجمهور
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([grade, section])
+  @@index([phone])
+  @@index([studentCode])
+  @@index([featured])
+}
+
+// ─── أكواد توثيق الهاتف (OTP) ───────────────────────
+// كود صلاحية 10 دقائق لكل هاتف — يُخزّن مُشفّرًا (hash) لا نصًا صريحًا
+// عدّاد محاولات + إبطال — الحالة الرسمية للتوثيق في قاعدة البيانات
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String // 01xxxxxxxxx
+  codeHash  String // SHA-256 مع السر — لا يُخزّن الكود صريحًا
+  purpose   String   @default("PHONE_VERIFY")
+  attempts  Int      @default(5) // محاولات متبقية قبل الإبطال
+  consumed  Boolean  @default(false)
+  expiresAt DateTime // +10 دقائق عند الإنشاء
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
+}
+
+// ─── المواهب ─────────────────────────────────────────────────
+
+model Talent {
+  id            String   @id @default(cuid())
+  userId        String? // اختياري — الإدارة تقدر تضيف موهبة لطالب مسجل أو باسم حر
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // بيانات العرض عندما لا يكون الطالب مسجلًا (أو لتجاوز اسم الحساب)
+  personName    String?
+  personGrade   String?
+  personSection String?
+  category      String // PERFORMING | SPORTS | OTHER
+  name          String // القيمة من القوائم أو "OTHER"
+  customName    String? // نص "أخرى"
+  description   String?
+  portfolioUrl  String?
+  imageUrl      String? // صورة الطالب: رابط درايف «أي شخص لديه الرابط» أو أي رابط أو رفع على السيرفر
+  status        String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  featured      Boolean  @default(false) // يظهر في قسم المواهب المميزة فقط إذا VERIFIED + featured
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, featured])
+  @@index([userId])
+}
+
+// ─── البرامج (المستوى الأعلى — اختياري) ──────────────────────
+
+model Program {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String   @default("✨")
+  color       String   @default("#c9a45c")
+  status      String   @default("ACTIVE") // ACTIVE | ARCHIVED
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  activities Activity[]
+}
+
+// ─── النشاط (الكورس / الورشة / الفعالية) ─────────────────────
+// كيان ثابت يحمل الوصف والصورة والبرنامج — يتكرر عبر «التنفيذات» (Runs)
+
+model Activity {
+  id               String   @id @default(cuid())
+  legacyWorkshopId String?  @unique
+  type             String   @default("WORKSHOP") // COURSE | WORKSHOP | EVENT | COMPETITION | VISIT | ORGANIZATION | OTHER
+  programId        String?
+  program          Program? @relation(fields: [programId], references: [id])
+  title            String
+  teaser           String? // رسالة التشويق قبل كشف التفاصيل
+  description      String
+  image            String? // رابط درايف أو أي رابط أو رفع على السيرفر
+  presenter        String?
+  level            String? // BEGINNER | INTERMEDIATE | ADVANCED
+  publish          String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
+  // روابط خارجية موصوفة: JSON [{label, url, newTab}]
+  links            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  runs       Run[]
+  sessions   Session[]
+  formFields FormField[]
+  tasks      Task[]
+
+  @@index([type, publish])
+  @@index([programId])
+}
+
+// ─── التنفيذ / الدفعة (Run) ──────────────────────────────────
+// تكرار فعلي للنشاط: دفعة سبتمبر / دفعة يناير / التنفيذ الأول
+// لكل تنفيذ نافذة تسجيل ومشاركون وسجل مستقل —
+// الجلسات بلا نافذة خاصة ترث نافذة التنفيذ
+
+model Run {
+  id                   String    @id @default(cuid())
+  activityId           String
+  activity             Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  title                String // «دفعة سبتمبر 2026» / «التنفيذ الأول»
+  description          String?
+  order                Int       @default(1)
+  // نافذة تسجيل التنفيذ — تُرثها الجلسات التي بلا نافذة خاصة
+  seats                Int?
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+  closingMode          String    @default("EITHER") // BY_DATE | BY_CAPACITY | EITHER | MANUAL
+  registrationOpen     Boolean   @default(true)
+  allowGuests          Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  sessions Session[]
+  tasks    Task[]
+
+  @@index([activityId, order])
+}
+
+// ─── المحاضرة / موعد الورشة (Session) ──────────────────────
+// وحدة التسجيل: لكل جلسة مقاعدها ونافذة تسجيلها وعدّها التنازلي
+// الكورس: محاضرات متعددة · الورشة: موعد واحد (يتكرر إن أُعيد تقديمها)
+
+model Session {
+  id            String    @id @default(cuid())
+  activityId    String
+  activity      Activity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  runId         String? // التنفيذ/الدفعة — اختياري للورش البسيطة
+  run           Run?      @relation(fields: [runId], references: [id], onDelete: SetNull)
+  order         Int       @default(1)
+  title         String
+  description   String?
+  image         String? // صورة خاصة بالمحاضرة/الجلسة (رابط درايف أو خارجي أو رفع) — إن خلت تُستعمل صورة النشاط
+  startsAt      DateTime
+  endsAt        DateTime?
+  location      String?
+  presenter     String?
+  onlineUrl     String?
+  onlineLabel   String?
+  materialUrl   String?
+  materialLabel String?
+  status        String    @default("SCHEDULED") // SCHEDULED | DONE | CANCELLED
+
+  // ── التسجيل (معاملة الورشة لكل جلسة) ──
+  seats                Int       @default(50)
+  registrationOpensAt  DateTime? // موعد فتح التسجيل — مستقل عن موعد الإقامة
+  registrationClosesAt DateTime? // موعد إغلاق التسجيل + العد التنازلي التسويقي
+  closingMode          String    @default("EITHER") // BY_DATE | BY_CAPACITY | EITHER | MANUAL
+  registrationOpen     Boolean   @default(true) // المفتاح اليدوي
+  allowGuests          Boolean   @default(true)
+  allowAdminOverride   Boolean   @default(true)
+
+  excelTemplateUrl  String?
+  excelTemplateName String?
+  qrToken           String   @unique @default(cuid()) // QR حضور خاص بالجلسة
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  registrations Registration[]
+  pointEvents   PointEvent[]
+  attendance    Attendance[]
+}
+
+// أسئلة التسجيل الديناميكية — على مستوى النشاط (تُسأل مرة واحدة)
+
+model FormField {
+  id            String   @id @default(cuid())
+  activityId    String
+  activity      Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  label         String
+  type          String // TEXT | LONGTEXT | NUMBER | PHONE | EMAIL | SELECT | RADIO | CHECKBOX | DATE | TIME | FILE
+  options       String? // JSON: ["نعم","لا"]
+  required      Boolean  @default(false)
+  order         Int      @default(0)
+  // ── إعادة استخدام بيانات الطالب (v5) ──
+  key           String?  @unique // مفتاح الحفظ الدائم
+  saveToProfile Boolean  @default(false)
+  forceReask    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+// ─── التسجيل (ACCOUNT = عضو / MANUAL = إدخال يدوي / GUEST = ضيف) ──
+
+model Registration {
+  id            String   @id @default(cuid())
+  sessionId     String
+  session       Session  @relation(fields: [sessionId], references: [id])
+  userId        String? // null للتسجيل اليدوي والضيوف
+  user          User?    @relation(fields: [userId], references: [id])
+  // نسخة ثابتة من بيانات الطالب وقت التسجيل (للتقارير والـExcel)
+  fullName      String
+  phone         String?
+  email         String?
+  grade         String?
+  section       String?
+  gender        String?
+  studentCode   String?
+  answers       String? // JSON: {fieldId: value}
+  source        String   @default("ACCOUNT") // ACCOUNT | MANUAL | GUEST | GATE_ADDED
+  // كشف النادي: أُدرج المشارك في الكشف المرسل للنادي؟
+  inManifest    Boolean  @default(false)
+  status        String   @default("REGISTERED") // REGISTERED | WAITLISTED | CANCELLED
+  waitlistOrder Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  attendance Attendance[]
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, status])
+  @@index([userId])
+  @@index([phone])
+}
+
+// ─── الحضور (منفصل تمامًا عن التسجيل) ─────────────────────────
+// الحضور مرتبط بالتسجيل والجلسة المسجل بها الطالب
+
+model Attendance {
+  id             String       @id @default(cuid())
+  registrationId String
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  sessionId      String?
+  session        Session?     @relation(fields: [sessionId], references: [id])
+  present        Boolean      @default(false)
+  status         String? // PRESENT | LATE — null مع present=false = غياب مسجل
+  lateMinutes    Int?
+  method         String? // MANUAL | QR | GATE
+  markedById     String?
+  markedBy       User?        @relation("AttendanceMarker", fields: [markedById], references: [id])
+  markedAt       DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([present])
+  @@index([sessionId])
+}
+
+// ─── نظام النقاط (كل نقطة لها سجل — الإجمالي مجموع الأحداث) ────
+
+model PointRule {
+  id     String  @id @default(cuid())
+  action String  @unique // WORKSHOP_ATTENDANCE | COMPETITION_WIN | ...
+  label  String // "حضور نشاط"
+  points Int
+  active Boolean @default(true)
+}
+
+model PointEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("PointEventRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  points      Int // موجبة أو سالبة
+  reason      String // إلزامي — سبب واضح
+  ruleAction  String? // القاعدة المرتبطة إن وجدت
+  sessionId   String?
+  session     Session? @relation(fields: [sessionId], references: [id])
+  seasonId    String? // الموسم الجاري وقت المنح — null = تراكمي قديم
+  season      Season?  @relation(fields: [seasonId], references: [id])
+  createdById String
+  createdBy   User     @relation("PointEventActor", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([seasonId])
+}
+
+// ─── المواسم (Seasons) ──────────────────────────────────────
+// كل موسم فترة تنافس مستقلة — المتصدرون تُصفّى بالموسم
+// والترتيب التاريخي يبقى متاحًا للأبد
+
+model Season {
+  id        String    @id @default(cuid())
+  name      String // «الموسم الأول 2026»
+  startAt   DateTime
+  endAt     DateTime? // null = مفتوح حتى إشعار آخر
+  status    String    @default("ACTIVE") // UPCOMING | ACTIVE | ENDED
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  pointEvents PointEvent[]
+  quests      Quest[]
+  tasks       Task[]
+
+  @@index([status, startAt])
+}
+
+// ─── المهام / التكليفات ────────────────────────────────────
+// قد تنتمي لبرنامج/نشاط/تنفيذ/جلسة أو تكون مستقلة
+// النشر يُجمّد لقطة المستلمين في TaskAssignment (لا فلترة حية)
+
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  description    String
+  // نطاق الربط الاختياري
+  seasonId       String?
+  season         Season?   @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  programId      String?
+  activityId     String?
+  activity       Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  runId          String?
+  run            Run?      @relation(fields: [runId], references: [id], onDelete: SetNull)
+  sessionId      String?
+  // طريقة التسليم
+  submissionType String    @default("TEXT") // TEXT | FILE | LINK | TEXT_AND_FILE | TEXT_AND_LINK | GROUP
+  distribution   String    @default("ONE_TASK_FOR_EVERYONE") // ONE_TASK_FOR_EVERYONE | RANDOM_TASK_PER_STUDENT | BALANCED_RANDOM | TASK_POOL
+  pool           String? // JSON [{title, description}] — بدائل المهام للتوزيع
+  links          String? // JSON [{label, url, newTab}] — روابط خارجية موصوفة
+  // الجمهور — JSON نفس محرك الاستهداف الموحد
+  target         String
+  dueAt          DateTime?
+  xpReward       Int       @default(0)
+  pointsReward   Int       @default(0)
+  status         String    @default("DRAFT") // DRAFT | PUBLISHED | CLOSED
+  publishedAt    DateTime?
+  createdById    String
+  createdBy      User      @relation("TaskCreator", fields: [createdById], references: [id])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  assignments TaskAssignment[]
+
+  @@index([status, publishedAt])
+  @@index([activityId])
+}
+
+// لقطة ثابتة لكل مستلم عند النشر — التوزيع العشوائي يُختم هنا للأبد
+
+model TaskAssignment {
+  id           String   @id @default(cuid())
+  taskId       String
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId       String? // null للمهمة الجماعية (للفريق)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId       String? // مهمة جماعية لفريق
+  team         Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  variantIndex Int      @default(0) // نسخة المهمة المخصصة (التوزيع العشوائي)
+  status       String   @default("ASSIGNED") // ASSIGNED | SUBMITTED | EVALUATED
+  assignedAt   DateTime @default(now())
+
+  submission TaskSubmission?
+
+  @@unique([taskId, userId])
+  @@unique([taskId, teamId])
+  @@index([userId, status])
+}
+
+model TaskSubmission {
+  id            String         @id @default(cuid())
+  assignmentId  String         @unique
+  assignment    TaskAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  text          String?
+  fileUrl       String?
+  linkUrl       String?
+  variantIndex  Int? // اختيار الطالب في وضع TASK_POOL
+  submittedAt   DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  late          Boolean        @default(false) // محسوبة من dueAt عند التسليم
+  feedback      String?
+  score         Int? // من 100
+  xpAwarded     Int            @default(0)
+  pointsAwarded Int            @default(0)
+  status        String         @default("SUBMITTED") // SUBMITTED | EVALUATED | RETURNED
+  evaluatedById String?
+  evaluatedBy   User?          @relation("TaskSubmissionEvaluator", fields: [evaluatedById], references: [id])
+  evaluatedAt   DateTime?
+
+  @@index([status])
+}
+
+// ─── الفرق ──────────────────────────────────────────────────
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String   @default("#c9a45c")
+  icon        String   @default("🛡️")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members      TeamMember[]
+  pointEvents  TeamPointEvent[]
+  achievements TeamAchievement[]
+  assignments  TaskAssignment[]
+}
+
+model TeamMember {
+  teamId   String
+  userId   String
+  role     String   @default("MEMBER") // MEMBER | LEADER
+  joinedAt DateTime @default(now())
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
+  @@index([userId])
+}
+
+model TeamPointEvent {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  points      Int
+  reason      String
+  createdById String
+  createdBy   User     @relation("TeamPointEventActor", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([teamId, createdAt])
+}
+
+model TeamAchievement {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  icon        String   @default("🏆")
+  awardedAt   DateTime @default(now())
+  awardedById String?
+
+  @@index([teamId])
+}
+
+// ─── الإنجازات / التحديات (Quests) ───────────────────────
+// تُقيّم تلقائيًا عند أحداث المشاركة — الإنجاز يمنح XP
+
+model Quest {
+  id          String   @id @default(cuid())
+  seasonId    String?
+  season      Season?  @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  title       String
+  description String?
+  kind        String // ATTEND_COUNT | TASK_COUNT | JOIN_EVENT | COMPETITION | STREAK_WEEKS
+  targetCount Int      @default(1)
+  xpReward    Int      @default(50)
+  icon        String   @default("🎯")
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  progress QuestProgress[]
+
+  @@index([active, order])
+}
+
+model QuestProgress {
+  questId     String
+  userId      String
+  count       Int       @default(0)
+  completedAt DateTime?
+  quest       Quest     @relation(fields: [questId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([questId, userId])
+  @@index([userId])
+}
+
+// ─── المكافآت ───────────────────────────────────────────────
+
+model Reward {
+  id          String   @id @default(cuid())
+  type        String   @default("BADGE") // BADGE | CERTIFICATE | RECOGNITION | SPECIAL_INVITATION | PHYSICAL | OTHER
+  title       String
+  description String?
+  icon        String   @default("🎁")
+  createdAt   DateTime @default(now())
+
+  awards StudentReward[]
+}
+
+model StudentReward {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("StudentRewardRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  rewardId    String
+  reward      Reward    @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  note        String?
+  awardedById String?
+  awardedBy   User?     @relation("StudentRewardAwarder", fields: [awardedById], references: [id])
+  awardedAt   DateTime  @default(now())
+  revokedAt   DateTime? // سحب المكافأة — يبقى السجل
+
+  @@unique([userId, rewardId])
+  @@index([userId])
+}
+
+// ─── المجتمع (منشورات اللجنة + تفاعلات + تعليقات بإشراف) ──
+
+model CommunityPost {
+  id                  String   @id @default(cuid())
+  type                String   @default("NEWS") // NEWS | ANNOUNCEMENT | HIGHLIGHT | ACHIEVEMENT | ACTIVITY_UPDATE
+  title               String
+  body                String
+  imageUrl            String?
+  links               String? // JSON [{label, url, newTab}]
+  mediaUrl            String? // فيديو/وسيط: مباشر أو يوتيوب أو تليجرام (عرض حسب المزود)
+  target              String? // JSON جمهور — null = الجميع
+  status              String   @default("DRAFT") // DRAFT | PUBLISHED | HIDDEN
+  pinned              Boolean  @default(false)
+  lockedComments      Boolean  @default(false)
+  autoApproveComments Boolean  @default(false) // السماح بالتعليق المباشر بدون موافقة مسبقة
+  createdById         String
+  createdBy           User     @relation("CommunityPostCreator", fields: [createdById], references: [id])
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  reactions PostReaction[]
+  comments  Comment[]
+
+  @@index([status, pinned, createdAt])
+}
+
+model PostReaction {
+  postId    String
+  userId    String
+  kind      String        @default("LIKE")
+  reactedAt DateTime      @default(now())
+  post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([userId])
+}
+
+model Comment {
+  id            String        @id @default(cuid())
+  postId        String
+  post          CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId      String?
+  parent        Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[]     @relation("CommentReplies")
+  body          String
+  status        String        @default("PENDING") // PENDING | APPROVED | HIDDEN
+  moderatedById String?
+  moderatedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @default(now()) @updatedAt
+
+  @@index([postId, status])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+// ─── الوسائط (موفر-واعٍ: يوتيوب/تليجرام/درايف/مباشر) ─────
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  provider    String   @default("DIRECT_URL") // SUPABASE | GOOGLE_DRIVE | YOUTUBE | TELEGRAM | DIRECT_URL | OTHER
+  title       String
+  url         String
+  fileId      String? // هوية الملف لدى المزود (نقل درايف لا يكسر الرابط)
+  mimeType    String?
+  thumbnail   String?
+  durationSec Int?
+  visibility  String   @default("PUBLIC") // PUBLIC | STUDENTS | LINK
+  createdById String
+  createdBy   User     @relation("MediaAssetCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([provider])
+}
+
+// ─── الشارات والإنجازات ──────────────────────────────────────
+
+model Badge {
+  id          String         @id @default(cuid())
+  name        String
+  description String
+  icon        String         @default("🏆") // إيموجي أو أيقونة
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  students    StudentBadge[]
+}
+
+model StudentBadge {
+  userId      String
+  badgeId     String
+  awardedAt   DateTime @default(now())
+  awardedById String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+}
+
+// ─── الأخبار والإعلانات (جاهز للمرحلة القادمة) ────────────────
+
+model NewsItem {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  image     String?
+  link      String?
+  type      String    @default("NEWS") // NEWS | ANNOUNCEMENT | IMPORTANT
+  status    String    @default("DRAFT") // DRAFT | PUBLISHED | HIDDEN | SCHEDULED
+  priority  Int       @default(0)
+  publishAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status, publishAt])
+}
+
+// ─── الإشعارات (مستقلة — استهداف + CTA + تثبيت) ──────────────
+// الإشعار يُرسل لجمهور (target JSON) — حالة القراءة/الإغفال لكل طالب في NotificationRead
+// الإشعار المثبت يظل بنرًا أعلى لوحة الطالب حتى يضغط «تم» ويبقى دائمًا في مركز الإشعارات
+
+model Notification {
+  id          String    @id @default(cuid())
+  type        String    @default("INFO") // INFO | IMPORTANT | ANNOUNCEMENT | TASK
+  pinned      Boolean   @default(false) // يظهر بنرًا أعلى لوحة الطالب حتى «تم»
+  title       String
+  body        String?
+  // أزرار الإجراء (متعددة): JSON [{label, url, newTab}] — حتى 4 أزرار
+  buttons     String?
+  // صورة داخل الإشعار: رابط درايف «أي شخص لديه الرابط» أو أي رابط أو رفع على السيرفر
+  imageUrl    String?
+  // زر واحد قديم (توافق) — يُقرأ كزر أول عند غياب buttons
+  ctaLabel    String?
+  ctaUrl      String?
+  ctaNewTab   Boolean   @default(true)
+  linkType    String? // WHATSAPP | TELEGRAM | DRIVE | FORM | GITHUB | YOUTUBE | LINK
+  // استهداف — JSON مثل DataRequest.target + runId للمشاركين في تنفيذ
+  target      String
+  createdById String
+  createdBy   User      @relation("NotificationCreator", fields: [createdById], references: [id])
+  expiresAt   DateTime? // اختياري — يختفي من الطالب بعده
+  createdAt   DateTime  @default(now())
+
+  reads NotificationRead[]
+
+  @@index([pinned, createdAt])
+}
+
+model NotificationRead {
+  userId         String // جزء من المفتاح المركب مع notificationId
+  notificationId String
+  readAt         DateTime     @default(now())
+  dismissedAt    DateTime? // ضغط «تم» على البنر — يختفي البنر ويبقى بالمركز
+  user           User         @relation(fields: [userId], references: [id])
+  notification   Notification @relation(fields: [notificationId], references: [id])
+
+  @@id([userId, notificationId])
+  @@index([userId])
+}
+
+// ─── مكتبة روابط جوجل درايف (مرفقات قابلة لإعادة الاستخدام) ───
+
+model DriveAsset {
+  id          String   @id @default(cuid())
+  title       String
+  url         String // رابط مشاركة درايف أو أي رابط
+  kind        String   @default("FILE") // FILE | IMAGE | VIDEO | FOLDER | DOC | SHEET | LINK
+  note        String?
+  createdById String
+  createdBy   User     @relation("DriveAssetCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([kind])
+}
+
+// ─── سجل العمليات (Audit Log) ────────────────────────────────
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorEmail    String? // نسخة من بريد من قام بالعملية
+  action        String // ACTIVITY_CREATED | RUN_UPDATED | POINTS_ADDED | ...
+  entity        String // ACTIVITY | ACTIVITY_RUN | SESSION | NOTIFICATION | STUDENT | SETTING | ...
+  entityId      String?
+  summary       String // وصف عربي مختصر
+  details       String? // JSON بالتغييرات (توافق)
+  before        String? // JSON للحالة قبل العملية
+  after         String? // JSON للحالة بعد العملية
+  reason        String? // سبب التعديل/الحذف إن وجد
+  correlationId String? // ربط أحداث العملية الواحدة
+  success       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+  @@index([action])
+  @@index([actorId])
+}
+
+// ─── طلبات البيانات من الطلاب ─────────────────────────────────
+// الإدارة تطلب بيانات جديدة (نموذج مخصص) موجهة لمجموعة محددة من الطلاب
+// حسب الفرقة/الشعبة/الجنس/الحضور/المواهب/المتفوقين أو طلاب بعينهم
+
+model DataRequest {
+  id                   String    @id @default(cuid())
+  title                String // مثال: «درجات مادة قواعد البيانات»
+  description          String? // شرح الطلب للطالب
+  fields               String // JSON: [{id,label,type,options,required}]
+  // طلب إلزامي: يمنع الطالب المستهدف من استخدام المنصة حتى يجيب عليه
+  mandatory            Boolean   @default(false)
+  reusePreviousAnswers Boolean   @default(true) // استخدام البيانات المحفوظة سابقًا بدل إعادة السؤال
+  // فلتر الاستهداف — JSON:
+  // {grades:[],sections:[],genders:[],attendance:"ANY|ATTENDED|NOT_ATTENDED",
+  //  talent:"ANY|HAS|VERIFIED|NONE",minPoints:0|null,userIds:[],sessionId:null}
+  target               String
+  status               String    @default("OPEN") // OPEN | CLOSED
+  deadline             DateTime? // اختياري
+  createdById          String
+  createdBy            User      @relation("DataRequestCreator", fields: [createdById], references: [id])
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  responses DataResponse[]
+
+  @@index([status])
+}
+
+model DataResponse {
+  id          String      @id @default(cuid())
+  requestId   String
+  request     DataRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     String // JSON: {fieldId: value}
+  submittedAt DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([requestId, userId])
+  @@index([requestId])
+}
+
+// ─── بيانات الطالب المحفوظة من طلبات اللجنة ─────────────────
+// إجابات قابلة لإعادة الاستخدام: نفس المعلومة لا تُطلب مرة أخرى إلا بإيقاف reusePreviousAnswers.
+model StudentData {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key             String
+  label           String
+  type            String
+  value           String
+  sourceRequestId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+// ─── الإعدادات (مفتاح/قيمة JSON) ─────────────────────────────
+
+model Setting {
+  key   String @id
+  value String // JSON
+}

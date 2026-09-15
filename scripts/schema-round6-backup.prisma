@@ -1,0 +1,345 @@
+// ═══════════════════════════════════════════════════════════════
+//  قاعدة بيانات منصة أنشطة اللجنة التكنولوجية
+//  Production: Supabase PostgreSQL عبر Prisma
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── الحسابات والصلاحيات ─────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String? // اختياري — مستخدمو Google ليس لديهم كلمة سر
+  provider     String   @default("EMAIL") // EMAIL | GOOGLE
+  googleId     String?  @unique
+  avatarUrl    String?
+  role         String   @default("STUDENT") // STUDENT | SUPER_ADMIN | ADMIN | WORKSHOP_MANAGER | CONTENT_MANAGER | VIEWER
+  status       String   @default("ACTIVE") // ACTIVE | SUSPENDED
+  // صلاحيات مخصصة تتجاوز افتراضي الدور — JSON: {"students":"manage","points":"view",...}
+  // null = اتباع افتراضي الدور تمامًا | قيمة لكل وحدة: "manage" | "view" | false
+  customPermissions String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile          StudentProfile?
+  registrations    Registration[]
+  talents          Talent[]
+  badges           StudentBadge[]
+  pointEvents      PointEvent[] @relation("PointEventRecipient")
+  pointsAwarded    PointEvent[] @relation("PointEventActor")
+  attendanceMarks  Attendance[] @relation("AttendanceMarker")
+  dataResponses    DataResponse[]
+  studentData      StudentData[]
+  dataRequestsMade DataRequest[] @relation("DataRequestCreator")
+}
+
+// ─── ملف الطالب ──────────────────────────────────────────────
+
+model StudentProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String // 3 كلمات على الأقل
+  grade           String // FIRST | SECOND | THIRD | FOURTH
+  section         String // IS | COMMERCIAL | TOURISM | LANGS
+  gender          String // MALE | FEMALE
+  phone           String // 01xxxxxxxxx
+  // حالة توثيق الهاتف عبر OTP — لا نثق أبدًا بمجرد قبول الواجهة للرقم
+  phoneVerified   Boolean  @default(true) // الهاتف لا يحتاج OTP في النسخة المجانية الحالية
+  studentCode     String? // اختياري — يُطلب فقط عند تفعيله من الإعدادات
+  discoverySource String? // TANSIQ | PARTY | LECTURES | MEMBER | ADS | OTHER
+  joinReasons     String? // JSON: ["LEARNING","TALENTS",...]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([grade, section])
+  @@index([phone])
+  @@index([studentCode])
+}
+
+// ─── أكواد توثيق الهاتف (OTP) ───────────────────────
+// كود صلاحية 10 دقائق لكل هاتف — يُخزّن مُشفّرًا (hash) لا نصًا صريحًا
+// عدّاد محاولات + إبطال — الحالة الرسمية للتوثيق في قاعدة البيانات
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String // 01xxxxxxxxx
+  codeHash  String // SHA-256 مع السر — لا يُخزّن الكود صريحًا
+  purpose   String   @default("PHONE_VERIFY")
+  attempts  Int      @default(5) // محاولات متبقية قبل الإبطال
+  consumed  Boolean  @default(false)
+  expiresAt DateTime // +10 دقائق عند الإنشاء
+  createdAt DateTime @default(now())
+
+  @@index([phone, createdAt])
+  @@index([expiresAt])
+}
+
+// ─── المواهب ─────────────────────────────────────────────────
+
+model Talent {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String // PERFORMING | SPORTS | OTHER
+  name         String // القيمة من القوائم أو "OTHER"
+  customName   String? // نص "أخرى"
+  description  String?
+  portfolioUrl String?
+  status       String   @default("PENDING") // PENDING | VERIFIED | REJECTED
+  featured     Boolean  @default(false) // يظهر في قسم المواهب المميزة فقط إذا VERIFIED + featured
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status, featured])
+  @@index([userId])
+}
+
+// ─── الورش ───────────────────────────────────────────────────
+
+model Workshop {
+  id                String   @id @default(cuid())
+  title             String
+  teaser            String? // رسالة التشويق في حالة UPCOMING مثل: "شيء مميز قادم..."
+  description       String
+  image             String? // من المكتبة أو رابط خارجي أو صورة مرفوعة
+  dateTime          DateTime
+  endTime           DateTime?
+  registrationDeadline DateTime? // آخر وقت لتسجيل الطلاب/الضيوف؛ الإدارة اليدوية تتجاوز الموعد
+  excelTemplateUrl  String?
+  excelTemplateName String?
+  location          String
+  seats             Int      @default(50)
+  presenter         String? // مقدم الورشة — اختياري
+  status            String   @default("DRAFT") // DRAFT | UPCOMING | CURRENT | COMPLETED | ARCHIVED
+  registrationOpen  Boolean  @default(true)
+  allowGuests       Boolean  @default(true) // السماح للضيوف (بدون حساب) بالتسجيل
+  qrToken           String   @unique @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  formFields    FormField[]
+  registrations Registration[]
+  pointEvents   PointEvent[]
+
+  @@index([status, dateTime])
+}
+
+// أسئلة التسجيل الديناميكية لكل ورشة (Form Builder)
+model FormField {
+  id         String   @id @default(cuid())
+  workshopId String
+  workshop   Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  label      String
+  type       String // TEXT | LONGTEXT | NUMBER | PHONE | EMAIL | SELECT | RADIO | CHECKBOX | DATE | TIME | FILE
+  options    String? // JSON: ["نعم","لا"]
+  required   Boolean  @default(false)
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+// ─── التسجيل (ACCOUNT = عضو / MANUAL = إدخال يدوي / GUEST = ضيف) ──
+
+model Registration {
+  id            String   @id @default(cuid())
+  workshopId    String
+  workshop      Workshop @relation(fields: [workshopId], references: [id])
+  userId        String? // null للتسجيل اليدوي والضيوف
+  user          User?    @relation(fields: [userId], references: [id])
+  // نسخة ثابتة من بيانات الطالب وقت التسجيل (للتقارير والـExcel)
+  fullName      String
+  phone         String?
+  email         String?
+  grade         String?
+  section       String?
+  gender        String?
+  studentCode   String?
+  answers       String? // JSON: {fieldId: value}
+  source        String   @default("ACCOUNT") // ACCOUNT | MANUAL | GUEST
+  status        String   @default("REGISTERED") // REGISTERED | WAITLISTED | CANCELLED
+  waitlistOrder Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  attendance Attendance?
+
+  @@unique([workshopId, userId])
+  @@index([workshopId, status])
+  @@index([userId])
+  @@index([phone])
+}
+
+// ─── الحضور (منفصل تمامًا عن التسجيل) ─────────────────────────
+
+model Attendance {
+  id             String   @id @default(cuid())
+  registrationId String   @unique
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  present        Boolean  @default(false)
+  method         String? // MANUAL | QR
+  markedById     String?
+  markedBy       User?    @relation("AttendanceMarker", fields: [markedById], references: [id])
+  markedAt       DateTime?
+  createdAt      DateTime @default(now())
+
+  @@index([present])
+}
+
+// ─── نظام النقاط (كل نقطة لها سجل — الإجمالي مجموع الأحداث) ────
+
+model PointRule {
+  id     String  @id @default(cuid())
+  action String  @unique // WORKSHOP_ATTENDANCE | COMPETITION_WIN | ...
+  label  String // "حضور ورشة"
+  points Int
+  active Boolean @default(true)
+}
+
+model PointEvent {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation("PointEventRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  points      Int // موجبة أو سالبة
+  reason      String // إلزامي — سبب واضح
+  ruleAction  String? // القاعدة المرتبطة إن وجدت
+  workshopId  String?
+  workshop    Workshop? @relation(fields: [workshopId], references: [id])
+  createdById String
+  createdBy   User      @relation("PointEventActor", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ─── الشارات والإنجازات ──────────────────────────────────────
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   @default("🏆") // إيموجي أو أيقونة
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  students    StudentBadge[]
+}
+
+model StudentBadge {
+  userId      String
+  badgeId     String
+  awardedAt   DateTime @default(now())
+  awardedById String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+}
+
+// ─── الأخبار والإعلانات (جاهز للمرحلة القادمة) ────────────────
+
+model NewsItem {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  image     String?
+  link      String?
+  type      String    @default("NEWS") // NEWS | ANNOUNCEMENT | IMPORTANT
+  status    String    @default("DRAFT") // DRAFT | PUBLISHED | HIDDEN | SCHEDULED
+  priority  Int       @default(0)
+  publishAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status, publishAt])
+}
+
+// ─── سجل العمليات (Audit Log) ────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String? // نسخة من بريد من قام بالعملية
+  action     String // WORKSHOP_CREATED | POINTS_ADDED | ...
+  entity     String // WORKSHOP | STUDENT | SETTING | ...
+  entityId   String?
+  summary    String // وصف عربي مختصر
+  details    String? // JSON بالتغييرات
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+// ─── طلبات البيانات من الطلاب ─────────────────────────────────
+// الإدارة تطلب بيانات جديدة (نموذج مخصص) موجهة لمجموعة محددة من الطلاب
+// حسب الفرقة/الشعبة/الجنس/الحضور/المواهب/المتفوقين أو طلاب بعينهم
+
+model DataRequest {
+  id          String    @id @default(cuid())
+  title       String // مثال: «درجات مادة قواعد البيانات»
+  description String? // شرح الطلب للطالب
+  fields      String // JSON: [{id,label,type,options,required}]
+  // طلب إلزامي: يمنع الطالب المستهدف من استخدام المنصة حتى يجيب عليه
+  mandatory   Boolean   @default(false)
+  reusePreviousAnswers Boolean @default(true) // استخدام البيانات المحفوظة سابقًا بدل إعادة السؤال
+  // فلتر الاستهداف — JSON:
+  // {grades:[],sections:[],genders:[],attendance:"ANY|ATTENDED|NOT_ATTENDED",
+  //  talent:"ANY|HAS|VERIFIED|NONE",minPoints:0|null,userIds:[]}
+  target      String
+  status      String    @default("OPEN") // OPEN | CLOSED
+  deadline    DateTime? // اختياري
+  createdById String
+  createdBy   User      @relation("DataRequestCreator", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  responses   DataResponse[]
+
+  @@index([status])
+}
+
+model DataResponse {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     DataRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     String // JSON: {fieldId: value}
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([requestId, userId])
+  @@index([requestId])
+}
+
+// ─── بيانات الطالب المحفوظة من طلبات اللجنة ─────────────────
+// إجابات قابلة لإعادة الاستخدام: نفس المعلومة لا تُطلب مرة أخرى إلا بإيقاف reusePreviousAnswers.
+model StudentData {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key             String
+  label           String
+  type            String
+  value           String
+  sourceRequestId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+// ─── الإعدادات (مفتاح/قيمة JSON) ─────────────────────────────
+
+model Setting {
+  key   String @id
+  value String // JSON
+}
