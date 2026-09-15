@@ -20,6 +20,7 @@ import { logAudit, getStudentCodeConfig } from "@/lib/platform";
 import { isAdminRole } from "@/lib/permissions";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimit, resetRateLimit, clientIp, waitMessage } from "@/lib/rate-limit";
 import { headers } from "next/headers";
 import {
@@ -78,9 +79,9 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
   try {
     const email = normalizeEmail(data.email || "");
 
-    // حماية من الاندفاع: حد تسجيل لكل IP (20 محاولة/ساعة) — يكفي الاستخدام الشرعي
+    // حماية من الاندفاع: حد تسجيل لكل IP (120 محاولة/ساعة) — يكفي الاستخدام والتجارب الشرعية
     const ip = clientIp(await headers());
-    const ipLimit = rateLimit(`register:ip:${ip}`, 20, 60 * 60 * 1000);
+    const ipLimit = rateLimit(`register:ip:${ip}`, 120, 60 * 60 * 1000);
     if (!ipLimit.ok) return { ok: false, error: waitMessage(ipLimit.retryAfterSec) };
 
     // ── التحقق الأساسي وحظر البريد المؤقت ──
@@ -190,7 +191,23 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
 
     // ── التأكد من عدم تكرار البريد ──
     const existing = await db.user.findUnique({ where: { email } });
-    if (existing) return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول" };
+    if (existing) {
+      if (isSupabaseConfigured()) {
+        const supaAdmin = getSupabaseAdmin();
+        if (supaAdmin) {
+          const { data: supaUser } = await supaAdmin.auth.admin.getUserById(existing.id);
+          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نعيد إرسال الرمز وننقله لشاشة التفعيل
+          if (supaUser?.user && !supaUser.user.email_confirmed_at && !supaUser.user.confirmed_at) {
+            const supabase = await createSupabaseServerClient();
+            if (supabase) {
+              await supabase.auth.resend({ type: "signup", email });
+            }
+            return { ok: true, needsEmailConfirm: true, email };
+          }
+        }
+      }
+      return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول" };
+    }
 
     // ══ وضع Supabase: الهوية في Supabase Auth + الصف بنفس UUID ══
     if (isSupabaseConfigured()) {
@@ -200,8 +217,18 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: data.password });
       if (signUpError || !signUpData.user) {
         const msg = signUpError?.message ?? "";
-        if (/already registered/i.test(msg))
+        if (/already registered/i.test(msg)) {
+          const supaAdmin = getSupabaseAdmin();
+          if (supaAdmin) {
+            const { data: usersList } = await supaAdmin.auth.admin.listUsers();
+            const match = usersList?.users?.find((u) => u.email?.toLowerCase() === email);
+            if (match && !match.email_confirmed_at && !match.confirmed_at) {
+              await supabase.auth.resend({ type: "signup", email });
+              return { ok: true, needsEmailConfirm: true, email };
+            }
+          }
           return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
+        }
         if (/not allowed/i.test(msg))
           return { ok: false, error: "التسجيل معطل حاليًا من إعدادات Supabase — تواصل مع الإدارة" };
         if (/password/i.test(msg) && /least/i.test(msg))
@@ -399,8 +426,8 @@ export async function resendSignupOtp({
       return { ok: false, error: "البريد الإلكتروني غير صحيح" };
     }
 
-    // حد لمنع الإغراق: طلب واحد كل 45 ثانية
-    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 45 * 1000);
+    // حد لمنع الإغراق: طلب واحد كل 20 ثانية (مريح للتجارب)
+    const limit = rateLimit(`resend-otp:${normEmail}`, 1, 20 * 1000);
     if (!limit.ok) {
       return { ok: false, error: `يرجى الانتظار ${limit.retryAfterSec} ثانية قبل طلب رمز جديد` };
     }
@@ -446,11 +473,11 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     if (!EMAIL_RE.test(email)) return { error: "أدخل بريدًا إلكترونيًا صحيحًا" };
     if (!password) return { error: "أدخل كلمة السر" };
 
-    // حماية من التخمين: حد لكل بريد + حد عام لكل IP (نافذة منزلقة)
+    // حماية من التخمين: حد لكل بريد + حد عام لكل IP (نافذة منزلقة) — موسعة لتسهيل الفحص والتجارب
     const ip = clientIp(await headers());
-    const emailLimit = rateLimit(`login:email:${email}`, 8, 15 * 60 * 1000);
+    const emailLimit = rateLimit(`login:email:${email}`, 30, 15 * 60 * 1000);
     if (!emailLimit.ok) return { error: waitMessage(emailLimit.retryAfterSec) };
-    const ipLimit = rateLimit(`login:ip:${ip}`, 25, 15 * 60 * 1000);
+    const ipLimit = rateLimit(`login:ip:${ip}`, 100, 15 * 60 * 1000);
     if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
 
     const user = await db.user.findUnique({ where: { email } });
@@ -493,6 +520,14 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
         // دخول فاشل — إنهاء أي جلسة جزئية
         await supabase.auth.signOut().catch(() => {});
         return { error: "البريد أو كلمة السر غير صحيحة" };
+      }
+
+      // منع تجاوز رمز التحقق (OTP): إذا لم يتم توثيق البريد بعد، لا يُسمح له بالدخول ويُحول لصفحة الرمز
+      if (!signInData.user.email_confirmed_at && !signInData.user.confirmed_at) {
+        await supabase.auth.signOut().catch(() => {});
+        return {
+          redirectTo: `/register/verify?email=${encodeURIComponent(email)}&notice=need_verification`,
+        };
       }
 
       // نجاح — تصفير عداد البريد حتى لا يتأثر مستخدم شرعي
@@ -649,6 +684,12 @@ export type CompleteProfileData = {
   section: string;
   gender: string;
   phone: string;
+  studentCode?: string;
+  discoverySource?: string;
+  joinReasons?: string[];
+  joinReasonOther?: string;
+  hasTalent?: boolean;
+  talents?: TalentEntry[];
 };
 
 export async function completeGoogleProfile(data: CompleteProfileData): Promise<ActionResult> {
@@ -669,18 +710,104 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
     const phone = normalizePhone(data.phone || "");
     if (!/^01[0125][0-9]{8}$/.test(phone)) return { ok: false, error: "رقم الهاتف غير صحيح — مثال صحيح: 01012345678" };
 
-    await db.studentProfile.create({
-      data: {
-        userId: user.id,
-        fullName,
-        grade: data.grade,
-        section: data.section,
-        gender: data.gender,
-        phone,
-        phoneVerified: true,
-        discoverySource: "OTHER",
-        joinReasons: null,
-      },
+    // كود الطالب
+    const codeConfig = await getStudentCodeConfig();
+    const codeRequired = codeConfig.requiredGrades.includes(data.grade);
+    let studentCode: string | undefined;
+    if (codeRequired) {
+      const code = (data.studentCode || "").trim();
+      if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات اللجنة" };
+      const codeCheck = validateStudentCodeFormat(code, data.grade);
+      if (!codeCheck.ok) return { ok: false, error: codeCheck.error! };
+      const existsCode = await db.studentProfile.findFirst({ where: { studentCode: code } });
+      if (existsCode) return { ok: false, error: "كود الطالب مسجل بالفعل — تواصل مع الإدارة" };
+      studentCode = code;
+    }
+
+    // مصدر التعارف
+    let discoverySource: string | undefined;
+    if (data.discoverySource) {
+      if (!discoveryValues.includes(data.discoverySource)) {
+        return { ok: false, error: "مصدر التعارف غير صحيح" };
+      }
+      if (data.discoverySource === "TANSIQ" && data.grade !== "FIRST") {
+        return { ok: false, error: "خيار التنسيق متاح للفرقة الأولى فقط" };
+      }
+      discoverySource = data.discoverySource;
+    }
+
+    // أسباب الانضمام
+    let joinReasons: string[] = [];
+    if (data.joinReasons && data.joinReasons.length > 0) {
+      for (const r of data.joinReasons) {
+        if (!reasonValues.includes(r)) return { ok: false, error: "أحد أسباب الانضمام غير صحيح" };
+      }
+      if (data.joinReasons.includes("OTHER")) {
+        const other = (data.joinReasonOther || "").trim();
+        if (other.length < 3) return { ok: false, error: "اكتب سببك في خانة «أخرى»" };
+        joinReasons = [...data.joinReasons.filter((r) => r !== "OTHER"), `OTHER:${other}`];
+      } else {
+        joinReasons = data.joinReasons;
+      }
+    }
+
+    // المواهب
+    const talentRecords: { category: string; name: string; customName: string | null; description: string | null }[] = [];
+    if (data.hasTalent && data.talents && data.talents.length > 0) {
+      if (data.talents.length > MAX_TALENTS) return { ok: false, error: `أقصى عدد للمواهب هو ${MAX_TALENTS}` };
+      const seen = new Set<string>();
+      for (const [i, entry] of data.talents.entries()) {
+        const label = data.talents.length > 1 ? `الموهبة ${i + 1}: ` : "";
+        if (!entry.category || !talentCatValues.includes(entry.category)) {
+          return { ok: false, error: `${label}اختر تصنيف الموهبة` };
+        }
+        if (!entry.name) return { ok: false, error: `${label}اختر الموهبة من القائمة` };
+        let customName: string | null = null;
+        if (entry.name === "OTHER") {
+          const custom = (entry.customName || "").trim();
+          if (custom.length < 2) return { ok: false, error: `${label}اكتب اسم الموهبة` };
+          customName = custom;
+        }
+        const dedupeKey = `${entry.category}|${entry.name}|${customName ?? ""}`.toLowerCase();
+        if (seen.has(dedupeKey)) return { ok: false, error: `${label}مكررة — اختار موهبة مختلفة` };
+        seen.add(dedupeKey);
+        talentRecords.push({
+          category: entry.category,
+          name: entry.name,
+          customName,
+          description: (entry.description || "").trim() || null,
+        });
+      }
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.studentProfile.create({
+        data: {
+          userId: user.id,
+          fullName,
+          grade: data.grade,
+          section: data.section,
+          gender: data.gender,
+          phone,
+          phoneVerified: true,
+          studentCode: studentCode ?? null,
+          discoverySource: discoverySource ?? null,
+          joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+        },
+      });
+
+      if (talentRecords.length > 0) {
+        await tx.talent.createMany({
+          data: talentRecords.map((t) => ({
+            userId: user.id,
+            category: t.category,
+            name: t.name,
+            customName: t.customName,
+            description: t.description,
+            status: "PENDING",
+          })),
+        });
+      }
     });
 
     await logAudit({
@@ -690,6 +817,9 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
       summary: `أكمل بياناته مستخدم Google: ${fullName}`,
     });
 
+    revalidatePath("/", "layout");
+    revalidatePath("/panel");
+    revalidatePath("/profile");
     return { ok: true };
   } catch (err) {
     console.error("completeGoogleProfile error:", err);

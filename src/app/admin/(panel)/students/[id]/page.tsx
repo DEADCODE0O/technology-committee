@@ -12,7 +12,7 @@ import {
   levelFromPoints, TALENT_STATUS_LABELS, talentLabel, REGISTRATION_STATUS_LABELS,
   REGISTRATION_SOURCE_LABELS,
 } from "@/lib/constants";
-import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton } from "@/components/admin/student-actions";
+import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, DeleteStudentButton } from "@/components/admin/student-actions";
 import { ReversePointEventButton, DeletePointEventButton } from "@/components/admin/points-tools";
 import { EditStudentButton } from "@/components/admin/edit-student-form";
 import { SetTalentStatusButtons } from "@/components/admin/talent-actions";
@@ -95,6 +95,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
           {canBadges && <AwardBadgeButton userId={student.id} studentName={student.profile?.fullName ?? student.email} badges={allBadges.map((b) => ({ id: b.id, name: b.name, icon: b.icon }))} />}
           {canManage && <ResetPasswordButton userId={student.id} studentName={student.profile?.fullName ?? student.email} />}
           {canManage && <SuspendToggle userId={student.id} active={student.status === "ACTIVE"} />}
+          {canManage && <DeleteStudentButton userId={student.id} studentName={student.profile?.fullName ?? student.email} />}
         </div>
       </div>
 

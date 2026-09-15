@@ -5,8 +5,8 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound } from "lucide-react";
-import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword } from "@/actions/admin";
+import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle } from "lucide-react";
+import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -253,3 +253,97 @@ export function ResetPasswordButton({ userId, studentName }: { userId: string; s
     </>
   );
 }
+
+// حذف حساب الطالب نهائياً من قاعدة البيانات وسيرفر Supabase
+export function DeleteStudentButton({ userId, studentName }: { userId: string; studentName: string }) {
+  const [open, setOpen] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const submitDelete = () => {
+    if (confirmName.trim() !== studentName.trim()) {
+      return toast.error("يرجى كتابة اسم الطالب للتأكيد");
+    }
+    startTransition(async () => {
+      const res = await deleteStudentPermanently(userId);
+      if (res.ok) {
+        toast.success("تم حذف حساب الطالب نهائياً من المنصة وسيرفر Supabase ✓");
+        setOpen(false);
+        router.push("/admin/students");
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر حذف الحساب");
+      }
+    });
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        onClick={() => {
+          setConfirmName("");
+          setOpen(true);
+        }}
+        variant="outline"
+        className="h-9 rounded-lg border-red-500/30 bg-red-500/[0.06] px-3 text-xs font-extrabold text-red-400 hover:bg-red-500/15 hover:border-red-500/50 transition-colors"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+        حذف نهائي
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent dir="rtl" className="max-w-md rounded-3xl border-red-500/30 bg-surface">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-500/30 bg-red-500/[0.1] text-red-400">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-center text-base font-extrabold text-red-400">
+              حذف حساب الطالب نهائياً
+            </DialogTitle>
+            <DialogDescription className="text-center text-xs leading-relaxed text-zinc-400">
+              هذا الإجراء سيقوم بمسح حساب الطالب <span className="font-bold text-zinc-200">«{studentName}»</span> وجميع بياناته، تسجيلاته، ونقاطه بالكامل من قاعدة البيانات وسيرفر Supabase نهائياً. لن يمكن استرجاع البيانات ولكن سيتمكن الطالب من التسجيل من جديد كحساب جديد بالكامل.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] p-3 text-xs text-zinc-300">
+              لتأكيد الحذف، اكتب اسم الطالب في الخانة التالية: <span className="font-bold text-red-400 select-all">{studentName}</span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-zinc-300">اسم الطالب للتأكيد</Label>
+              <Input
+                value={confirmName}
+                onChange={(e) => setConfirmName(e.target.value)}
+                placeholder={studentName}
+                className="h-11 rounded-xl bg-surface border-white/15"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="h-11 flex-1 rounded-xl border-white/10 text-xs font-bold text-zinc-300"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                onClick={submitDelete}
+                disabled={pending || confirmName.trim() !== studentName.trim()}
+                className="h-11 flex-1 rounded-xl bg-red-600 hover:bg-red-500 text-xs font-extrabold text-white shadow-lg shadow-red-900/40"
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                حذف الحساب نهائياً
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+

@@ -7,7 +7,7 @@
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Send, Eye, Pin, Link2, Plus, Trash2, Save, XCircle, ImagePlus, Upload } from "lucide-react";
+import { Loader2, Send, Eye, Pin, Link2, Plus, Trash2, Save, XCircle, ImagePlus, Upload, Sparkles } from "lucide-react";
 import { sendNotification, updateNotification, previewNotificationTarget } from "@/actions/notifications";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -197,6 +197,125 @@ export function NotificationComposer({
           </button>
         )}
       </div>
+
+      {/* ── نماذج سريعة للطلاب الجدد وقنوات التواصل الاجتماعي ── */}
+      {!editing && (
+        <div className="rounded-2xl border border-gold/25 bg-gold/[0.04] p-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <span className="text-xs font-bold text-gold-light flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-gold" />
+              نماذج جاهزة للطلاب الجدد وقنوات التواصل:
+            </span>
+            <span className="text-[10px] text-zinc-400">انقر لتعبئة النموذج واستهداف الجمهور المطلوب فوراً</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            <button
+              type="button"
+              onClick={() => {
+                setV((p) => ({
+                  ...p,
+                  type: "WELCOME",
+                  pinned: true,
+                  title: "انضم لجروب شباب اللجنة التكنولوجية 💬",
+                  body: "أهلاً بك يا بطل! انضم لجروب الواتساب أو التيليجرام الخاص بالشباب لمتابعة الإعلانات والورش والأنشطة أولاً بأول.",
+                }));
+                setGenders(["MALE"]);
+                setButtons([
+                  { label: "جروب واتساب الشباب", url: "https://chat.whatsapp.com/", newTab: true },
+                  { label: "قناة تيليجرام الشباب", url: "https://t.me/", newTab: true },
+                ]);
+                toast.success("تم اختيار نموذج جروب الشباب واستهداف الطلاب الذكور");
+              }}
+              className="flex items-center gap-2.5 rounded-xl border border-blue-500/20 bg-blue-500/[0.05] p-3 text-start text-xs font-bold text-blue-300 hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors"
+            >
+              <span className="text-xl">👨‍💻</span>
+              <div>
+                <p className="font-extrabold text-blue-200">جروب الشباب</p>
+                <p className="text-[10px] text-zinc-400">واتساب وتيليجرام (للشباب فقط)</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setV((p) => ({
+                  ...p,
+                  type: "WELCOME",
+                  pinned: true,
+                  title: "انضمي لجروب طالبات اللجنة التكنولوجية 🌸",
+                  body: "أهلاً بكِ في اللجنة التكنولوجية! انضمي لجروب الواتساب أو التيليجرام الخاص بالطالبات لمتابعة الفعاليات والورش والتواصل.",
+                }));
+                setGenders(["FEMALE"]);
+                setButtons([
+                  { label: "جروب واتساب البنات", url: "https://chat.whatsapp.com/", newTab: true },
+                  { label: "قناة تيليجرام البنات", url: "https://t.me/", newTab: true },
+                ]);
+                toast.success("تم اختيار نموذج جروب البنات واستهداف الطالبات الإناث");
+              }}
+              className="flex items-center gap-2.5 rounded-xl border border-pink-500/20 bg-pink-500/[0.05] p-3 text-start text-xs font-bold text-pink-300 hover:bg-pink-500/10 hover:border-pink-500/40 transition-colors"
+            >
+              <span className="text-xl">🌸</span>
+              <div>
+                <p className="font-extrabold text-pink-200">جروب البنات</p>
+                <p className="text-[10px] text-zinc-400">واتساب وتيليجرام (للبنات فقط)</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setV((p) => ({
+                  ...p,
+                  type: "WELCOME",
+                  pinned: true,
+                  title: "تابع صفحات اللجنة التكنولوجية الرسمية 🚀",
+                  body: "خليك على تواصل دائم وتابع التغطيات الحصرية، الصور، والملخصات على منصاتنا الرسمية.",
+                }));
+                setGenders([]);
+                setButtons([
+                  { label: "صفحتنا على فيسبوك", url: "https://facebook.com/", newTab: true },
+                  { label: "حساب إنستغرام", url: "https://instagram.com/", newTab: true },
+                  { label: "قناة يوتيوب", url: "https://youtube.com/", newTab: true },
+                ]);
+                toast.success("تم تجهيز نموذج صفحات التواصل الاجتماعي");
+              }}
+              className="flex items-center gap-2.5 rounded-xl border border-gold/25 bg-gold/[0.06] p-3 text-start text-xs font-bold text-gold-light hover:bg-gold/[0.12] hover:border-gold/40 transition-colors"
+            >
+              <span className="text-xl">🌐</span>
+              <div>
+                <p className="font-extrabold text-gold-pale">صفحات التواصل</p>
+                <p className="text-[10px] text-zinc-400">فيسبوك، إنستغرام، يوتيوب</p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setV((p) => ({
+                  ...p,
+                  type: "ANNOUNCEMENT",
+                  pinned: true,
+                  title: "دليل الطالب الجديد والتعليمات الهامة 📋",
+                  body: "أهلاً بك في اللجنة التكنولوجية! ننصحك بالاطلاع على نظام النقاط والورش المتاحة وطريقة تأكيد حضورك في الفعاليات.",
+                }));
+                setGrades(["FIRST"]);
+                setButtons([
+                  { label: "تصفح الفعاليات والورش", url: "/panel", newTab: false },
+                ]);
+                toast.success("تم تجهيز دليل الطالب الجديد (استهداف الفرقة الأولى)");
+              }}
+              className="flex items-center gap-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-3 text-start text-xs font-bold text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-colors"
+            >
+              <span className="text-xl">📋</span>
+              <div>
+                <p className="font-extrabold text-emerald-200">دليل الطلاب الجدد</p>
+                <p className="text-[10px] text-zinc-400">نصائح وإرشادات الفرقة الأولى</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* النوع + التثبيت */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

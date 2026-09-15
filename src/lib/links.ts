@@ -4,7 +4,7 @@
 //  يعمل في السيرفر والواجهة معًا (نقي بلا تبعيات)
 // ═══════════════════════════════════════════════════════════════
 
-export type LinkType = "WHATSAPP" | "TELEGRAM" | "DRIVE" | "FORM" | "GITHUB" | "YOUTUBE" | "LINK";
+export type LinkType = "WHATSAPP" | "TELEGRAM" | "FACEBOOK" | "INSTAGRAM" | "TIKTOK" | "DRIVE" | "FORM" | "GITHUB" | "YOUTUBE" | "LINK";
 
 // كشف نوع الرابط من شكله — للأيقونة والتسمية في الواجهة
 export function detectLinkType(url: string | null | undefined): LinkType {
@@ -12,6 +12,9 @@ export function detectLinkType(url: string | null | undefined): LinkType {
   if (!u) return "LINK";
   if (u.includes("chat.whatsapp.com") || u.includes("wa.me") || u.includes("whatsapp.com")) return "WHATSAPP";
   if (u.includes("t.me") || u.includes("telegram")) return "TELEGRAM";
+  if (u.includes("facebook.com") || u.includes("fb.com") || u.includes("fb.watch")) return "FACEBOOK";
+  if (u.includes("instagram.com") || u.includes("instagr.am")) return "INSTAGRAM";
+  if (u.includes("tiktok.com")) return "TIKTOK";
   if (u.includes("drive.google.com") || u.includes("docs.google.com")) return "DRIVE";
   if (u.includes("forms.gle") || u.includes("docs.google.com/forms")) return "FORM";
   if (u.includes("github.com")) return "GITHUB";

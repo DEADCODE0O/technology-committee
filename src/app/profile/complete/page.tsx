@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getStudentCodeConfig } from "@/lib/platform";
 import { CompleteProfileForm } from "@/components/platform/complete-profile-form";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,10 @@ export const dynamic = "force-dynamic";
 // ═══════════════════════════════════════════════════════════════
 
 export default async function CompleteProfilePage() {
-  const user = await getCurrentUser();
+  const [user, codeConfig] = await Promise.all([
+    getCurrentUser(),
+    getStudentCodeConfig(),
+  ]);
   if (!user) redirect("/login");
   if (user.role !== "STUDENT") redirect("/admin");
   if (user.profile) redirect("/panel");
@@ -30,7 +34,7 @@ export default async function CompleteProfilePage() {
           </span>
         </Link>
 
-        <CompleteProfileForm suggestedName={user.email.split("@")[0]} />
+        <CompleteProfileForm suggestedName={user.email.split("@")[0]} codeConfig={codeConfig} />
       </div>
     </div>
   );

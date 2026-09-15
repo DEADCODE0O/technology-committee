@@ -744,3 +744,74 @@ export async function updateSiteThemeSettings(
   }
 }
 
+// ─── حذف حساب طالب نهائياً من المنصة وسيرفر Supabase ─────────
+export async function deleteStudentPermanently(
+  userId: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.STUDENTS, "manage");
+    if (!userId) return { ok: false, error: "معرّف الطالب مطلوب" };
+    if (admin.id === userId) return { ok: false, error: "لا يمكنك حذف حسابك الحالي" };
+
+    const targetUser = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+    if (!targetUser) return { ok: false, error: "الحساب غير موجود بالفعل" };
+    if (targetUser.role !== "STUDENT") {
+      return { ok: false, error: "يمكن فقط حذف حسابات الطلاب عبر هذه الخاصية" };
+    }
+
+    const studentName = targetUser.profile?.fullName || targetUser.email;
+
+    // 1. حذف المستخدم من Supabase Auth
+    if (isSupabaseConfigured()) {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        const { error: supaErr } = await supaAdmin.auth.admin.deleteUser(userId);
+        if (supaErr) {
+          console.warn("deleteStudentPermanently: Supabase admin deleteUser warning:", supaErr.message);
+        }
+      }
+    }
+
+    // 2. حذف جميع بيانات ومتعلقات الطالب في قاعدة البيانات لضمان عدم وجود أخطاء قيود
+    await db.$transaction(async (tx) => {
+      await tx.attendance.deleteMany({ where: { registration: { userId } } });
+      await tx.registration.deleteMany({ where: { userId } });
+      await tx.pointEvent.deleteMany({ where: { userId } });
+      await tx.studentBadge.deleteMany({ where: { userId } });
+      await tx.studentData.deleteMany({ where: { userId } });
+      await tx.dataResponse.deleteMany({ where: { userId } });
+      await tx.notificationRead.deleteMany({ where: { userId } });
+      await tx.taskSubmission.deleteMany({ where: { assignment: { userId } } });
+      await tx.taskAssignment.deleteMany({ where: { userId } });
+      await tx.questProgress.deleteMany({ where: { userId } });
+      await tx.teamMember.deleteMany({ where: { userId } });
+      await tx.comment.deleteMany({ where: { userId } });
+      await tx.postReaction.deleteMany({ where: { userId } });
+      await tx.studentReward.deleteMany({ where: { userId } });
+      await tx.talent.deleteMany({ where: { userId } });
+      await tx.studentProfile.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "STUDENT_DELETED_PERMANENTLY",
+      entity: "STUDENT",
+      entityId: userId,
+      summary: `حذف حساب الطالب نهائياً من المنصة وسيرفر Supabase: «${studentName}» (${targetUser.email})`,
+      details: { email: targetUser.email, name: studentName },
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath(`/admin/students/${userId}`);
+    return { ok: true };
+  } catch (err) {
+    console.error("deleteStudentPermanently error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "حدث خطأ أثناء حذف الحساب" };
+  }
+}
+
+

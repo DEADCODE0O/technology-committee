@@ -7,6 +7,7 @@
 
 import { LINK_TYPE_ICONS, LINK_TYPE_COLORS, LINK_TYPE_LABELS } from "@/lib/constants";
 import { safeExternalUrl } from "@/lib/links";
+import { SocialBrandIcon } from "@/components/platform/social-icons";
 
 export function CtaLink({
   label,
@@ -23,7 +24,7 @@ export function CtaLink({
   size?: "md" | "lg";
   onClick?: () => void;
 }) {
-  const type = linkType || "LINK";
+  const type = (linkType || "LINK").toUpperCase();
   const icon = LINK_TYPE_ICONS[type] ?? "🔗";
   const color = LINK_TYPE_COLORS[type] ?? "#c9a45c";
   const typeName = LINK_TYPE_LABELS[type];
@@ -43,7 +44,10 @@ export function CtaLink({
         boxShadow: `0 8px 24px -12px ${color}66`,
       }}
     >
-      <span className="text-base leading-none">{icon}</span>
+      <span className="flex items-center text-base leading-none">
+        <SocialBrandIcon type={type} className="h-4 w-4" />
+        {!["WHATSAPP", "TELEGRAM", "FACEBOOK", "INSTAGRAM", "TIKTOK", "YOUTUBE"].includes(type) && icon}
+      </span>
       <span>{label}</span>
       <span className="opacity-0 transition-opacity group-hover:opacity-70" style={{ fontSize: 11 }}>
         {typeName} ↗

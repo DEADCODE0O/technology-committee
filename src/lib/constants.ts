@@ -220,10 +220,13 @@ export const ACTIVITY_LEVEL_LABELS: Record<string, string> = Object.fromEntries(
 export const LINK_TYPES = [
   { value: "WHATSAPP", label: "واتساب", icon: "💬", color: "#25D366" },
   { value: "TELEGRAM", label: "تليجرام", icon: "✈️", color: "#229ED9" },
+  { value: "FACEBOOK", label: "فيسبوك", icon: "👥", color: "#1877F2" },
+  { value: "INSTAGRAM", label: "انستجرام", icon: "📸", color: "#E4405F" },
+  { value: "TIKTOK", label: "تيك توك", icon: "🎵", color: "#00F2FE" },
+  { value: "YOUTUBE", label: "يوتيوب", icon: "▶️", color: "#FF0000" },
   { value: "DRIVE", label: "جوجل درايف", icon: "📁", color: "#1FA463" },
   { value: "FORM", label: "نموذج", icon: "📝", color: "#7B61FF" },
   { value: "GITHUB", label: "GitHub", icon: "🐙", color: "#24292F" },
-  { value: "YOUTUBE", label: "يوتيوب", icon: "▶️", color: "#FF0000" },
   { value: "LINK", label: "رابط", icon: "🔗", color: "#c9a45c" },
 ] as const;
 
@@ -240,6 +243,7 @@ export const LINK_TYPE_COLORS: Record<string, string> = Object.fromEntries(
 // ─── أنواع الإشعارات ─────────────────────────────────────────
 export const NOTIFICATION_TYPES = [
   { value: "IMPORTANT", label: "مهم — مثبت أعلى لوحة الطالب", icon: "📌" },
+  { value: "WELCOME", label: "ترحيب بالطلاب الجدد / توجيه", icon: "👋" },
   { value: "ANNOUNCEMENT", label: "إعلان", icon: "📢" },
   { value: "TASK", label: "مهمة / تكليف", icon: "📋" },
   { value: "INFO", label: "معلومة", icon: "ℹ️" },
