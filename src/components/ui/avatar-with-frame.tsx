@@ -123,7 +123,7 @@ export function AvatarWithFrame({
       : frame.animationType === "fire-flicker"
       ? "anim-frame-fire"
       : frame.animationType === "wings-float"
-      ? "anim-frame-pulse"
+      ? "anim-frame-wings"
       : frame.animationType === "shimmer"
       ? "anim-frame-shimmer"
       : frame.animationType === "cosmic-orbit"
@@ -163,7 +163,7 @@ export function AvatarWithFrame({
             width={avatarPx * 2}
             height={avatarPx * 2}
             quality={95}
-            unoptimized={highResAvatarUrl.startsWith("http")}
+            unoptimized={highResAvatarUrl.startsWith("http") || highResAvatarUrl.endsWith(".svg")}
             className="h-full w-full object-cover"
           />
         ) : (

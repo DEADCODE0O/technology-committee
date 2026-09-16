@@ -179,17 +179,15 @@ export default async function ProfilePage() {
             </div>
 
             <div className="shrink-0 flex flex-col items-center sm:items-end gap-2.5">
-              {avatarFramesVisible && (
-                <FrameWardrobeModal
-                  user={{
-                    fullName: profile.fullName,
-                    avatarUrl: userRow?.avatarUrl,
-                    avatarFrameId: userRow?.avatarFrameId,
-                    level: progress.level,
-                    points: progress.xp,
-                  }}
-                />
-              )}
+              <FrameWardrobeModal
+                user={{
+                  fullName: profile.fullName,
+                  avatarUrl: userRow?.avatarUrl,
+                  avatarFrameId: userRow?.avatarFrameId,
+                  level: progress.level,
+                  points: progress.xp,
+                }}
+              />
               <span className="text-[11px] font-bold text-zinc-500">
                 الترتيب العام: #{rank}
               </span>

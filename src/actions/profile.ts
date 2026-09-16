@@ -180,3 +180,40 @@ export async function deleteStudentTalentAction(talentId: string): Promise<{ ok:
     return { ok: false, error: "تعذر حذف الموهبة" };
   }
 }
+
+export async function setAvatarUrlAction(
+  avatarUrl: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "يجب تسجيل الدخول أولاً" };
+
+    await db.user.update({
+      where: { id: user.id },
+      data: { avatarUrl },
+    });
+
+    await logAudit({
+      actor: user,
+      action: "AVATAR_IMAGE_UPDATED",
+      entity: "USER",
+      entityId: user.id,
+      summary: avatarUrl ? "تحديث الصورة الرمزية (أفاتار)" : "حذف الصورة الرمزية",
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/panel");
+    revalidatePath("/tasks");
+    revalidatePath("/activities");
+    revalidatePath("/leaderboard");
+    revalidatePath("/community");
+    revalidatePath("/welcome");
+    revalidatePath("/");
+
+    return { ok: true };
+  } catch (err: unknown) {
+    console.error("setAvatarUrlAction error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "حدث خطأ أثناء تحديث الصورة الرمزية" };
+  }
+}
+

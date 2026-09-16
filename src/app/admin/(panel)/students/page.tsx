@@ -8,6 +8,7 @@ import { GRADES, SECTIONS, GENDERS, GRADE_LABELS, SECTION_LABELS, GENDER_LABELS,
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SuspendToggle } from "@/components/admin/student-actions";
+import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 export const dynamic = "force-dynamic";
 
@@ -205,9 +206,12 @@ export default async function AdminStudentsPage({
                     <tr key={s.id} className="border-b border-white/[0.04] transition-colors hover:bg-white/[0.02]">
                       <td className="px-4 py-3.5">
                         <Link href={`/admin/students/${s.id}`} className="group flex items-center gap-3">
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gold/20 bg-gold/[0.06] text-xs font-extrabold text-gold-light">
-                            {(s.profile?.fullName ?? "?").split(" ").slice(0, 2).map((w) => w[0]).join("")}
-                          </span>
+                          <AvatarWithFrame
+                            avatarUrl={s.avatarUrl}
+                            name={s.profile?.fullName ?? s.email}
+                            frameId={s.avatarFrameId}
+                            size="xs"
+                          />
                           <div className="min-w-0">
                             <p className="truncate font-bold text-zinc-100 group-hover:text-gold-light">{s.profile?.fullName ?? s.email}</p>
                             {s.profile?.studentCode && <p className="text-[10px] text-zinc-600" dir="ltr">كود: {s.profile.studentCode}</p>}

@@ -1,0 +1,40 @@
+<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg9" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#042f2e" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <linearGradient id="skin9" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="100%" stop-color="#fde68a" />
+    </linearGradient>
+    <linearGradient id="hijab9" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#134e4a" />
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="url(#bg9)" stroke="#2dd4bf" stroke-width="2.5" />
+  <!-- Shield Motif in BG -->
+  <path d="M80 32l22 8v16c0 14-10 24-22 28-12-4-22-14-22-28V40z" stroke="#2dd4bf" stroke-width="1.5" opacity="0.3" fill="none" />
+  <!-- Body / Stealth Cyber Jacket -->
+  <path d="M28 148c0-30 22-42 52-42s52 12 52 42z" fill="#0f172a" />
+  <path d="M68 106l12 18 12-18z" fill="#14b8a6" opacity="0.6" />
+  <!-- Hijab / Dark Tech Wrap -->
+  <path d="M48 76c0-26 14-44 32-44s32 18 32 44c0 28-12 40-32 40s-32-12-32-40z" fill="url(#hijab9)" />
+  <!-- Face Opening -->
+  <ellipse cx="80" cy="74" rx="23" ry="27" fill="url(#skin9)" />
+  <path d="M58 66c4-12 12-18 22-18s18 6 22 18c-4-4-12-6-22-6s-18 2-22 6z" fill="#042f2e" opacity="0.5" />
+  <!-- Sharp Tech Eyes -->
+  <ellipse cx="70" cy="72" rx="3.2" ry="4" fill="#042f2e" />
+  <ellipse cx="90" cy="72" rx="3.2" ry="4" fill="#042f2e" />
+  <circle cx="71" cy="70.5" r="1.2" fill="#ffffff" />
+  <circle cx="91" cy="70.5" r="1.2" fill="#ffffff" />
+  <path d="M65 69l-3-2M95 69l3-2" stroke="#042f2e" stroke-width="1.5" stroke-linecap="round" />
+  <!-- Eyebrows (Determined) -->
+  <path d="M64 63c3-2 8-1 11 1" stroke="#042f2e" stroke-width="2.2" stroke-linecap="round" fill="none" />
+  <path d="M85 64c3-2 8-1 11 1" stroke="#042f2e" stroke-width="2.2" stroke-linecap="round" fill="none" />
+  <!-- Confident Smile -->
+  <path d="M75 86c3 2 7 2 10 0" stroke="#0d9488" stroke-width="2" stroke-linecap="round" fill="none" />
+  <!-- Cyan Cyber Accent on Collar -->
+  <circle cx="80" cy="116" r="3" fill="#2dd4bf" />
+</svg>

@@ -9,6 +9,7 @@ import { canUser, isAdminRole, MODULES, type Module } from "@/lib/permissions";
 import { ROLE_LABELS } from "@/lib/constants";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 
 
@@ -127,9 +128,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <p className="max-w-[160px] truncate text-xs font-bold text-foreground/80" dir="ltr">{user.email}</p>
               <p className="text-[10px] font-bold text-gold-deep dark:text-gold/70">{ROLE_LABELS[user.role] ?? user.role}</p>
             </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.08] text-gold-deep dark:text-gold">
-              <ShieldCheck className="h-4.5 w-4.5" />
-            </span>
+            <AvatarWithFrame
+              avatarUrl={user.avatarUrl}
+              name={user.profile?.fullName ?? user.email}
+              frameId={user.avatarFrameId}
+              size="xs"
+            />
             <form action={logoutAction}>
               <button
                 type="submit"

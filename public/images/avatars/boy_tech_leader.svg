@@ -1,0 +1,46 @@
+<svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c1917" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="skin4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fde68a" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="suit4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#292524" />
+      <stop offset="100%" stop-color="#1c1917" />
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="url(#bg4)" stroke="#fbbf24" stroke-width="2.5" />
+  <!-- Golden Laurel / Tech Crest Motif in BG -->
+  <circle cx="80" cy="80" r="66" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4 6" opacity="0.3" fill="none" />
+  <!-- Body / Royal Tech Blazer -->
+  <path d="M28 148c0-32 24-44 52-44s52 12 52 44z" fill="url(#suit4)" />
+  <path d="M68 104l12 28 12-28z" fill="#fbbf24" opacity="0.3" />
+  <path d="M72 104l8 18 8-18z" fill="#ffffff" />
+  <polygon points="80,122 83,128 77,128" fill="#d97706" />
+  <!-- Golden Pin on Lapel -->
+  <circle cx="58" cy="122" r="3.5" fill="#fbbf24" stroke="#92400e" stroke-width="1" />
+  <!-- Neck -->
+  <rect x="71" y="88" width="18" height="20" rx="6" fill="#d97706" />
+  <!-- Head -->
+  <ellipse cx="80" cy="72" rx="27" ry="31" fill="url(#skin4)" />
+  <!-- Hair (Neat executive cut) -->
+  <path d="M53 64c0-20 14-32 30-32 14 0 24 8 24 24-6-6-15-10-25-10-12 0-21 6-29 18z" fill="#292524" />
+  <!-- Modern Round Glasses with Golden Frame -->
+  <circle cx="69" cy="72" r="8" fill="#fbbf24" fill-opacity="0.15" stroke="#fbbf24" stroke-width="1.8" />
+  <circle cx="91" cy="72" r="8" fill="#fbbf24" fill-opacity="0.15" stroke="#fbbf24" stroke-width="1.8" />
+  <line x1="77" y1="72" x2="83" y2="72" stroke="#fbbf24" stroke-width="1.8" />
+  <!-- Eyes inside glasses -->
+  <circle cx="69" cy="72" r="3" fill="#1c1917" />
+  <circle cx="91" cy="72" r="3" fill="#1c1917" />
+  <circle cx="70" cy="71" r="1" fill="#ffffff" />
+  <circle cx="92" cy="71" r="1" fill="#ffffff" />
+  <!-- Eyebrows -->
+  <path d="M63 61c3-2 8-2 11 0" stroke="#1c1917" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <path d="M86 61c3-2 8-2 11 0" stroke="#1c1917" stroke-width="2.5" stroke-linecap="round" fill="none" />
+  <!-- Smile -->
+  <path d="M74 86c3 3 9 3 12 0" stroke="#92400e" stroke-width="2" stroke-linecap="round" fill="none" />
+</svg>

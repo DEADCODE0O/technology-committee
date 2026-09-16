@@ -16,6 +16,7 @@ import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, 
 import { ReversePointEventButton, DeletePointEventButton } from "@/components/admin/points-tools";
 import { EditStudentButton } from "@/components/admin/edit-student-form";
 import { SetTalentStatusButtons } from "@/components/admin/talent-actions";
+import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +64,12 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
             كل الطلاب
           </Link>
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.08] text-lg font-extrabold text-gold-light">
-              {(student.profile?.fullName ?? "?").split(" ").slice(0, 2).map((w) => w[0]).join("")}
-            </span>
+            <AvatarWithFrame
+              avatarUrl={student.avatarUrl}
+              name={student.profile?.fullName ?? student.email}
+              frameId={student.avatarFrameId}
+              size="lg"
+            />
             <div>
               <h1 className="text-2xl font-extrabold text-zinc-50">{student.profile?.fullName ?? student.email}</h1>
               <p className="mt-1 text-sm text-zinc-500">

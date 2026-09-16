@@ -21,8 +21,19 @@ export async function Landing({ user }: { user: SessionUser | null }) {
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-x-clip bg-background">
-      <div className="noise-overlay" aria-hidden="true" />
-      <Navbar user={user ? { name: user.profile?.fullName ?? user.email, role: user.role } : null} showTalents={talentsVisible} />
+      <Navbar
+        user={
+          user
+            ? {
+                name: user.profile?.fullName ?? user.email,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+                avatarFrameId: user.avatarFrameId,
+              }
+            : null
+        }
+        showTalents={talentsVisible}
+      />
 
       <main className="flex-1">
         <Hero />

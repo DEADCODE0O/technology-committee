@@ -18,8 +18,18 @@ export async function SitePageShell({
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-x-clip bg-background">
-      <div className="noise-overlay" aria-hidden="true" />
-      <Navbar user={user ? { name: user.profile?.fullName ?? user.email, role: user.role } : null} />
+      <Navbar
+        user={
+          user
+            ? {
+                name: user.profile?.fullName ?? user.email,
+                role: user.role,
+                avatarUrl: user.avatarUrl,
+                avatarFrameId: user.avatarFrameId,
+              }
+            : null
+        }
+      />
 
       <main className="flex-1 pt-24 lg:pt-28">
         {/* رأس الصفحة */}

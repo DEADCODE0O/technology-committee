@@ -8,8 +8,14 @@ import { Menu, X, ArrowLeft, LogOut, LayoutDashboard, ShieldCheck } from "lucide
 import { navLinks, siteConfig } from "@/config/site";
 import { logoutAction } from "@/actions/auth";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
-type NavUser = { name: string; role: string } | null;
+type NavUser = {
+  name: string;
+  role: string;
+  avatarUrl?: string | null;
+  avatarFrameId?: string | null;
+} | null;
 
 export function Navbar({ user, showTalents = false }: { user: NavUser; showTalents?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
@@ -93,9 +99,14 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
               {/* المستخدم المسجل — زر لوحته */}
               <Link
                 href={isAdmin ? "/admin" : "/panel"}
-                className="hidden h-10 items-center gap-2 rounded-full border border-gold/30 bg-gold/[0.08] px-4 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/50 sm:inline-flex"
+                className="hidden h-10 items-center gap-2 rounded-full border border-gold/30 bg-gold/[0.08] pe-4 ps-2 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/50 sm:inline-flex"
               >
-                {isAdmin ? <ShieldCheck className="h-4 w-4" /> : <LayoutDashboard className="h-4 w-4" />}
+                <AvatarWithFrame
+                  avatarUrl={user.avatarUrl}
+                  name={user.name}
+                  frameId={user.avatarFrameId}
+                  size="xs"
+                />
                 <span className="max-w-[130px] truncate">{user.name}</span>
               </Link>
               <form action={logoutAction} className="hidden sm:block">
@@ -176,10 +187,15 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
                   <Link
                     href={isAdmin ? "/admin" : "/panel"}
                     onClick={() => setOpen(false)}
-                    className="flex h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-transform active:scale-[0.98]"
+                    className="flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-gold-light to-gold px-4 text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-transform active:scale-[0.98]"
                   >
-                    {isAdmin ? <ShieldCheck className="h-5 w-5" /> : <LayoutDashboard className="h-5 w-5" />}
-                    {isAdmin ? "لوحة الإدارة" : "لوحة التحكم"}
+                    <AvatarWithFrame
+                      avatarUrl={user.avatarUrl}
+                      name={user.name}
+                      frameId={user.avatarFrameId}
+                      size="xs"
+                    />
+                    <span>{isAdmin ? "لوحة الإدارة" : "لوحة التحكم"}</span>
                   </Link>
                   <form action={logoutAction}>
                     <button
