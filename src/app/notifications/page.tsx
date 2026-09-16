@@ -43,7 +43,11 @@ export default async function NotificationsPage() {
 
   return (
     <StudentShell
-      user={{ name: user.profile.fullName, email: user.email }}
+      user={{
+        name: user.profile.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+      }}
       active="notifications"
       pendingCount={pendingCount}
       unreadCount={unreadCount}

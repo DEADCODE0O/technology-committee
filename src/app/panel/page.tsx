@@ -173,7 +173,12 @@ export default async function StudentDashboardPage() {
 
   return (
     <StudentShell
-      user={{ name: profile.fullName, email: user.email }}
+      user={{
+        name: profile.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        level: progress.level,
+      }}
       active="dashboard"
       pendingCount={pendingRequests.length}
       unreadCount={notifications.unreadCount}

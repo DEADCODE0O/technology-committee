@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
-// مكتبة الصور الرمزية الرسمية للجنة التكنولوجية (Preset Avatars)
-// تشكيلة مميزة وعالية الدقة (Vector SVGs) للشباب والبنات
+// مكتبة الصور الرمزية للطلاب (Student Avatar Characters)
+// شخصيات طلابية طبيعية ومتنوعة (أنشطة ثقافية، فنية، رياضية، واجتماعية)
 // ═══════════════════════════════════════════════════════════════
 
 export interface PresetAvatar {
@@ -9,108 +9,108 @@ export interface PresetAvatar {
   gender: "BOY" | "GIRL";
   description: string;
   src: string;
-  roleHint: string;
+  tag: string;
 }
 
 export const PRESET_AVATARS: PresetAvatar[] = [
   // ── شباب (Boys) ──
   {
-    id: "avatar_boy_cyber_dev",
-    name: "مبرمج سايبر وبايثون",
+    id: "avatar_boy_ziad",
+    name: "زياد",
     gender: "BOY",
-    description: "مطوّر شغوف بالأكواد والأمن السيبراني مع نظارات تقنية وسماعات محيطية.",
+    description: "شخصية هادئة ومحبة للقراءة والاطلاع والأنشطة الثقافية.",
     src: "/images/avatars/boy_cyber_dev.svg",
-    roleHint: "Cyber & Software Dev",
+    tag: "القراءة والاطلاع",
   },
   {
-    id: "avatar_boy_ai_engineer",
-    name: "مهندس ذكاء اصطناعي",
+    id: "avatar_boy_omar",
+    name: "عمر",
     gender: "BOY",
-    description: "مبتكر نماذج ذكاء اصطناعي وخوارزميات تعلم عميق بشارة عصبية متوهجة.",
+    description: "شاب نشيط ومحب للرياضة والعمل الجماعي وروح المبادرة في كل حدث.",
     src: "/images/avatars/boy_ai_engineer.svg",
-    roleHint: "AI & Machine Learning",
+    tag: "الرياضة والنشاط",
   },
   {
-    id: "avatar_boy_cloud_ninja",
-    name: "خبير سحابي ونظم",
+    id: "avatar_boy_kareem",
+    name: "كريم",
     gender: "BOY",
-    description: "محترف هندسة البنية التحتية السحابية والحاويات وأنظمة السيرفرات.",
+    description: "شاب مبدع وودود، مهتم بالفنون والتنظيم والتفاعل مع زملائه.",
     src: "/images/avatars/boy_cloud_ninja.svg",
-    roleHint: "Cloud & DevOps",
+    tag: "الفنون والتنظيم",
   },
   {
-    id: "avatar_boy_tech_leader",
-    name: "قائد تكنولوجي أنيق",
+    id: "avatar_boy_yassin",
+    name: "ياسين",
     gender: "BOY",
-    description: "قائد فرق تقنية وريادة أعمال برؤية استراتيجية ووسام اللجنة المذهب.",
+    description: "شخصية قيادية ومنظمة، يسعى للتميز وتقديم المساعدة في كل وقت.",
     src: "/images/avatars/boy_tech_leader.svg",
-    roleHint: "Tech Leadership",
+    tag: "القيادة والتنظيم",
   },
   {
-    id: "avatar_boy_game_creator",
-    name: "مطور ألعاب وروبوتات",
+    id: "avatar_boy_ahmed",
+    name: "أحمد",
     gender: "BOY",
-    description: "مبتكر عوالم ألعاب تفاعلية وبرمجة روبوتات مع هيدسيت احترافي.",
+    description: "طالب مرح ومبتسم، يحب التجربة والمشاركة في ورش العمل والفعاليات.",
     src: "/images/avatars/boy_game_creator.svg",
-    roleHint: "Game Dev & Robotics",
+    tag: "الأنشطة العامة",
   },
   {
-    id: "avatar_boy_space_explorer",
-    name: "مستكشف الفضاء والبيانات",
+    id: "avatar_boy_tariq",
+    name: "طارق",
     gender: "BOY",
-    description: "مستكشف بيانات ضخمة وعوالم سحابية مستقبلية برداء الفضاء السيبراني.",
+    description: "شخصية متفائلة وحيوية، شغوف بالمعرفة والاستكشاف وتطوير المهارات.",
     src: "/images/avatars/boy_space_explorer.svg",
-    roleHint: "Big Data & Future Tech",
+    tag: "المعرفة والمهارات",
   },
 
   // ── بنات (Girls) ──
   {
-    id: "avatar_girl_ai_coder",
-    name: "مبرمجة ذكاء اصطناعي",
+    id: "avatar_girl_mariam",
+    name: "مريم",
     gender: "GIRL",
-    description: "مطورة أنظمة ذكية وواجهات رقمية مع نظارات ذكية ولمسة أرجوانية أنيقة.",
+    description: "طالبة مجتهدة ومتفوقة، تحب المشاركة في الأنشطة الثقافية والتطوعية.",
     src: "/images/avatars/girl_ai_coder.svg",
-    roleHint: "AI & Full-Stack",
+    tag: "الثقافة والتطوع",
   },
   {
-    id: "avatar_girl_ui_designer",
-    name: "مصممة تجربة وواجهات UI/UX",
+    id: "avatar_girl_sarah",
+    name: "سارة",
     gender: "GIRL",
-    description: "مبدعة تجارب المستخدم والجمال الرقمي مع قلم التصميم الاحترافي.",
+    description: "شخصية فنية ومبدعة، تهتم بالتصميم والتعبير الإبداعي والرسم.",
     src: "/images/avatars/girl_ui_designer.svg",
-    roleHint: "Product & UI/UX Design",
+    tag: "الفنون والإبداع",
   },
   {
-    id: "avatar_girl_cyber_shield",
-    name: "خبيرة أمن سيبراني",
+    id: "avatar_girl_nour",
+    name: "نور",
     gender: "GIRL",
-    description: "حارسة الأنظمة الرقمية والمتخصصة في صد الهجمات والاختراق الأخلاقي.",
+    description: "طالبة حيوية ومتفائلة، تحب العمل الجماعي والأنشطة الاجتماعية والرياضية.",
     src: "/images/avatars/girl_cyber_shield.svg",
-    roleHint: "Cyber Security & Defense",
+    tag: "الرياضة والأنشطة",
   },
   {
-    id: "avatar_girl_tech_leader",
-    name: "قائدة تقنية وتنفيذية",
+    id: "avatar_girl_farida",
+    name: "فريدة",
     gender: "GIRL",
-    description: "قائدة ملهمة تدير المشروعات الرقمية برؤية ثاقبة وأناقة قيادية.",
+    description: "شخصية أنيقة ومنظمة، تتميز بالحضور والقيادة وحب المبادرة.",
     src: "/images/avatars/girl_tech_leader.svg",
-    roleHint: "Tech Lead & PM",
+    tag: "القيادة والمبادرة",
   },
   {
-    id: "avatar_girl_data_scientist",
-    name: "عالمة بيانات وخوارزميات",
+    id: "avatar_girl_salma",
+    name: "سلمى",
     gender: "GIRL",
-    description: "محللة بيانات دقيقة تستخرج الرؤى والأنماط المعقدة بنظارات تحليلية.",
+    description: "طالبة هادئة وذكية، شغوفة بالبحث والتعلم ومساعدة زميلاتها.",
     src: "/images/avatars/girl_data_scientist.svg",
-    roleHint: "Data Science & BI",
+    tag: "البحث والتعلم",
   },
   {
-    id: "avatar_girl_cloud_architect",
-    name: "مهندسة حلول سحابية",
+    id: "avatar_girl_laila",
+    name: "ليلى",
     gender: "GIRL",
-    description: "معمارية أنظمة متصلة وسحابية عالية التوافر بسماعات استوديو تقنية.",
+    description: "طالبة إيجابية وملهمة، تحب الأنشطة المتنوعة وصنع أثر جميل في كل مكان.",
     src: "/images/avatars/girl_cloud_architect.svg",
-    roleHint: "Cloud Solutions Architect",
+    tag: "المشاركة الإيجابية",
   },
 ];
 

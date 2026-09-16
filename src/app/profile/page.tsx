@@ -138,21 +138,6 @@ export default async function ProfilePage() {
                       visible={heartsVisible}
                     />
                   </h1>
-                  {avatarFramesVisible && (
-                    equippedFrame ? (
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold border ${
-                          TIER_CONFIG[equippedFrame.tier].badgeCls
-                        }`}
-                      >
-                        {equippedFrame.name}
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-white/[0.05] border border-white/10 px-2.5 py-0.5 text-[10px] font-bold text-zinc-400">
-                        إطار افتراضي
-                      </span>
-                    )
-                  )}
                 </div>
                 <p className="mt-1.5 flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-zinc-500 dark:text-zinc-400">
                   <GraduationCap className="h-4 w-4 text-gold" />
@@ -168,13 +153,6 @@ export default async function ProfilePage() {
                 <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400 max-w-md leading-6">
                   {accountFlair.stageDescription}
                 </p>
-                {avatarFramesVisible && (
-                  <p className="mt-2 text-xs text-zinc-400 max-w-md leading-6">
-                    {equippedFrame
-                      ? equippedFrame.description
-                      : "ارتقِ بمستواك وشارك في الأنشطة لفتح أندر الإطارات الملكية ثلاثية الأبعاد."}
-                  </p>
-                )}
               </div>
             </div>
 

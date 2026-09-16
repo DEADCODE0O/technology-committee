@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { getAvatarFrame, type AvatarFrame } from "@/lib/avatar-frames";
 import { cleanAvatarUrl } from "@/lib/utils";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
@@ -7,7 +6,7 @@ type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 interface AvatarWithFrameProps {
   avatarUrl?: string | null;
   name: string;
-  frameId?: string | null;
+  frameId?: string | null; // محتفظ به للتوافقية
   size?: AvatarSize;
   level?: number;
   showLevel?: boolean;
@@ -17,74 +16,46 @@ interface AvatarWithFrameProps {
 const SIZE_MAP: Record<
   AvatarSize,
   {
-    containerWithFrame: string;
-    containerNoFrame: string;
-    avatarWithFrame: string;
-    avatarNoFrame: string;
-    avatarPxWithFrame: number;
-    avatarPxNoFrame: number;
-    frameSize: string;
+    container: string;
+    px: number;
+    initialsText: string;
     badgeText: string;
   }
 > = {
   xs: {
-    containerWithFrame: "w-8 h-8",
-    containerNoFrame: "w-6 h-6",
-    avatarWithFrame: "w-4.5 h-4.5",
-    avatarNoFrame: "w-6 h-6",
-    avatarPxWithFrame: 18,
-    avatarPxNoFrame: 24,
-    frameSize: "w-full h-full",
+    container: "w-7 h-7",
+    px: 28,
+    initialsText: "text-[10px]",
     badgeText: "text-[7px] px-0.5 py-0 -bottom-1",
   },
   sm: {
-    containerWithFrame: "w-14 h-14",
-    containerNoFrame: "w-9 h-9",
-    avatarWithFrame: "w-7 h-7",
-    avatarNoFrame: "w-9 h-9",
-    avatarPxWithFrame: 28,
-    avatarPxNoFrame: 36,
-    frameSize: "w-full h-full",
+    container: "w-9 h-9",
+    px: 36,
+    initialsText: "text-xs",
     badgeText: "text-[8px] px-1 py-0 -bottom-1",
   },
   md: {
-    containerWithFrame: "w-20 h-20",
-    containerNoFrame: "w-11 h-11",
-    avatarWithFrame: "w-10 h-10",
-    avatarNoFrame: "w-11 h-11",
-    avatarPxWithFrame: 40,
-    avatarPxNoFrame: 44,
-    frameSize: "w-full h-full",
+    container: "w-11 h-11",
+    px: 44,
+    initialsText: "text-sm",
     badgeText: "text-[9px] px-1.5 py-0.5 -bottom-1.5",
   },
   lg: {
-    containerWithFrame: "w-28 h-28",
-    containerNoFrame: "w-14 h-14",
-    avatarWithFrame: "w-14 h-14",
-    avatarNoFrame: "w-14 h-14",
-    avatarPxWithFrame: 56,
-    avatarPxNoFrame: 56,
-    frameSize: "w-full h-full",
+    container: "w-16 h-16",
+    px: 64,
+    initialsText: "text-base",
     badgeText: "text-[10px] px-2 py-0.5 -bottom-2",
   },
   xl: {
-    containerWithFrame: "w-36 h-36",
-    containerNoFrame: "w-20 h-20",
-    avatarWithFrame: "w-18 h-18",
-    avatarNoFrame: "w-20 h-20",
-    avatarPxWithFrame: 72,
-    avatarPxNoFrame: 80,
-    frameSize: "w-full h-full",
+    container: "w-20 h-20",
+    px: 80,
+    initialsText: "text-lg",
     badgeText: "text-xs px-2.5 py-0.5 -bottom-2.5",
   },
   "2xl": {
-    containerWithFrame: "w-44 h-44",
-    containerNoFrame: "w-24 h-24",
-    avatarWithFrame: "w-22 h-22",
-    avatarNoFrame: "w-24 h-24",
-    avatarPxWithFrame: 88,
-    avatarPxNoFrame: 96,
-    frameSize: "w-full h-full",
+    container: "w-24 h-24",
+    px: 96,
+    initialsText: "text-xl",
     badgeText: "text-xs px-3 py-1 -bottom-3",
   },
 };
@@ -101,104 +72,44 @@ function getInitials(name: string): string {
 export function AvatarWithFrame({
   avatarUrl,
   name,
-  frameId,
   size = "md",
   level,
   showLevel = false,
   className = "",
 }: AvatarWithFrameProps) {
-  const frame = getAvatarFrame(frameId);
   const cfg = SIZE_MAP[size];
   const initials = getInitials(name);
-  const hasFrame = Boolean(frame && frame.imageSrc);
 
-  // أنيميشن ضوئي هادئ وثابت دون أي حركة تزعج المستخدم أو تخرج عن الحدود
-  const animClass = frame
-    ? frame.animationType === "pulse"
-      ? "anim-frame-pulse"
-      : frame.animationType === "spin-slow"
-      ? "anim-frame-pulse"
-      : frame.animationType === "neon-flow"
-      ? "anim-frame-neon"
-      : frame.animationType === "fire-flicker"
-      ? "anim-frame-fire"
-      : frame.animationType === "wings-float"
-      ? "anim-frame-wings"
-      : frame.animationType === "shimmer"
-      ? "anim-frame-shimmer"
-      : frame.animationType === "cosmic-orbit"
-      ? "anim-frame-orbit"
-      : frame.animationType === "royal-crest"
-      ? "anim-frame-royal"
-      : "anim-frame-pulse"
-    : "";
-
-  const containerCls = hasFrame ? cfg.containerWithFrame : cfg.containerNoFrame;
-  const avatarCls = hasFrame ? cfg.avatarWithFrame : cfg.avatarNoFrame;
-  const avatarPx = hasFrame ? cfg.avatarPxWithFrame : cfg.avatarPxNoFrame;
-
-  // تنظيف وترقية رابط الصورة ليظهر بأعلى دقة ممكنة مع الحفاظ على توقيع فيسبوك
+  // ترقية رابط الصورة وتنظيفه
   const highResAvatarUrl = cleanAvatarUrl(avatarUrl);
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center shrink-0 select-none ${containerCls} ${className}`}
-      style={
-        frame
-          ? ({
-              "--frame-glow": frame.glowColor,
-              "--frame-color": frame.color,
-            } as React.CSSProperties)
-          : undefined
-      }
+      className={`relative inline-flex items-center justify-center shrink-0 select-none ${cfg.container} ${className}`}
     >
-      {/* ── الصورة الرمزية للمستخدم (Avatar Circle) ── */}
-      <div
-        className={`relative overflow-hidden rounded-full bg-muted flex items-center justify-center border border-border shadow-inner z-10 dark:bg-zinc-900 dark:border-white/10 ${avatarCls}`}
-      >
+      {/* ── الدائرة الرئيسية للأفاتار (Clean Round Avatar) ── */}
+      <div className="relative h-full w-full overflow-hidden rounded-full border border-border/80 bg-muted/60 shadow-sm flex items-center justify-center dark:border-white/15 dark:bg-zinc-900/80">
         {highResAvatarUrl ? (
           <Image
             src={highResAvatarUrl}
             alt={name}
-            width={avatarPx * 2}
-            height={avatarPx * 2}
+            width={cfg.px * 2}
+            height={cfg.px * 2}
             quality={95}
             unoptimized={highResAvatarUrl.startsWith("http") || highResAvatarUrl.endsWith(".svg")}
             className="h-full w-full object-cover"
           />
         ) : (
-          <span className="font-extrabold text-gold-deep dark:text-zinc-300 text-xs sm:text-sm select-none">
+          <span className={`font-extrabold text-gold-deep dark:text-gold-light select-none ${cfg.initialsText}`}>
             {initials}
           </span>
         )}
       </div>
 
-      {/* ── مجسم الإطار ثلاثي الأبعاد الواقعي (3D VIP Graphic Frame) ── */}
-      {hasFrame && frame ? (
-        <div
-          className={`pointer-events-none absolute flex items-center justify-center z-20 avatar-frame-layer ${cfg.frameSize}`}
-          aria-hidden="true"
-        >
-          <img
-            src={frame.imageSrc}
-            alt=""
-            className={`w-full h-full object-contain select-none transition-transform duration-300 ${animClass}`}
-            style={{
-              filter: frame.filter
-                ? `${frame.filter} drop-shadow(0 0 8px ${frame.glowColor}90)`
-                : `drop-shadow(0 0 8px ${frame.glowColor}90)`,
-            }}
-          />
-        </div>
-      ) : (
-        /* إطار هادئ افتراضي عند عدم وجود إطار مخصص */
-        <div className="pointer-events-none absolute inset-0 rounded-full border border-border dark:border-white/10" />
-      )}
-
       {/* ── شارة المستوى السفلي (Lv.X) ── */}
       {showLevel && typeof level === "number" && (
         <span
-          className={`absolute z-30 rounded-full font-black text-night shadow-lg tracking-tight border border-white/40 bg-gradient-to-r from-gold to-gold-light ${cfg.badgeText}`}
+          className={`absolute z-20 rounded-full font-black text-night shadow-md tracking-tight border border-white/50 bg-gradient-to-r from-gold to-gold-light ${cfg.badgeText}`}
         >
           Lv.{level}
         </span>
