@@ -19,6 +19,7 @@ import { parseTarget, findTargetedStudentIds, isTargetEveryone, type StudentTarg
 import { parseTaskPool } from "@/lib/tasks";
 import { stampSeasonId, evaluateQuests } from "@/lib/progress";
 import { TASK_SUBMISSION_TYPES, TASK_DISTRIBUTIONS } from "@/lib/constants";
+import { parseDateInput } from "@/lib/dates";
 
 // توزيع حتمي بذر ثابت (taskId) — نفس النتيجة مهما أعيد الحساب
 function seededShuffle<T>(items: T[], seed: string): T[] {
@@ -95,8 +96,8 @@ function validateTaskInput(input: TaskInput): string | null {
   if ((input.xpReward ?? 0) < 0 || (input.xpReward ?? 0) > 1000) return "مكافأة XP بين 0 و1000";
   if ((input.pointsReward ?? 0) < 0 || (input.pointsReward ?? 0) > 1000) return "مكافأة النقاط بين 0 و1000";
   if (input.dueAt) {
-    const due = new Date(input.dueAt);
-    if (isNaN(due.getTime())) return "موعد التسليم غير صالح";
+    const due = parseDateInput(input.dueAt);
+    if (!due || isNaN(due.getTime())) return "موعد التسليم غير صالح";
   }
   return null;
 }
@@ -120,7 +121,7 @@ export async function saveTask(input: TaskInput): Promise<{ ok: boolean; id?: st
       activityId: input.activityId || null,
       runId: input.runId || null,
       sessionId: input.sessionId || null,
-      dueAt: input.dueAt ? new Date(input.dueAt) : null,
+      dueAt: parseDateInput(input.dueAt),
       xpReward: input.xpReward ?? 0,
       pointsReward: input.pointsReward ?? 0,
     };

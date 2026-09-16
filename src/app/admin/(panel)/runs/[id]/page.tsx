@@ -69,7 +69,7 @@ export default async function AdminRunPage({ params }: { params: Promise<{ id: s
               <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-gold/60" /> {totalRegistered} تسجيلًا · {run.sessions.length} جلسات</span>
               <span className="flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 text-gold/60" />
                 {run.registrationOpensAt
-                  ? `تسجيل: ${new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" }).format(run.registrationOpensAt)} → ${run.registrationClosesAt ? new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" }).format(run.registrationClosesAt) : "مفتوح"}`
+                  ? `تسجيل: ${new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short" }).format(run.registrationOpensAt)} → ${run.registrationClosesAt ? new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short" }).format(run.registrationClosesAt) : "مفتوح"}`
                   : "بلا نافذة تسجيل"}
               </span>
             </div>

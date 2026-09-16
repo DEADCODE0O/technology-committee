@@ -11,6 +11,7 @@ import { requireActionUser } from "@/lib/auth";
 import { logAudit } from "@/lib/platform";
 import { MODULES } from "@/lib/permissions";
 import { ACTIVITY_TYPES, ACTIVITY_PUBLISH, ACTIVITY_LEVELS, FORM_FIELD_TYPES } from "@/lib/constants";
+import { parseDateInput } from "@/lib/dates";
 
 const typeValues = ACTIVITY_TYPES.map((t) => t.value as string);
 const publishValues = ACTIVITY_PUBLISH.map((p) => p.value as string);
@@ -31,11 +32,7 @@ function refreshAll(ids?: { activityId?: string; sessionId?: string }) {
   }
 }
 
-function parseDate(v?: string | null): Date | null {
-  if (!v || typeof v !== "string" || !v.trim()) return null;
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? null : d;
-}
+const parseDate = parseDateInput;
 
 // ─── البرامج ─────────────────────────────────────────────────
 

@@ -118,18 +118,14 @@ export async function getSessionUserId(): Promise<string | null> {
 // لا نغيّر id صف قائم أبدًا — يبقى التاريخ (التسجيل/الحضور/النقاط) سليمًا.
 
 export function cleanAvatarUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
+  if (!url || url === "INITIALS" || url.trim() === "") return null;
   // Google: ترقية الصورة المصغرة بأمان إلى دقة فائقة =s720-c
   if (url.includes("googleusercontent.com")) {
     return url.replace(/=s\d+(-c)?$/i, "=s720-c");
   }
-  // Facebook platform-lookaside: استخراج asid وطلب الصورة بدقة 720x720 فائقة الوضوح من Graph API
+  // Facebook platform-lookaside: الرابط موقع بتوقيع رقمي (hash) من فيسبوك ويجب تركه دون تعديل
   if (url.includes("platform-lookaside.fbsbx.com") || url.includes("fbsbx.com")) {
-    const match = url.match(/asid=(\d+)/);
-    if (match && match[1]) {
-      return `https://graph.facebook.com/${match[1]}/picture?width=720&height=720`;
-    }
-    return url.replace(/height=500&width=500/i, "height=50&width=50");
+    return url;
   }
   return url;
 }
@@ -173,16 +169,31 @@ export async function resolveSupabaseAppUser(
   // 1) نفس الـ UUID
   const byId = await db.user.findUnique({ where: { id: authUser.id } });
   if (byId) {
-    const currentClean = cleanAvatarUrl(byId.avatarUrl);
-    const needsAvatarUpdate =
-      (avatar && byId.avatarUrl !== avatar) ||
-      (byId.avatarUrl && (byId.avatarUrl.includes("height=500&width=500") || byId.avatarUrl.includes("=s96-c")));
+    const isPresetAvatar = byId.avatarUrl?.startsWith("/avatars/");
+    const isInitials = byId.avatarUrl === "INITIALS";
+    const isOldBrokenFb = byId.avatarUrl?.includes("graph.facebook.com") || byId.avatarUrl?.includes("height=500&width=500");
+    const isTinyGoogle = byId.avatarUrl?.includes("=s96-c");
+
+    let updatedAvatarUrl = byId.avatarUrl;
+    let needsAvatarUpdate = false;
+
+    // لا نستبدل الصورة أبدًا إذا اختار الطالب بنفسه شخصية أفاتار أو الحروف الأولى
+    if (!isPresetAvatar && !isInitials) {
+      if (!byId.avatarUrl && avatar) {
+        updatedAvatarUrl = avatar;
+        needsAvatarUpdate = true;
+      } else if ((isOldBrokenFb || isTinyGoogle) && avatar) {
+        updatedAvatarUrl = avatar;
+        needsAvatarUpdate = true;
+      }
+    }
+
     const needsProviderUpdate = byId.provider !== userProvider && userProvider !== "EMAIL";
     if (needsAvatarUpdate || needsProviderUpdate) {
       return db.user.update({
         where: { id: byId.id },
         data: {
-          avatarUrl: avatar ?? currentClean,
+          avatarUrl: updatedAvatarUrl,
           provider: needsProviderUpdate ? userProvider : byId.provider,
         },
       });
@@ -248,6 +259,7 @@ export type SessionUser = {
   provider?: string;
   suggestedName?: string | null;
   avatarUrl?: string | null;
+  accountAvatarUrl?: string | null; // صورة الحساب الأصلية المستوردة من OAuth (Google/Facebook)
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
   profile: {
@@ -273,6 +285,7 @@ type DbUserWithProfile = {
   provider?: string;
   suggestedName?: string | null;
   avatarUrl?: string | null;
+  accountAvatarUrl?: string | null;
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
   profile: {
@@ -299,6 +312,7 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
     provider: user.provider ?? "EMAIL",
     suggestedName: user.suggestedName ?? null,
     avatarUrl: user.avatarUrl ?? null,
+    accountAvatarUrl: user.accountAvatarUrl ?? null,
     avatarFrameId: user.avatarFrameId ?? null,
     profileThemeId: user.profileThemeId ?? null,
     profile: user.profile
@@ -346,7 +360,19 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
         }
       }
       const metaAvatar = cleanAvatarUrl(rawMetaAvatar);
-      const finalAvatar = cleanAvatarUrl(row.avatarUrl) || metaAvatar;
+
+      // تحديد الصورة النشطة المعروضة:
+      // 1) إذا اختار الطالب يدويًا "INITIALS" تكون null لتعرض الحروف
+      // 2) إذا اختار الطالب أفاتار (/avatars/...) أو أي رابط مخصص نستخدمه
+      // 3) إذا لم يسبق للطالب تعيين صورة نستخدم صورة الحساب (metaAvatar)
+      let finalAvatar: string | null = null;
+      if (row.avatarUrl === "INITIALS") {
+        finalAvatar = null;
+      } else if (row.avatarUrl) {
+        finalAvatar = cleanAvatarUrl(row.avatarUrl);
+      } else {
+        finalAvatar = metaAvatar;
+      }
 
       const metaName =
         typeof meta.full_name === "string" && meta.full_name.trim()
@@ -357,7 +383,13 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
       // اجلب الملف المرتبط (إن وُجد)
       const profile = await db.studentProfile.findUnique({ where: { userId: row.id } });
-      return toSessionUser({ ...row, avatarUrl: finalAvatar, suggestedName: metaName, profile });
+      return toSessionUser({
+        ...row,
+        avatarUrl: finalAvatar,
+        accountAvatarUrl: metaAvatar,
+        suggestedName: metaName,
+        profile,
+      });
     }
 
     // ── وضع التطوير المحلي: JWT ──
@@ -370,7 +402,11 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     });
     if (!user || user.status === "SUSPENDED") return null;
 
-    return toSessionUser(user);
+    return toSessionUser({
+      ...user,
+      avatarUrl: user.avatarUrl === "INITIALS" ? null : cleanAvatarUrl(user.avatarUrl),
+      accountAvatarUrl: user.avatarUrl,
+    });
   } catch (err) {
     console.error("getCurrentUser error:", err);
     return null;

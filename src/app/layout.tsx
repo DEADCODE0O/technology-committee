@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { cookies } from "next/headers";
 import { Cairo, Outfit } from "next/font/google";
 import { Toaster } from "sonner";
@@ -115,6 +116,28 @@ export default async function RootLayout({
             />
           </LanguageProvider>
         </ThemeProvider>
+
+        {/* ── Facebook JavaScript SDK ── */}
+        <Script id="facebook-jssdk" strategy="afterInteractive">
+          {`
+            window.fbAsyncInit = function() {
+              FB.init({
+                appId      : '1625840098924106',
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v19.0'
+              });
+              FB.AppEvents.logPageView();
+            };
+            (function(d, s, id){
+               var js, fjs = d.getElementsByTagName(s)[0];
+               if (d.getElementById(id)) {return;}
+               js = d.createElement(s); js.id = id;
+               js.src = "https://connect.facebook.net/ar_AR/sdk.js";
+               fjs.parentNode.insertBefore(js, fjs);
+             }(document, 'script', 'facebook-jssdk'));
+          `}
+        </Script>
       </body>
     </html>
   );

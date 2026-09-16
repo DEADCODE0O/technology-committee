@@ -97,6 +97,7 @@ export function AvatarWithFrame({
             height={cfg.px * 2}
             quality={95}
             unoptimized={highResAvatarUrl.startsWith("http") || highResAvatarUrl.endsWith(".svg")}
+            referrerPolicy="no-referrer"
             className="h-full w-full object-cover"
           />
         ) : (

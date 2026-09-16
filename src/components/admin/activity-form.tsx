@@ -8,7 +8,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Save, ImagePlus, Link2, Upload, X } from "lucide-react";
+import { Loader2, Save, ImagePlus, Link2, Upload, X, Maximize2 } from "lucide-react";
 import { saveActivity, type ActivityInput } from "@/actions/activities";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ACTIVITY_TYPES, ACTIVITY_PUBLISH, ACTIVITY_LEVELS } from "@/lib/constants";
+import { ImagePreviewModal } from "@/components/admin/image-preview-modal";
 
 export type ActivityFormValues = {
   id?: string;
@@ -40,6 +41,7 @@ export function ActivityForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [uploading, setUploading] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [v, setV] = useState<ActivityFormValues>(
     initial ?? { type: "WORKSHOP", programId: "", title: "", teaser: "", description: "", image: "", presenter: "", level: "", publish: "PUBLISHED" }
   );
@@ -177,16 +179,26 @@ export function ActivityForm({
 
         {/* المعاينة */}
         {previewSrc && (
-          <div className="relative overflow-hidden rounded-2xl border border-gold/25">
+          <div className="group relative overflow-hidden rounded-2xl border border-gold/25">
             <img src={previewSrc} alt="معاينة صورة النشاط" className="aspect-[16/7] w-full object-cover" />
-            <button
-              type="button"
-              onClick={clearImage}
-              title="إزالة الصورة"
-              className="absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-night/80 text-red-300 backdrop-blur transition-colors hover:bg-red-500/30"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="absolute end-2 top-2 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-gold/40 bg-night/80 px-3 py-1.5 text-xs font-black text-gold-light backdrop-blur hover:bg-gold hover:text-night transition-colors"
+                title="فحص وتكبير وتحميل الصورة"
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> فحص وتكبير وتحميل
+              </button>
+              <button
+                type="button"
+                onClick={clearImage}
+                title="إزالة الصورة"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-night/80 text-red-300 backdrop-blur transition-colors hover:bg-red-500/30"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
             <span className="absolute bottom-2 start-2 rounded-full bg-night/70 px-2.5 py-1 text-[10px] font-bold text-zinc-300 backdrop-blur">
               {isLocal ? "صورة مرفوعة على السيرفر" : "صورة من رابط خارجي"}
             </span>
@@ -248,6 +260,14 @@ export function ActivityForm({
         {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
         {v.id ? "حفظ التعديلات" : "إنشاء النشاط"}
       </Button>
+
+      {/* نافذة فحص وتكبير وتحميل الصورة */}
+      <ImagePreviewModal
+        isOpen={showPreviewModal}
+        src={v.image || null}
+        title={`صورة النشاط: ${v.title || "النشاط"}`}
+        onClose={() => setShowPreviewModal(false)}
+      />
     </div>
   );
 }

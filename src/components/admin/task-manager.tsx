@@ -19,6 +19,7 @@ import {
   TASK_SUBMISSION_TYPES, TASK_DISTRIBUTIONS, TASK_STATUS_LABELS,
   TASK_SUBMISSION_TYPE_LABELS, TASK_DISTRIBUTION_LABELS,
 } from "@/lib/constants";
+import { toLocalInput, toUtcIso } from "@/lib/dates";
 
 // ═══════════════════════════════════════════════════════════════
 //  مدير المهام — إنشاء/تعديل بمعاينة جمهور حية + نشر/إغلاق
@@ -176,7 +177,7 @@ export function TaskManager({
     } catch {
       setLinks([]);
     }
-    setDueAt(task.dueAt ? new Date(task.dueAt).toISOString().slice(0, 16) : "");
+    setDueAt(toLocalInput(task.dueAt));
     setXpReward(String(task.xpReward ?? 20));
     setPointsReward(String(task.pointsReward ?? 0));
     setSeasonId(task.seasonId ?? "");
@@ -219,7 +220,7 @@ export function TaskManager({
         activityId: activityId || null,
         runId: runId || null,
         sessionId: sessionId || null,
-        dueAt: dueAt || null,
+        dueAt: toUtcIso(dueAt) || null,
         xpReward: Number(xpReward) || 0,
         pointsReward: Number(pointsReward) || 0,
       });
@@ -552,7 +553,7 @@ export function TaskManager({
                   <p className="text-xs leading-6 text-zinc-400">
                     <Users className="me-1 inline h-3.5 w-3.5 text-gold/70" />
                     الجمهور: {t.targetDesc}
-                    {t.dueAt && <span className="ms-3">· الموعد: {new Intl.DateTimeFormat("ar-EG", { dateStyle: "short", timeStyle: "short" }).format(new Date(t.dueAt))}</span>}
+                    {t.dueAt && <span className="ms-3">· الموعد: {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short", timeStyle: "short" }).format(new Date(t.dueAt))}</span>}
                     {t.xpReward > 0 && <span className="ms-3 text-emerald-300">+{t.xpReward} XP</span>}
                   </p>
                   <div className="flex flex-wrap gap-2">

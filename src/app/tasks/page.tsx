@@ -13,6 +13,7 @@ export const dynamic = "force-dynamic";
 function fmtDue(d: Date | null): string {
   if (!d) return "بلا موعد محدد";
   return new Intl.DateTimeFormat("ar-EG", {
+    timeZone: "Africa/Cairo",
     day: "numeric", month: "long", hour: "numeric", minute: "2-digit",
   }).format(d);
 }

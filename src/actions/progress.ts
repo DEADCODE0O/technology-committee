@@ -11,6 +11,7 @@ import { requireActionUser } from "@/lib/auth";
 import { logAudit } from "@/lib/platform";
 import { MODULES } from "@/lib/permissions";
 import { QUEST_KINDS, REWARD_TYPES, FEATURED_KINDS } from "@/lib/constants";
+import { parseDateInput } from "@/lib/dates";
 
 function refreshAll() {
   revalidatePath("/leaderboard");
@@ -32,9 +33,9 @@ export async function saveSeason(input: {
   try {
     const admin = await requireActionUser(MODULES.POINTS, "manage");
     if (!input.name?.trim()) return { ok: false, error: "اسم الموسم مطلوب" };
-    const start = new Date(input.startAt);
-    if (isNaN(start.getTime())) return { ok: false, error: "تاريخ البداية غير صالح" };
-    const end = input.endAt ? new Date(input.endAt) : null;
+    const start = parseDateInput(input.startAt);
+    if (!start) return { ok: false, error: "تاريخ البداية غير صالح" };
+    const end = parseDateInput(input.endAt);
     if (end && end <= start) return { ok: false, error: "نهاية الموسم يجب أن تكون بعد بدايته" };
 
     const data = {

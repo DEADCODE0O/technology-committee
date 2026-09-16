@@ -46,7 +46,14 @@ export async function GET(req: NextRequest) {
     "media.licdn.com",
     "pbs.twimg.com",
     "res.cloudinary.com",
+    "platform-lookaside.fbsbx.com",
+    "fbsbx.com",
+    "graph.facebook.com",
+    "scontent.fbsbx.com",
+    "supabase.co",
   ];
+  const isDownload = req.nextUrl.searchParams.get("download") === "1";
+
   for (const candidate of driveCandidates) {
     let host = "";
     try { host = new URL(candidate).hostname; } catch { continue; }
@@ -58,7 +65,8 @@ export async function GET(req: NextRequest) {
     ) {
       return NextResponse.json({ error: "blocked host" }, { status: 400 });
     }
-    if (!allowed.includes(host)) {
+    const isAllowedHost = allowed.some((a) => host === a || host.endsWith("." + a));
+    if (!isAllowedHost) {
       // مجال غير معروف: نرفض (القائمة البيضاء أبسط وأأمن — الصور تُرفع على السيرفر أو درايف)
       return NextResponse.json({ error: "host not allowed" }, { status: 400 });
     }
@@ -91,13 +99,23 @@ export async function GET(req: NextRequest) {
       if (bytes.byteLength > MAX_BYTES) {
         return NextResponse.json({ error: "too large" }, { status: 413 });
       }
-      return new NextResponse(bytes, {
-        headers: {
-          "Content-Type": contentType,
-          // تخزين مؤقت ساعة على مستوى المتصفح + يوم على البروكسي
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
-        },
-      });
+
+      let ext = "jpg";
+      if (contentType.includes("png")) ext = "png";
+      else if (contentType.includes("webp")) ext = "webp";
+      else if (contentType.includes("gif")) ext = "gif";
+
+      const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        // تخزين مؤقت ساعة على مستوى المتصفح + يوم على البروكسي
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      };
+
+      if (isDownload) {
+        headers["Content-Disposition"] = `attachment; filename="image_${Date.now()}.${ext}"`;
+      }
+
+      return new NextResponse(bytes, { headers });
     } catch {
       continue; // جرب البديل التالي
     }

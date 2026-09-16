@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TALENT_CATEGORIES, TALENT_OPTIONS, GRADES, SECTIONS } from "@/lib/constants";
 import { resolveImageSrc } from "@/lib/links";
+import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 
 export type AdminTalentRow = {
   id: string;
@@ -311,12 +312,13 @@ export function TalentManager({
             </div>
             {v.imageUrl && (
               <div className="flex items-center gap-3 rounded-xl border border-gold/15 bg-gold/[0.04] p-3">
-                {(() => {
-                  const src = resolveImageSrc(v.imageUrl);
-                  return src ? (
-                    <img src={src} alt="معاينة" className="h-16 w-16 rounded-xl border border-gold/25 object-cover" />
-                  ) : null;
-                })()}
+                <ImageWithPreview
+                  src={v.imageUrl}
+                  alt="معاينة موهبة"
+                  title={`صورة الموهبة: ${v.personName || "الموهبة"}`}
+                  className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-gold/25 cursor-pointer"
+                  imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
                 <p className="min-w-0 flex-1 truncate text-[11px] text-zinc-500" dir="ltr">{v.imageUrl}</p>
                 <button type="button" onClick={() => setV((p) => ({ ...p, imageUrl: "" }))} className="shrink-0 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-2 py-1 text-[11px] font-bold text-red-300 hover:bg-red-500/10">
                   <Trash2 className="h-3.5 w-3.5" />
@@ -365,9 +367,15 @@ export function TalentManager({
               <div key={t.id} className="overflow-hidden rounded-3xl border border-white/[0.06] bg-surface">
                 {imgSrc ? (
                   <div className="relative h-36 w-full overflow-hidden">
-                    <img src={imgSrc} alt={t.studentLabel ?? t.personName ?? ""} className="h-full w-full object-cover" />
+                    <ImageWithPreview
+                      src={t.imageUrl}
+                      alt={t.studentLabel ?? t.personName ?? ""}
+                      title={`موهبة: ${t.studentLabel ?? t.personName ?? ""}`}
+                      className="group relative h-full w-full overflow-hidden cursor-pointer"
+                      imgClassName="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
                     {t.featured && (
-                      <span className="absolute start-2 top-2 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-night/80 px-2 py-1 text-[10px] font-extrabold text-gold-light backdrop-blur">
+                      <span className="pointer-events-none absolute start-2 top-2 z-10 inline-flex items-center gap-1 rounded-full border border-gold/40 bg-night/80 px-2 py-1 text-[10px] font-extrabold text-gold-light backdrop-blur">
                         <Sparkles className="h-3 w-3" /> مميزة
                       </span>
                     )}

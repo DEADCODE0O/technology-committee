@@ -15,6 +15,7 @@ import { detectLinkType, safeExternalUrl } from "@/lib/links";
 import {
   markNotificationRead, markAllNotificationsRead, dismissNotification,
 } from "@/lib/notifications";
+import { parseDateInput, toLocalInput } from "@/lib/dates";
 
 // ─── إدارة: إرسال إشعار ──────────────────────────────────────
 
@@ -100,8 +101,8 @@ export async function sendNotification(
 
     let expiresAt: Date | null = null;
     if (input.expiresAt) {
-      expiresAt = new Date(input.expiresAt);
-      if (isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
+      expiresAt = parseDateInput(input.expiresAt);
+      if (!expiresAt || isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
     }
 
     // التحقق من الجمهور قبل الإرسال (حتى لو 0 حالياً، يُحفظ الإشعار ليصل للطلاب الجدد فور تسجيلهم)
@@ -234,8 +235,8 @@ export async function updateNotification(
 
     let expiresAt: Date | null = null;
     if (input.expiresAt) {
-      expiresAt = new Date(input.expiresAt);
-      if (isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
+      expiresAt = parseDateInput(input.expiresAt);
+      if (!expiresAt || isNaN(expiresAt.getTime())) return { ok: false, error: "تاريخ الانتهاء غير صحيح" };
     }
 
     // التحقق من الجمهور الجديد (يُحفظ حتى لو 0 طالب حالياً)
@@ -325,7 +326,7 @@ export async function getNotificationForEdit(
         ctaLabel: n.ctaLabel ?? "",
         ctaUrl: n.ctaUrl ?? "",
         ctaNewTab: n.ctaNewTab,
-        expiresAt: n.expiresAt ? n.expiresAt.toISOString().slice(0, 16) : "",
+        expiresAt: n.expiresAt ? toLocalInput(n.expiresAt) : "",
         target: parseTarget(n.target),
         createdAt: n.createdAt.toISOString(),
       },

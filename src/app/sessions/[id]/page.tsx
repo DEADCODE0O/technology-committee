@@ -20,16 +20,17 @@ import { isAdminRole } from "@/lib/permissions";
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
 import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
+import { formatCairoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
 const FALLBACK_IMAGE = "/images/hero-bg.webp";
 
 function formatDateAr(d: Date): string {
-  return new Intl.DateTimeFormat("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(d);
+  return formatCairoDate(d, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 function formatTimeAr(d: Date): string {
-  return new Intl.DateTimeFormat("ar-EG", { hour: "numeric", minute: "2-digit", hour12: true }).format(d);
+  return formatCairoDate(d, { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 export default async function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -509,7 +510,7 @@ async function OtherSessions({ sessionId, activityId }: { sessionId: string; act
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">{s.title}</p>
                 <p className="mt-0.5 text-[11px] text-zinc-600 dark:text-zinc-500">
-                  {new Intl.DateTimeFormat("ar-EG", { weekday: "short", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", hour12: true }).format(s.startsAt)}
+                  {formatCairoDate(s.startsAt, { weekday: "short", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", hour12: true })}
                   {done ? " · انتهت" : ""}
                 </p>
               </div>

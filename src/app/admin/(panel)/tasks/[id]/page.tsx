@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Users, Send, CheckCircle2, Clock, ExternalLink, FileText, Link2 } from "lucide-react";
+import { ArrowRight, Users, Send, CheckCircle2, Clock, ExternalLink, FileText, Link2, Download } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { MODULES } from "@/lib/permissions";
@@ -12,7 +12,8 @@ import {
   TASK_SUBMISSION_TYPE_LABELS, TASK_DISTRIBUTION_LABELS, TASK_STATUS_LABELS,
   TASK_SUBMISSION_STATUS_LABELS,
 } from "@/lib/constants";
-import { safeExternalUrl } from "@/lib/links";
+import { safeExternalUrl, isEmbeddableImage } from "@/lib/links";
+import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -69,7 +70,7 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
         <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500">
           <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-gold/60" /> {task.assignments.length} مكلَّفًا · {targetDesc}</span>
           {task.dueAt && (
-            <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gold/60" /> الموعد: {new Intl.DateTimeFormat("ar-EG", { dateStyle: "full", timeStyle: "short" }).format(task.dueAt)}</span>
+            <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5 text-gold/60" /> الموعد: {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "full", timeStyle: "short" }).format(task.dueAt)}</span>
           )}
           <span className="flex items-center gap-1.5"><Send className="h-3.5 w-3.5 text-gold/60" /> {withSub.length} تسليمًا · {pendingEval.length} بانتظار التقييم</span>
         </div>
@@ -172,12 +173,47 @@ export default async function AdminTaskDetailPage({ params }: { params: Promise<
                           </div>
                         )}
                         {sub.fileUrl && (
-                          <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-bold text-gold/80 hover:underline">
-                            <FileText className="h-3.5 w-3.5" /> الملف المرفوع على السيرفر
-                          </a>
+                          <div className="space-y-2 pt-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-bold text-gold/80 hover:underline">
+                                <FileText className="h-3.5 w-3.5" /> الملف المرفوع على السيرفر
+                              </a>
+                              <a
+                                href={sub.fileUrl}
+                                download
+                                className="inline-flex items-center gap-1 rounded-lg border border-gold/30 bg-gold/[0.1] px-2.5 py-1 text-[11px] font-bold text-gold-light hover:bg-gold hover:text-night transition-colors"
+                              >
+                                <Download className="h-3 w-3" /> تحميل الملف
+                              </a>
+                            </div>
+                            {isEmbeddableImage(sub.fileUrl) && (
+                              <div className="pt-1">
+                                <p className="mb-1 text-[10px] text-zinc-400">معاينة الصورة المرفوعة (انقر للتكبير والتحميل):</p>
+                                <ImageWithPreview
+                                  src={sub.fileUrl}
+                                  alt="ملف الطالب"
+                                  title={`تسليم الطالب: ${name}`}
+                                  className="group relative h-28 w-44 overflow-hidden rounded-xl border border-white/10 cursor-pointer"
+                                  imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {sub.linkUrl && isEmbeddableImage(sub.linkUrl) && (
+                          <div className="pt-1">
+                            <p className="mb-1 text-[10px] text-zinc-400">معاينة الصورة المرفقة بالرابط:</p>
+                            <ImageWithPreview
+                              src={sub.linkUrl}
+                              alt="صورة الطالب"
+                              title={`تسليم الطالب: ${name}`}
+                              className="group relative h-28 w-44 overflow-hidden rounded-xl border border-white/10 cursor-pointer"
+                              imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+                            />
+                          </div>
                         )}
                         <p className="text-zinc-600">
-                          سُلّم: {new Intl.DateTimeFormat("ar-EG", { dateStyle: "short", timeStyle: "short" }).format(sub.submittedAt)}
+                          سُلّم: {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short", timeStyle: "short" }).format(sub.submittedAt)}
                         </p>
                       </div>
 

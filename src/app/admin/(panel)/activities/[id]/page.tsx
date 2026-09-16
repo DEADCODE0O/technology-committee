@@ -13,6 +13,7 @@ import {
   ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD,
 } from "@/lib/constants";
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
+import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -157,13 +158,25 @@ export default async function AdminActivityDetailPage({
     <div className="mx-auto max-w-6xl space-y-6">
       {/* الرأس */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <Link href="/admin/activities" className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-zinc-500 hover:text-gold-light">
-            ← كل الأنشطة
-          </Link>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xl">{ACTIVITY_TYPE_ICONS[activity.type]}</span>
-            <h1 className="text-2xl font-extrabold text-zinc-50">{activity.title}</h1>
+        <div className="flex items-start gap-4 min-w-0 flex-1">
+          {activity.image && (
+            <div className="hidden sm:block shrink-0">
+              <ImageWithPreview
+                src={activity.image}
+                alt={activity.title}
+                title={`صورة النشاط: ${activity.title}`}
+                className="group relative h-20 w-32 overflow-hidden rounded-2xl border border-white/10 cursor-pointer shadow-lg"
+                imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <Link href="/admin/activities" className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-zinc-500 hover:text-gold-light">
+              ← كل الأنشطة
+            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xl">{ACTIVITY_TYPE_ICONS[activity.type]}</span>
+              <h1 className="text-2xl font-extrabold text-zinc-50">{activity.title}</h1>
             <Link href={`/activities/${activity.id}`} target="_blank"
               className="rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-[10px] font-extrabold text-gold-light hover:bg-gold/[0.12]">
               عرض صفحة الطلاب ↗
@@ -178,8 +191,9 @@ export default async function AdminActivityDetailPage({
             <span>{totalRegistered} تسجيلًا إجمالًا</span>
           </p>
         </div>
-        <DeleteActivityButton activityId={activity.id} activityTitle={activity.title} />
       </div>
+      <DeleteActivityButton activityId={activity.id} activityTitle={activity.title} />
+    </div>
 
       {/* التابات */}
       <nav className="flex flex-wrap gap-2 border-b border-white/[0.06] pb-3" role="tablist">

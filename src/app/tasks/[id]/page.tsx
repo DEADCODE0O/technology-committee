@@ -92,7 +92,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               }`}
             >
               <Clock className="h-3.5 w-3.5" />
-              {duePassed ? "انتهى الموعد — تسليمك سيحسب متأخرًا" : `آخر موعد: ${new Intl.DateTimeFormat("ar-EG", { dateStyle: "full", timeStyle: "short" }).format(task.dueAt)}`}
+              {duePassed ? "انتهى الموعد — تسليمك سيحسب متأخرًا" : `آخر موعد: ${new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "full", timeStyle: "short" }).format(task.dueAt)}`}
             </p>
           )}
 
@@ -167,7 +167,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                     ملفك المرسل
                   </a>
                 )}
-                <p>سُلّمت: {new Intl.DateTimeFormat("ar-EG", { dateStyle: "medium", timeStyle: "short" }).format(sub.submittedAt)}</p>
+                <p>سُلّمت: {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "medium", timeStyle: "short" }).format(sub.submittedAt)}</p>
               </div>
             </div>
           ) : (

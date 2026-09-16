@@ -18,6 +18,7 @@ import { MODULES, EDITABLE_MODULES, type CustomPerms } from "@/lib/permissions";
 import { ADMIN_ROLES } from "@/lib/constants";
 import { findTargetedStudentIds, parseTarget, type StudentTarget } from "@/lib/targeting";
 import { makeDataKey, normalizeArabicName, isValidArabicFullName, normalizePhone } from "@/lib/validation";
+import { parseDateInput } from "@/lib/dates";
 
 const VALID_FIELD_TYPES = ["TEXT", "LONGTEXT", "NUMBER", "PHONE", "EMAIL", "SELECT", "RADIO", "CHECKBOX", "DATE", "TIME", "FILE"];
 
@@ -345,11 +346,7 @@ export async function createDataRequest(input: {
       }
     }
 
-    let deadline: Date | null = null;
-    if (input.deadline) {
-      const d = new Date(input.deadline);
-      if (!isNaN(d.getTime())) deadline = d;
-    }
+    const deadline = parseDateInput(input.deadline);
 
     // تنظيف الفلتر
     const target = parseTarget(JSON.stringify(input.target ?? {}));

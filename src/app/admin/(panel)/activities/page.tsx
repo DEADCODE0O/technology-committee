@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { canUser, MODULES } from "@/lib/permissions";
 import { ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_PUBLISH_LABELS, ACTIVITY_LEVEL_LABELS } from "@/lib/constants";
 import { getSessionState } from "@/lib/activities";
+import { formatCairoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -134,7 +135,7 @@ export default async function AdminActivitiesPage({
                       {nextSession && (
                         <span className="text-gold/80">
                           أقرب {a.type === "COURSE" ? "محاضرة" : "موعد"}: {nextSession.title} —{" "}
-                          {new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(nextSession.startsAt)}
+                          {formatCairoDate(nextSession.startsAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}
                         </span>
                       )}
                     </div>

@@ -119,7 +119,7 @@ export default async function ProfilePage() {
           <div className="relative flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-start">
               <AvatarWithFrame
-                avatarUrl={userRow?.avatarUrl}
+                avatarUrl={user.avatarUrl}
                 name={profile.fullName}
                 frameId={userRow?.avatarFrameId}
                 size="2xl"
@@ -160,10 +160,12 @@ export default async function ProfilePage() {
               <FrameWardrobeModal
                 user={{
                   fullName: profile.fullName,
-                  avatarUrl: userRow?.avatarUrl,
+                  avatarUrl: user.avatarUrl,
+                  accountAvatarUrl: user.accountAvatarUrl,
                   avatarFrameId: userRow?.avatarFrameId,
                   level: progress.level,
                   points: progress.xp,
+                  provider: user.provider,
                 }}
               />
               <span className="text-[11px] font-bold text-zinc-500">

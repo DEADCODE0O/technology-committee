@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveRun, deleteRun, setSessionRun } from "@/actions/activities";
 import { CLOSING_MODES } from "@/lib/activities";
+import { toUtcIso } from "@/lib/dates";
 
 // ═══════════════════════════════════════════════════════════════
 //  مدير التنفيذات / الدفعات — تكرار النشاط بمواعيد مستقلة
@@ -99,8 +100,8 @@ export function RunManager({
                 activityId, title,
                 description: description || undefined,
                 seats: seats ? Number(seats) : null,
-                registrationOpensAt: opensAt || null,
-                registrationClosesAt: closesAt || null,
+                registrationOpensAt: toUtcIso(opensAt) || null,
+                registrationClosesAt: toUtcIso(closesAt) || null,
                 closingMode,
               }),
               `أُنشئت ${activityWord} «${title}»`,
@@ -163,7 +164,7 @@ export function RunManager({
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11px] text-zinc-500">
                   <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />
                     {r.registrationOpensAt
-                      ? `${new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" }).format(new Date(r.registrationOpensAt))} → ${r.registrationClosesAt ? new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" }).format(new Date(r.registrationClosesAt)) : "مفتوح"}`
+                      ? `${new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short" }).format(new Date(r.registrationOpensAt))} → ${r.registrationClosesAt ? new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short" }).format(new Date(r.registrationClosesAt)) : "مفتوح"}`
                       : "بلا نافذة تسجيل"}
                   </span>
                   <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {r.sessions.length} جلسات · {r.sessions.reduce((s, x) => s + x.registeredCount, 0)} تسجيلًا</span>
@@ -187,7 +188,7 @@ export function RunManager({
                 {r.sessions.map((s) => (
                   <li key={s.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3 py-2">
                     <Link href={`/admin/sessions/${s.id}`} className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-200 hover:text-gold-light">
-                      {s.title} · {new Intl.DateTimeFormat("ar-EG", { dateStyle: "short", timeStyle: "short" }).format(new Date(s.startsAt))}
+                      {s.title} · {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short", timeStyle: "short" }).format(new Date(s.startsAt))}
                     </Link>
                     {canManage && (
                       <button onClick={() => run(() => setSessionRun(s.id, null), "فُصلت الجلسة عن التنفيذ")} className="shrink-0 text-[10px] font-bold text-zinc-600 hover:text-red-300" title="فصل عن التنفيذ">
@@ -209,7 +210,7 @@ export function RunManager({
               {unlinkedSessions.map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3 py-2">
                   <Link href={`/admin/sessions/${s.id}`} className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-300">
-                    {s.title} · {new Intl.DateTimeFormat("ar-EG", { dateStyle: "short" }).format(new Date(s.startsAt))}
+                    {s.title} · {new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", dateStyle: "short" }).format(new Date(s.startsAt))}
                   </Link>
                   {canManage && runs.length > 0 && (
                     <select

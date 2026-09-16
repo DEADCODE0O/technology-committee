@@ -14,6 +14,7 @@ import { NotificationComposer, type ComposerInitial } from "@/components/admin/n
 import { getNotificationForEdit, deleteNotification } from "@/actions/notifications";
 import { NOTIFICATION_TYPE_ICONS } from "@/lib/constants";
 import { parseNotificationButtons } from "@/lib/links";
+import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 
 export type AdminNotificationItem = {
   id: string;
@@ -106,7 +107,7 @@ export function NotificationsPanel({
   };
 
   const fmtDate = (iso: string) =>
-    new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso));
+    new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso));
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
@@ -184,7 +185,15 @@ export function NotificationsPanel({
                 </div>
                 {n.body && <p className="mt-1 line-clamp-2 text-[11px] leading-5 text-zinc-500">{n.body}</p>}
                 {n.imageUrl && (
-                  <img src={n.imageUrl} alt="" className="mt-2 h-16 w-28 rounded-lg border border-white/[0.08] object-cover" />
+                  <div className="mt-2 w-fit">
+                    <ImageWithPreview
+                      src={n.imageUrl}
+                      alt={n.title}
+                      title={`صورة الإشعار: ${n.title}`}
+                      className="group relative h-16 w-28 overflow-hidden rounded-lg border border-white/[0.08] cursor-pointer"
+                      imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  </div>
                 )}
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-zinc-600">
                   <span>👥 {n.targetDesc}</span>

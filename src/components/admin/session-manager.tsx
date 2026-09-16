@@ -8,7 +8,7 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck, Maximize2, Download, Eye, Image as ImageIcon } from "lucide-react";
 import { saveSession, deleteSession, toggleSessionRegistration } from "@/actions/activities";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +17,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SESSION_STATUSES, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
-import { detectLinkType } from "@/lib/links";
+import { detectLinkType, resolveImageSrc } from "@/lib/links";
 import { CLOSING_MODES } from "@/lib/activities";
+import { toLocalInput, toUtcIso, formatCairoDate } from "@/lib/dates";
+import { ImagePreviewModal } from "@/components/admin/image-preview-modal";
 
 export type AdminSession = {
   id: string;
@@ -48,13 +50,6 @@ export type AdminSession = {
   presentCount: number;
   state: "UPCOMING" | "ONGOING" | "COMPLETED";
 };
-
-function toLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 type FormState = {
   title: string;
@@ -99,6 +94,7 @@ export function SessionManager({
   const [editing, setEditing] = useState<AdminSession | null>(null);
   const [adding, setAdding] = useState(false);
   const [qrFor, setQrFor] = useState<string | null>(null);
+  const [previewImg, setPreviewImg] = useState<{ src: string; title: string } | null>(null);
 
   const sessionWord = ACTIVITY_TYPE_SESSION_WORD[activityType] ?? "جلسة";
   const isCourse = activityType === "COURSE";
@@ -177,8 +173,8 @@ export function SessionManager({
         title: form.title,
         description: form.description || undefined,
         image: form.image || undefined,
-        startsAt: form.startsAt,
-        endsAt: form.endsAt || undefined,
+        startsAt: toUtcIso(form.startsAt) || form.startsAt,
+        endsAt: toUtcIso(form.endsAt) || undefined,
         location: form.location || undefined,
         presenter: form.presenter || undefined,
         onlineUrl: form.onlineUrl || undefined,
@@ -187,8 +183,8 @@ export function SessionManager({
         materialLabel: form.materialLabel || undefined,
         status: form.status,
         seats: Number(form.seats) || 50,
-        registrationOpensAt: form.registrationOpensAt || undefined,
-        registrationClosesAt: form.registrationClosesAt || undefined,
+        registrationOpensAt: toUtcIso(form.registrationOpensAt) || undefined,
+        registrationClosesAt: toUtcIso(form.registrationClosesAt) || undefined,
         closingMode: form.closingMode,
         registrationOpen: form.registrationOpen,
         allowGuests: form.allowGuests,
@@ -234,11 +230,25 @@ export function SessionManager({
         {sessions.map((s) => (
           <li key={s.id} className={`rounded-2xl border p-4 ${s.status === "CANCELLED" ? "border-red-400/20 bg-red-500/[0.03]" : s.state === "COMPLETED" ? "border-white/[0.06] bg-white/[0.02]" : "border-gold/20 bg-gold/[0.04]"}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className={`text-sm font-extrabold ${s.status === "CANCELLED" ? "text-zinc-400 line-through" : "text-zinc-100"}`}>
-                    {isCourse && `${s.order}. `}{s.title}
-                  </p>
+              <div className="flex items-start gap-3 min-w-0 flex-1">
+                {s.image && (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImg({ src: s.image!, title: `${sessionWord}: ${s.title}` })}
+                    className="group relative shrink-0 h-14 w-14 overflow-hidden rounded-xl border border-white/10 hover:border-gold/40 transition-colors cursor-pointer"
+                    title="فحص وتكبير وتحميل صورة الجلسة"
+                  >
+                    <img src={resolveImageSrc(s.image) || s.image} alt={s.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Maximize2 className="h-4 w-4 text-gold-light" />
+                    </span>
+                  </button>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className={`text-sm font-extrabold ${s.status === "CANCELLED" ? "text-zinc-400 line-through" : "text-zinc-100"}`}>
+                      {isCourse && `${s.order}. `}{s.title}
+                    </p>
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
                     s.state === "ONGOING" ? "border border-gold/40 bg-gold/[0.12] text-gold-light"
                     : s.state === "UPCOMING" ? "border border-white/10 bg-white/[0.03] text-zinc-400"
@@ -251,15 +261,15 @@ export function SessionManager({
                   )}
                 </div>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500">
-                  <span>{new Intl.DateTimeFormat("ar-EG", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(s.startsAt))}</span>
+                  <span>{formatCairoDate(s.startsAt, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}</span>
                   {s.location && <span>📍 {s.location}</span>}
                   <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {s.registeredCount}/{s.seats}</span>
                   {s.presentCount > 0 && <span className="text-gold/80">✓ {s.presentCount} حاضروا</span>}
                 </p>
                 {/* نافذة التسجيل */}
                 <p className="mt-1 text-[10px] leading-5 text-zinc-600">
-                  التسجيل: {s.registrationOpensAt ? `يُفتح ${new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(s.registrationOpensAt))}` : "دائمًا متاح"}
-                  {s.registrationClosesAt ? ` · يقفل ${new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(s.registrationClosesAt))}` : ""}
+                  التسجيل: {s.registrationOpensAt ? `يُفتح ${formatCairoDate(s.registrationOpensAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}` : "دائمًا متاح"}
+                  {s.registrationClosesAt ? ` · يقفل ${formatCairoDate(s.registrationClosesAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}` : ""}
                   {" · "}{CLOSING_MODES.find((m) => m.value === s.closingMode)?.label ?? s.closingMode}
                 </p>
                 {(s.materialUrl || s.onlineUrl) && (
@@ -277,7 +287,8 @@ export function SessionManager({
                   </div>
                 )}
               </div>
-              <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                 <Link2Quick href={`/admin/sessions/${s.id}`} label="إدارة" />
                 {canManage && (
                   <>
@@ -338,6 +349,30 @@ export function SessionManager({
               placeholder="رابط صورة مباشر أو رابط Google Drive (إن تُركت فارغة تُعرض صورة الورشة الرئيسية)"
               dir="ltr"
             />
+            {form.image && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold/25 bg-gold/[0.04] p-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <img
+                    src={resolveImageSrc(form.image) || form.image}
+                    alt="معاينة"
+                    className="h-10 w-16 rounded-lg border border-white/10 object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-zinc-200">معاينة صورة الجلسة</p>
+                    <p className="truncate text-[10px] text-zinc-500 max-w-[240px]" dir="ltr">{form.image}</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewImg({ src: form.image, title: form.title || "صورة الجلسة" })}
+                  className="h-8 gap-1.5 rounded-lg border-gold/30 bg-gold/[0.1] text-xs font-bold text-gold-light hover:bg-gold/20"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" /> فحص وتكبير وتحميل
+                </Button>
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -466,6 +501,14 @@ export function SessionManager({
           </Button>
         )
       )}
+
+      {/* نافذة فحص وتكبير وتحميل الصور */}
+      <ImagePreviewModal
+        isOpen={!!previewImg}
+        src={previewImg?.src ?? null}
+        title={previewImg?.title}
+        onClose={() => setPreviewImg(null)}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ import { SmartImg } from "@/components/platform/smart-img";
 // ═══════════════════════════════════════════════════════════════
 
 function fmtDate(d: Date): string {
-  return new Intl.DateTimeFormat("ar-EG", { weekday: "short", day: "numeric", month: "short" }).format(d);
+  return new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", weekday: "short", day: "numeric", month: "short" }).format(d);
 }
 
 export async function PlatformTeasers() {

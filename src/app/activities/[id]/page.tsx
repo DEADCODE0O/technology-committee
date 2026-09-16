@@ -15,14 +15,15 @@ import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/a
 import { resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 import { ChevronRight, MapPin, Users, CalendarDays, Clock } from "lucide-react";
+import { formatCairoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
 function fmtDate(d: Date) {
-  return new Intl.DateTimeFormat("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(d);
+  return formatCairoDate(d, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 function fmtTime(d: Date) {
-  return new Intl.DateTimeFormat("ar-EG", { hour: "numeric", minute: "2-digit", hour12: true }).format(d);
+  return formatCairoDate(d, { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 export default async function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {

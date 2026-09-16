@@ -9,6 +9,7 @@ import { GateAddForm, ManifestExportButton } from "@/components/admin/gate-add-f
 import { AttendanceBoard, type AttendanceRowData } from "@/components/admin/attendance-board";
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
 import { ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
+import { formatCairoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -165,7 +166,7 @@ export default async function AdminSessionPage({
             </Link>
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
-            <span>{new Intl.DateTimeFormat("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(session.startsAt)}</span>
+            <span>{formatCairoDate(session.startsAt, { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}</span>
             {session.location && <span>📍 {session.location}</span>}
             <span>👥 {registeredCount}/{session.seats}</span>
             <span className={decision.open ? "text-emerald-400/80" : "text-amber-400/80"}>
@@ -173,8 +174,8 @@ export default async function AdminSessionPage({
             </span>
           </p>
           <p className="mt-1 text-[11px] text-zinc-600">
-            التسجيل: {session.registrationOpensAt ? `يُفتح ${new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(session.registrationOpensAt)}` : "متاح"}
-            {session.registrationClosesAt ? ` · يقفل ${new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(session.registrationClosesAt)}` : ""}
+            التسجيل: {session.registrationOpensAt ? `يُفتح ${formatCairoDate(session.registrationOpensAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}` : "متاح"}
+            {session.registrationClosesAt ? ` · يقفل ${formatCairoDate(session.registrationClosesAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}` : ""}
           </p>
         </div>
       </div>

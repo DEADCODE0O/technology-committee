@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { GRADES, SECTIONS, GENDERS, NOTIFICATION_TYPES } from "@/lib/constants";
 import { detectLinkType, resolveImageSrc } from "@/lib/links";
 import { CtaLink } from "@/components/platform/cta-link";
+import { toUtcIso } from "@/lib/dates";
 
 type ButtonDraft = { label: string; url: string; newTab: boolean };
 
@@ -151,7 +152,7 @@ export function NotificationComposer({
         body: v.body || undefined,
         buttons: filledButtons.map((b) => ({ label: b.label.trim(), url: b.url.trim(), newTab: b.newTab })),
         imageUrl: image.trim() || undefined,
-        expiresAt: v.expiresAt || undefined,
+        expiresAt: toUtcIso(v.expiresAt) || undefined,
         target: buildTarget(),
       };
       // وضع التعديل — تحديث الإشعار القائم

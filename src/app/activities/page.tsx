@@ -47,7 +47,7 @@ type ActivityWithSessions = {
 type Card = ActivityWithSessions & { focusSession: SessionLite | null };
 
 function fmtDate(d: Date) {
-  return new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "long" }).format(d);
+  return new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", day: "numeric", month: "long" }).format(d);
 }
 
 // أكثر جلسة صلة بالعرض: جارية > أقرب قادمة > أحدث منتهية
