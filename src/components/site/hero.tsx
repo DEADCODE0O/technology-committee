@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronDown, UserPlus, LogIn, Sparkles } from "lucide-react";
+import { ChevronDown, LogIn, Sparkles } from "lucide-react";
 import { siteConfig } from "@/config/site";
 import { useLanguage } from "@/lib/i18n/context";
 
@@ -95,23 +95,15 @@ export function Hero() {
         {/* العبارة الرئيسية */}
         <motion.p
           {...anim(0.32)}
-          className="mt-8 max-w-xl text-xl font-extrabold leading-[1.6] text-foreground drop-shadow-sm dark:drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-2xl sm:leading-[1.6] lg:text-3xl lg:leading-[1.6]"
+          className="mt-7 max-w-xl text-xl font-extrabold leading-[1.6] text-foreground drop-shadow-sm dark:drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)] sm:text-2xl sm:leading-[1.6] lg:text-3xl lg:leading-[1.6]"
         >
           {t("welcome.heroTitlePrefix")}{" "}
           <span className="text-gold-deep dark:text-gold-light">{t("welcome.heroTitleHighlight")}</span>
         </motion.p>
 
-        {/* وصف قصير */}
-        <motion.p
-          {...anim(0.4)}
-          className="mt-4 max-w-xl text-sm leading-loose text-muted-foreground dark:text-zinc-300/90 dark:drop-shadow-[0_1px_8px_rgba(0,0,0,0.9)] sm:text-base sm:leading-loose"
-        >
-          {t("welcome.heroSubtitle")}
-        </motion.p>
-
         {/* شارة المجانية */}
-        <motion.div {...anim(0.5)}>
-          <span className="mt-7 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white/70 px-5 py-2 text-xs font-bold text-gold-deep shadow-[0_2px_12px_rgba(32,29,25,0.06)] backdrop-blur-md dark:bg-night/60 dark:text-gold-pale dark:shadow-none sm:text-sm">
+        <motion.div {...anim(0.42)}>
+          <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white/70 px-5 py-1.5 text-xs font-bold text-gold-deep shadow-[0_2px_12px_rgba(32,29,25,0.06)] backdrop-blur-md dark:bg-night/60 dark:text-gold-pale dark:shadow-none sm:text-sm">
             <span aria-hidden="true" className="text-sm text-gold">
               ✦
             </span>
@@ -119,40 +111,33 @@ export function Hero() {
           </span>
         </motion.div>
 
-        {/* الأزرار — إنشاء حساب وتسجيل دخول واكتشف التجربة */}
+        {/* الأزرار — تصفح الفعاليات كزر رئيسي وتسجيل الدخول */}
         <motion.div
-          {...anim(0.6)}
-          className="mt-9 flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
+          {...anim(0.52)}
+          className="mt-8 flex w-full flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
         >
-          <Link
-            href="/register"
-            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-gradient-to-b from-gold-light to-gold px-8 py-3.5 text-base font-extrabold text-night shadow-[0_12px_40px_-10px_rgba(201,164,92,0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-10px_rgba(201,164,92,0.75)] active:translate-y-0"
+          <a
+            href="#offerings"
+            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-gold-light to-gold px-8 py-3.5 text-base font-extrabold text-night shadow-[0_12px_40px_-10px_rgba(201,164,92,0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-10px_rgba(201,164,92,0.75)] active:translate-y-0"
           >
-            <UserPlus className="h-5 w-5" />
-            {t("welcome.createAccountCta")}
-          </Link>
+            <Sparkles className="h-4 w-4 text-night" />
+            {isEn ? "Explore Activities & Programs" : "تصفح الفعاليات والأنشطة"}
+            <ChevronDown className="h-4 w-4 text-night animate-bounce" />
+          </a>
 
           <Link
             href="/login"
-            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-foreground/15 bg-white/60 px-8 py-3.5 text-base font-bold text-foreground shadow-[0_2px_14px_rgba(32,29,25,0.05)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:text-gold-deep active:translate-y-0 dark:border-gold/40 dark:bg-gold/[0.1] dark:text-gold-light dark:shadow-none dark:hover:border-gold/70 dark:hover:bg-gold/[0.16]"
+            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-gold/40 bg-white/60 px-8 py-3.5 text-base font-bold text-foreground shadow-[0_2px_14px_rgba(32,29,25,0.05)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:text-gold-deep active:translate-y-0 dark:border-gold/40 dark:bg-gold/[0.08] dark:text-gold-light dark:shadow-none dark:hover:border-gold/70 dark:hover:bg-gold/[0.16]"
           >
             <LogIn className="h-5 w-5" />
             {t("welcome.loginCta")}
           </Link>
-
-          <a
-            href="#experience"
-            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-1.5 rounded-full border border-foreground/15 bg-white/60 px-7 py-3.5 text-base font-semibold text-foreground shadow-[0_2px_14px_rgba(32,29,25,0.05)] backdrop-blur-md transition-all duration-300 hover:border-gold/50 hover:text-gold-deep dark:border-border dark:bg-card/80 dark:text-foreground dark:shadow-none dark:hover:border-gold/50 dark:hover:text-gold"
-          >
-            <Sparkles className="h-4 w-4 text-gold" />
-            {t("welcome.explorePlatform")}
-          </a>
         </motion.div>
       </div>
 
       {/* مؤشر التمرير */}
       <motion.a
-        href="#experience"
+        href="#offerings"
         aria-label={isEn ? "Scroll down" : "انتقل للأسفل"}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

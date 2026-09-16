@@ -117,41 +117,69 @@ export async function getSessionUserId(): Promise<string | null> {
 //   4) لا صف؟ → إنشاء صف طالب جديد (self-heal: أول دخول Google)
 // لا نغيّر id صف قائم أبدًا — يبقى التاريخ (التسجيل/الحضور/النقاط) سليمًا.
 
+export function cleanAvatarUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  // Google: ترقية الصورة المصغرة بأمان إلى دقة فائقة =s500-c
+  if (url.includes("googleusercontent.com")) {
+    return url.replace(/=s\d+(-c)?$/i, "=s500-c");
+  }
+  // Facebook platform-lookaside: الحفاظ على التوقيع الرقمي (hash) لأن تعديل الأبعاد يُرجع 404
+  if (url.includes("platform-lookaside.fbsbx.com") || url.includes("fbsbx.com")) {
+    return url.replace(/height=500&width=500/i, "height=50&width=50");
+  }
+  return url;
+}
+
 export async function resolveSupabaseAppUser(
   authUser: AuthUser
 ): Promise<{ id: string; email: string; role: string; status: string; customPermissions: string | null; provider: string; googleId: string | null; avatarUrl: string | null } | null> {
   const metadata = (authUser.user_metadata ?? {}) as Record<string, unknown>;
   const rawProvider = (authUser.app_metadata?.provider || "").toUpperCase();
-  const isFacebook = rawProvider === "FACEBOOK";
-  const isGoogle = rawProvider === "GOOGLE" || Boolean(metadata.iss && String(metadata.iss).includes("google"));
+  const providersList = ((authUser.app_metadata?.providers as string[] | undefined) || []).map((p) => p.toUpperCase());
+  const identityProviders = (authUser.identities || []).map((i) => (i.provider || "").toUpperCase());
+  const isFacebook =
+    rawProvider === "FACEBOOK" ||
+    providersList.includes("FACEBOOK") ||
+    identityProviders.includes("FACEBOOK") ||
+    Boolean(metadata.iss && String(metadata.iss).includes("facebook")) ||
+    Boolean(metadata.provider_id);
+  const isGoogle =
+    rawProvider === "GOOGLE" ||
+    providersList.includes("GOOGLE") ||
+    identityProviders.includes("GOOGLE") ||
+    Boolean(metadata.iss && String(metadata.iss).includes("google"));
   const userProvider = isFacebook ? "FACEBOOK" : isGoogle ? "GOOGLE" : "EMAIL";
 
   const googleSub = isGoogle && typeof metadata.sub === "string" ? metadata.sub : null;
   const email = (authUser.email ?? "").toLowerCase();
-  
-  // ترقية جودة الصورة إلى دقة فائقة (High Resolution):
-  // - Google: تحويل =s96-c إلى =s500-c
-  // - Facebook: تحويل الأبعاد إلى 500x500
-  const rawAvatar = typeof metadata.picture === "string" 
-    ? metadata.picture 
-    : typeof metadata.avatar_url === "string" 
-      ? metadata.avatar_url 
-      : null;
-  const avatar = rawAvatar
-    ? rawAvatar
-        .replace(/=s\d+(-c)?$/i, "=s500-c")
-        .replace(/height=\d+&width=\d+/i, "height=500&width=500")
-    : null;
+
+  let rawAvatar: string | null = null;
+  if (typeof metadata.avatar_url === "string" && metadata.avatar_url) {
+    rawAvatar = metadata.avatar_url;
+  } else if (typeof metadata.picture === "string" && metadata.picture) {
+    rawAvatar = metadata.picture;
+  } else if (metadata.picture && typeof metadata.picture === "object" && "data" in metadata.picture) {
+    const picData = (metadata.picture as { data?: { url?: string } }).data;
+    if (picData && typeof picData.url === "string") {
+      rawAvatar = picData.url;
+    }
+  }
+  const avatar = cleanAvatarUrl(rawAvatar);
 
   // 1) نفس الـ UUID
   const byId = await db.user.findUnique({ where: { id: authUser.id } });
   if (byId) {
-    if (avatar && (!byId.avatarUrl || byId.avatarUrl.includes("=s96-c") || byId.avatarUrl.includes("height=100") || byId.avatarUrl !== avatar)) {
+    const currentClean = cleanAvatarUrl(byId.avatarUrl);
+    const needsAvatarUpdate =
+      (avatar && byId.avatarUrl !== avatar) ||
+      (byId.avatarUrl && (byId.avatarUrl.includes("height=500&width=500") || byId.avatarUrl.includes("=s96-c")));
+    const needsProviderUpdate = byId.provider !== userProvider && userProvider !== "EMAIL";
+    if (needsAvatarUpdate || needsProviderUpdate) {
       return db.user.update({
         where: { id: byId.id },
         data: {
-          avatarUrl: avatar,
-          provider: byId.provider === "EMAIL" && userProvider !== "EMAIL" ? userProvider : byId.provider,
+          avatarUrl: avatar ?? currentClean,
+          provider: needsProviderUpdate ? userProvider : byId.provider,
         },
       });
     }
@@ -213,6 +241,8 @@ export type SessionUser = {
   role: string;
   status: string;
   customPermissions: string | null; // JSON صلاحيات مخصصة تتجاوز الدور
+  provider?: string;
+  suggestedName?: string | null;
   avatarUrl?: string | null;
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
@@ -236,6 +266,8 @@ type DbUserWithProfile = {
   role: string;
   status: string;
   customPermissions: string | null;
+  provider?: string;
+  suggestedName?: string | null;
   avatarUrl?: string | null;
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
@@ -260,6 +292,8 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
     role: user.role,
     status: user.status,
     customPermissions: user.customPermissions,
+    provider: user.provider ?? "EMAIL",
+    suggestedName: user.suggestedName ?? null,
     avatarUrl: user.avatarUrl ?? null,
     avatarFrameId: user.avatarFrameId ?? null,
     profileThemeId: user.profileThemeId ?? null,
@@ -294,17 +328,32 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       const row = await resolveSupabaseAppUser(authUser);
       if (!row || row.status === "SUSPENDED") return null;
 
-      // التأكد من تمرير صورة الحساب بأعلى جودة حتى لو كانت فارغة بالصف
+      // التأكد من تمرير صورة الحساب بنظافة ودقة عالية
       const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
-      let metaAvatar = typeof meta.picture === "string" ? meta.picture : (typeof meta.avatar_url === "string" ? meta.avatar_url : null);
-      if (metaAvatar) {
-        metaAvatar = metaAvatar.replace(/=s\d+(-c)?$/i, "=s500-c").replace(/height=\d+&width=\d+/i, "height=500&width=500");
+      let rawMetaAvatar: string | null = null;
+      if (typeof meta.avatar_url === "string" && meta.avatar_url) {
+        rawMetaAvatar = meta.avatar_url;
+      } else if (typeof meta.picture === "string" && meta.picture) {
+        rawMetaAvatar = meta.picture;
+      } else if (meta.picture && typeof meta.picture === "object" && "data" in meta.picture) {
+        const picData = (meta.picture as { data?: { url?: string } }).data;
+        if (picData && typeof picData.url === "string") {
+          rawMetaAvatar = picData.url;
+        }
       }
-      const finalAvatar = row.avatarUrl || metaAvatar;
+      const metaAvatar = cleanAvatarUrl(rawMetaAvatar);
+      const finalAvatar = cleanAvatarUrl(row.avatarUrl) || metaAvatar;
+
+      const metaName =
+        typeof meta.full_name === "string" && meta.full_name.trim()
+          ? meta.full_name.trim()
+          : typeof meta.name === "string" && meta.name.trim()
+          ? meta.name.trim()
+          : null;
 
       // اجلب الملف المرتبط (إن وُجد)
       const profile = await db.studentProfile.findUnique({ where: { userId: row.id } });
-      return toSessionUser({ ...row, avatarUrl: finalAvatar, profile });
+      return toSessionUser({ ...row, avatarUrl: finalAvatar, suggestedName: metaName, profile });
     }
 
     // ── وضع التطوير المحلي: JWT ──

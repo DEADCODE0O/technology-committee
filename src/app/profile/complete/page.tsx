@@ -34,7 +34,7 @@ export default async function CompleteProfilePage() {
           </span>
         </Link>
 
-        <CompleteProfileForm suggestedName={user.email.split("@")[0]} codeConfig={codeConfig} />
+        <CompleteProfileForm suggestedName={user.suggestedName || user.email.split("@")[0]} codeConfig={codeConfig} />
       </div>
     </div>
   );

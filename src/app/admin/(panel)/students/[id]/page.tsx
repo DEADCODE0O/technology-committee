@@ -106,7 +106,17 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
             <h2 className="mb-4 text-sm font-extrabold text-zinc-100">المعلومات الشخصية</h2>
             <ul className="space-y-2.5 text-sm">
               <Info icon={<Mail className="h-4 w-4" />} label="البريد" value={student.email} ltr />
-              <Info icon={<LogIn className="h-4 w-4" />} label="طريقة التسجيل" value={student.provider === "GOOGLE" ? "مسجل بحساب Google" : "بالبريد وكلمة السر"} />
+              <Info
+                icon={<LogIn className="h-4 w-4" />}
+                label="طريقة التسجيل"
+                value={
+                  student.provider === "GOOGLE"
+                    ? "مسجل بحساب Google"
+                    : student.provider === "FACEBOOK"
+                    ? "مسجل بحساب Facebook"
+                    : "بالبريد وكلمة السر"
+                }
+              />
               <Info icon={<Phone className="h-4 w-4" />} label="الهاتف" value={student.profile?.phone ?? "—"} ltr />
               <Info icon={<GraduationCap className="h-4 w-4" />} label="الفرقة" value={GRADE_LABELS[student.profile?.grade ?? ""] ?? "—"} />
               <Info icon={<Users className="h-4 w-4" />} label="الشعبة" value={SECTION_LABELS[student.profile?.section ?? ""] ?? "—"} />

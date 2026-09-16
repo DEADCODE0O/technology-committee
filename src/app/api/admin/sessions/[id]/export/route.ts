@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const wb = await createWorkbookFromTemplate(session.excelTemplateUrl);
   const ws = ensureSheet(wb, "المشاركون");
   ws.views = [{ rightToLeft: true, state: "frozen", ySplit: 1 }];
-  const headers = ["#", "الاسم الكامل", "الهاتف", "البريد", "الفرقة", "الشعبة", "الجنس", "كود الطالب", "مصدر التسجيل", "الحالة", "الحضور", ...(manifest ? ["حالة الكشف"] : []), ...formFields.map((f) => f.label)];
+  const headers = ["#", "الاسم", "الهاتف", "البريد", "الفرقة", "الشعبة", "الجنس", "كود الطالب", "مصدر التسجيل", "الحالة", "الحضور", ...(manifest ? ["حالة الكشف"] : []), ...formFields.map((f) => f.label)];
 
   // القالب قد يحتوي عنوانًا/شعارًا قبل صف العناوين، لذلك نبحث عن أول صف مفهوم للعناوين.
   const headerRow = findHeaderRow(ws) ?? 1;
@@ -77,6 +77,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     try { answers = reg.answers ? JSON.parse(reg.answers) : {}; } catch {}
     const values: Record<string, unknown> = {
       "#": i + 1,
+      "الاسم": reg.fullName,
       "الاسم الكامل": reg.fullName,
       "الهاتف": reg.phone ?? "",
       "البريد": reg.email ?? "",

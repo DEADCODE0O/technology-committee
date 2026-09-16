@@ -1,6 +1,6 @@
 import {
   Mail, Phone, GraduationCap, Users, IdCard, HelpCircle, Heart,
-  KeyRound, Palette, Sparkles, Trophy, Flame, Send, CheckCircle2, Swords, Gift, CalendarDays, Crown,
+  KeyRound, Palette, Sparkles, Trophy, Flame, Send, CheckCircle2, Swords, Gift, CalendarDays, Crown, LogIn,
 } from "lucide-react";
 import Link from "next/link";
 import { requireStudent } from "@/lib/auth";
@@ -51,7 +51,7 @@ export default async function ProfilePage() {
     heartsVisible,
   ] = await Promise.all([
     db.talent.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
-    db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, avatarUrl: true, avatarFrameId: true } }),
+    db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, avatarUrl: true, avatarFrameId: true, provider: true } }),
     getStudentProgress(user.id),
     getStudentRank(user.id),
     db.studentBadge.findMany({ where: { userId: user.id }, include: { badge: true }, orderBy: { awardedAt: "desc" } }),
@@ -347,6 +347,17 @@ export default async function ProfilePage() {
             <h2 id="sec-personal" className="mb-5 text-lg font-extrabold text-zinc-50">بياناتك الأساسية</h2>
             <div className="space-y-3">
               <InfoRow icon={<Mail className="h-4 w-4" />} label="البريد الإلكتروني" value={user.email} mono />
+              <InfoRow
+                icon={<LogIn className="h-4 w-4" />}
+                label="طريقة التسجيل"
+                value={
+                  userRow?.provider === "GOOGLE"
+                    ? "مسجل بحساب Google"
+                    : userRow?.provider === "FACEBOOK"
+                    ? "مسجل بحساب Facebook"
+                    : "بالبريد وكلمة السر"
+                }
+              />
               <InfoRow icon={<Phone className="h-4 w-4" />} label="رقم الهاتف" value={profile.phone} mono />
               <InfoRow icon={<GraduationCap className="h-4 w-4" />} label="الفرقة" value={GRADE_LABELS[profile.grade] ?? "—"} />
               <InfoRow icon={<Users className="h-4 w-4" />} label="الشعبة" value={SECTION_LABELS[profile.section] ?? "—"} />

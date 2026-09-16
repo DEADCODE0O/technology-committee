@@ -113,16 +113,9 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
             <>
               <Link
                 href="/login"
-                className="hidden h-10 items-center rounded-full border border-gold/30 bg-gold/[0.06] px-5 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/50 sm:inline-flex"
+                className="hidden h-10 items-center rounded-full border border-gold/40 bg-gold/[0.08] px-6 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:bg-gold/[0.15] sm:inline-flex"
               >
                 تسجيل الدخول
-              </Link>
-              <Link
-                href="/register"
-                className="hidden h-10 items-center gap-1.5 rounded-full bg-gradient-to-b from-gold-light to-gold px-5 text-sm font-extrabold text-night shadow-[0_6px_24px_-8px_rgba(201,164,92,0.55)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-8px_rgba(201,164,92,0.65)] sm:inline-flex"
-              >
-                إنشاء حساب
-                <ArrowLeft className="h-4 w-4" />
               </Link>
             </>
           )}
@@ -204,29 +197,14 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
                     initial={{ opacity: 0, y: 18 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.42, duration: 0.45, ease: "easeOut" }}
-                    className="mt-4 w-full max-w-xs"
+                    className="mt-5 w-full max-w-xs"
                   >
                     <Link
                       href="/login"
                       onClick={() => setOpen(false)}
-                      className="flex h-14 items-center justify-center rounded-2xl border border-gold/30 bg-gold/[0.06] text-base font-bold text-gold transition-all active:scale-[0.98]"
+                      className="flex h-13 items-center justify-center gap-2 rounded-2xl border border-gold/40 bg-gold/[0.1] text-base font-bold text-gold transition-all active:scale-[0.98]"
                     >
                       تسجيل الدخول
-                    </Link>
-                  </motion.li>
-                  <motion.li
-                    initial={{ opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.48, duration: 0.45, ease: "easeOut" }}
-                    className="w-full max-w-xs"
-                  >
-                    <Link
-                      href="/register"
-                      onClick={() => setOpen(false)}
-                      className="flex h-14 items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-transform active:scale-[0.98]"
-                    >
-                      إنشاء حساب
-                      <ArrowLeft className="h-5 w-5 rtl:rotate-0 ltr:rotate-180 transition-transform" />
                     </Link>
                   </motion.li>
                 </>

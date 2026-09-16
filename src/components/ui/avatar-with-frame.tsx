@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getAvatarFrame, type AvatarFrame } from "@/lib/avatar-frames";
+import { cleanAvatarUrl } from "@/lib/utils";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -136,12 +137,8 @@ export function AvatarWithFrame({
   const avatarCls = hasFrame ? cfg.avatarWithFrame : cfg.avatarNoFrame;
   const avatarPx = hasFrame ? cfg.avatarPxWithFrame : cfg.avatarPxNoFrame;
 
-  // تنظيف وترقية رابط الصورة ليظهر بأعلى دقة ممكنة دائماً
-  const highResAvatarUrl = avatarUrl
-    ? avatarUrl
-        .replace(/=s\d+(-c)?$/i, "=s500-c")
-        .replace(/height=\d+&width=\d+/i, "height=500&width=500")
-    : null;
+  // تنظيف وترقية رابط الصورة ليظهر بأعلى دقة ممكنة مع الحفاظ على توقيع فيسبوك
+  const highResAvatarUrl = cleanAvatarUrl(avatarUrl);
 
   return (
     <div

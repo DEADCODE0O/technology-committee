@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   });
 
   const dynamicKeys = Array.from(new Set(students.flatMap((s) => s.studentData.map((d) => d.label))));
-  const headers = ["#", "الاسم الكامل", "البريد", "الهاتف", "الفرقة", "الشعبة", "الجنس", "كود الطالب", "الحالة", "مصدر التعارف", "أسباب الانضمام", "النقاط", "المستوى", "المواهب", ...dynamicKeys];
+  const headers = ["#", "الاسم", "البريد", "الهاتف", "الفرقة", "الشعبة", "الجنس", "كود الطالب", "الحالة", "مصدر التعارف", "أسباب الانضمام", "النقاط", "المستوى", "المواهب", ...dynamicKeys];
   const wb = new ExcelJS.Workbook();
   wb.creator = "Technology Committee Platform";
   const ws = wb.addWorksheet("الطلاب", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
