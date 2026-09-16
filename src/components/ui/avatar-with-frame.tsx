@@ -136,6 +136,13 @@ export function AvatarWithFrame({
   const avatarCls = hasFrame ? cfg.avatarWithFrame : cfg.avatarNoFrame;
   const avatarPx = hasFrame ? cfg.avatarPxWithFrame : cfg.avatarPxNoFrame;
 
+  // تنظيف وترقية رابط الصورة ليظهر بأعلى دقة ممكنة دائماً
+  const highResAvatarUrl = avatarUrl
+    ? avatarUrl
+        .replace(/=s\d+(-c)?$/i, "=s500-c")
+        .replace(/height=\d+&width=\d+/i, "height=500&width=500")
+    : null;
+
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 select-none ${containerCls} ${className}`}
@@ -152,12 +159,14 @@ export function AvatarWithFrame({
       <div
         className={`relative overflow-hidden rounded-full bg-muted flex items-center justify-center border border-border shadow-inner z-10 dark:bg-zinc-900 dark:border-white/10 ${avatarCls}`}
       >
-        {avatarUrl ? (
+        {highResAvatarUrl ? (
           <Image
-            src={avatarUrl}
+            src={highResAvatarUrl}
             alt={name}
-            width={avatarPx}
-            height={avatarPx}
+            width={avatarPx * 2}
+            height={avatarPx * 2}
+            quality={95}
+            unoptimized={highResAvatarUrl.startsWith("http")}
             className="h-full w-full object-cover"
           />
         ) : (

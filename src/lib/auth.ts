@@ -120,10 +120,6 @@ export async function getSessionUserId(): Promise<string | null> {
 export async function resolveSupabaseAppUser(
   authUser: AuthUser
 ): Promise<{ id: string; email: string; role: string; status: string; customPermissions: string | null; provider: string; googleId: string | null; avatarUrl: string | null } | null> {
-  // 1) نفس الـ UUID
-  const byId = await db.user.findUnique({ where: { id: authUser.id } });
-  if (byId) return byId;
-
   const metadata = (authUser.user_metadata ?? {}) as Record<string, unknown>;
   const rawProvider = (authUser.app_metadata?.provider || "").toUpperCase();
   const isFacebook = rawProvider === "FACEBOOK";
@@ -132,11 +128,35 @@ export async function resolveSupabaseAppUser(
 
   const googleSub = isGoogle && typeof metadata.sub === "string" ? metadata.sub : null;
   const email = (authUser.email ?? "").toLowerCase();
-  const avatar = typeof metadata.picture === "string" 
+  
+  // ترقية جودة الصورة إلى دقة فائقة (High Resolution):
+  // - Google: تحويل =s96-c إلى =s500-c
+  // - Facebook: تحويل الأبعاد إلى 500x500
+  const rawAvatar = typeof metadata.picture === "string" 
     ? metadata.picture 
     : typeof metadata.avatar_url === "string" 
       ? metadata.avatar_url 
       : null;
+  const avatar = rawAvatar
+    ? rawAvatar
+        .replace(/=s\d+(-c)?$/i, "=s500-c")
+        .replace(/height=\d+&width=\d+/i, "height=500&width=500")
+    : null;
+
+  // 1) نفس الـ UUID
+  const byId = await db.user.findUnique({ where: { id: authUser.id } });
+  if (byId) {
+    if (avatar && (!byId.avatarUrl || byId.avatarUrl.includes("=s96-c") || byId.avatarUrl.includes("height=100") || byId.avatarUrl !== avatar)) {
+      return db.user.update({
+        where: { id: byId.id },
+        data: {
+          avatarUrl: avatar,
+          provider: byId.provider === "EMAIL" && userProvider !== "EMAIL" ? userProvider : byId.provider,
+        },
+      });
+    }
+    return byId;
+  }
 
   // 2) googleId
   if (googleSub) {
@@ -274,9 +294,17 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       const row = await resolveSupabaseAppUser(authUser);
       if (!row || row.status === "SUSPENDED") return null;
 
+      // التأكد من تمرير صورة الحساب بأعلى جودة حتى لو كانت فارغة بالصف
+      const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
+      let metaAvatar = typeof meta.picture === "string" ? meta.picture : (typeof meta.avatar_url === "string" ? meta.avatar_url : null);
+      if (metaAvatar) {
+        metaAvatar = metaAvatar.replace(/=s\d+(-c)?$/i, "=s500-c").replace(/height=\d+&width=\d+/i, "height=500&width=500");
+      }
+      const finalAvatar = row.avatarUrl || metaAvatar;
+
       // اجلب الملف المرتبط (إن وُجد)
       const profile = await db.studentProfile.findUnique({ where: { userId: row.id } });
-      return toSessionUser({ ...row, profile });
+      return toSessionUser({ ...row, avatarUrl: finalAvatar, profile });
     }
 
     // ── وضع التطوير المحلي: JWT ──

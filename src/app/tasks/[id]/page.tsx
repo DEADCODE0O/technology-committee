@@ -41,7 +41,12 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <StudentShell
-      user={{ name: user.profile?.fullName ?? user.email, email: user.email }}
+      user={{
+        name: user.profile?.fullName ?? user.email,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        avatarFrameId: user.avatarFrameId,
+      }}
       active="tasks"
       unreadCount={notifications.unreadCount}
     >

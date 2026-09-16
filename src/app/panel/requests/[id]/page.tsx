@@ -73,7 +73,15 @@ export default async function StudentDataRequestPage({ params }: { params: Promi
   const disabled = request.status !== "OPEN" || !!deadlinePassed;
 
   return (
-    <StudentShell user={{ name: profile.fullName, email: user.email }} active="dashboard">
+    <StudentShell
+      user={{
+        name: profile.fullName,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        avatarFrameId: user.avatarFrameId,
+      }}
+      active="dashboard"
+    >
       <div className="mx-auto max-w-2xl space-y-5">
         <Link href="/panel" className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-gold-light">
           <ArrowRight className="h-3.5 w-3.5" />

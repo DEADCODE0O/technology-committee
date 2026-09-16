@@ -54,7 +54,12 @@ export default async function MyTasksPage() {
 
   return (
     <StudentShell
-      user={{ name: user.profile?.fullName ?? user.email, email: user.email }}
+      user={{
+        name: user.profile?.fullName ?? user.email,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        avatarFrameId: user.avatarFrameId,
+      }}
       active="tasks"
       unreadCount={notifications.unreadCount}
       openTaskCount={open.length}
