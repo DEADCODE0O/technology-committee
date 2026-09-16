@@ -29,7 +29,6 @@ export function FacebookButton({
       provider: "facebook",
       options: {
         redirectTo: callback,
-        scopes: "email,public_profile",
       },
     });
     if (error) {
