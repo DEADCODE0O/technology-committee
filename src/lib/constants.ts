@@ -365,16 +365,17 @@ export function levelFromPoints(points: number): number {
   for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
     if (points >= LEVEL_THRESHOLDS[i]) level = i + 1;
   }
-  return level;
+  return Math.min(12, Math.max(1, level));
 }
 
 export function nextLevelProgress(points: number): { current: number; next: number | null; progress: number } {
   const current = levelFromPoints(points);
+  if (current >= 12) return { current: 12, next: null, progress: 100 };
   const nextThreshold = LEVEL_THRESHOLDS[current]; // عتبة المستوى التالي
-  if (nextThreshold === undefined) return { current, next: null, progress: 100 };
+  if (nextThreshold === undefined) return { current: 12, next: null, progress: 100 };
   const prevThreshold = LEVEL_THRESHOLDS[current - 1] ?? 0;
   const progress = Math.min(100, Math.max(0, Math.round(((points - prevThreshold) / (nextThreshold - prevThreshold)) * 100)));
-  return { current, next: current + 1, progress };
+  return { current, next: Math.min(12, current + 1), progress };
 }
 
 // ─── الفصل الدراسي الحالي (للوحة المتصدرين) ──────────────────

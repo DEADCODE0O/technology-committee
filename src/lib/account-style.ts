@@ -170,33 +170,11 @@ const FLAIRS: AccountFlairConfig[] = [
     glow: true,
     shimmer: true,
     halo: true,
-    stageDescription: 'تدرج إمبراطوري بنفسجي-ذهبي مهيب مع تاج مزدوج.',
-  },
-  {
-    level: 13,
-    rankTitle: 'السيادة الماسية',
-    nameCls: 'account-name-diamond account-name-glow account-name-shimmer',
-    crown: 'cosmic',
-    chipCls: 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
-    glow: true,
-    shimmer: true,
-    halo: true,
-    stageDescription: 'مظهر ماسي متلألئ — قمة الفخامة قبل الكونية.',
-  },
-  {
-    level: 14,
-    rankTitle: 'السفير الأسمى',
-    nameCls: 'account-name-cosmic account-name-glow account-name-shimmer',
-    crown: 'cosmic',
-    chipCls: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-200 dark:border-cyan-500/30',
-    glow: true,
-    shimmer: true,
-    halo: true,
-    stageDescription: 'أعلى مرتبة: تدرج كوني متعدد الألوان مع لمعان متحرك وهالة مجرّية.',
+    stageDescription: 'تدرج إمبراطوري بنفسجي-ذهبي مهيب مع تاج مزدوج — أعلى مرتبة لمظهر الحساب في المنصة.',
   },
 ];
 
 export function getAccountFlair(level: number): AccountFlairConfig {
-  const safe = Math.max(0, Math.min(level, FLAIRS.length - 1));
+  const safe = Math.max(0, Math.min(12, Math.min(level, FLAIRS.length - 1)));
   return FLAIRS[safe] ?? FLAIRS[0];
 }

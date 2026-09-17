@@ -1,16 +1,18 @@
 import Image from "next/image";
 import { cleanAvatarUrl } from "@/lib/utils";
+import { getAvatarFrame } from "@/lib/avatar-frames";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
 interface AvatarWithFrameProps {
   avatarUrl?: string | null;
   name: string;
-  frameId?: string | null; // محتفظ به للتوافقية
+  frameId?: string | null;
   size?: AvatarSize;
   level?: number;
   showLevel?: boolean;
   className?: string;
+  framesVisible?: boolean;
 }
 
 const SIZE_MAP: Record<
@@ -72,13 +74,16 @@ function getInitials(name: string): string {
 export function AvatarWithFrame({
   avatarUrl,
   name,
+  frameId,
   size = "md",
   level,
   showLevel = false,
   className = "",
+  framesVisible = true,
 }: AvatarWithFrameProps) {
   const cfg = SIZE_MAP[size];
   const initials = getInitials(name);
+  const frame = getAvatarFrame(frameId);
 
   // ترقية رابط الصورة وتنظيفه
   const highResAvatarUrl = cleanAvatarUrl(avatarUrl);
@@ -107,12 +112,32 @@ export function AvatarWithFrame({
         )}
       </div>
 
+      {/* ── طبقة الإطار الزخرفي ثلاثي الأبعاد (3D Avatar Frame Layer) ── */}
+      {frame && framesVisible !== false && (
+        <div
+          className="avatar-frame-layer pointer-events-none absolute inset-[-14%] z-10 flex items-center justify-center select-none"
+          aria-hidden="true"
+        >
+          <img
+            src={frame.imageSrc}
+            alt={frame.name}
+            className="h-full w-full object-contain"
+            style={{
+              transform: `scale(${frame.scale || 1.05})`,
+              filter: frame.filter
+                ? `${frame.filter} drop-shadow(0 2px 8px ${frame.glowColor || "rgba(201, 164, 92, 0.4)"})`
+                : `drop-shadow(0 2px 8px ${frame.glowColor || "rgba(201, 164, 92, 0.4)"})`,
+            }}
+          />
+        </div>
+      )}
+
       {/* ── شارة المستوى السفلي (Lv.X) ── */}
       {showLevel && typeof level === "number" && (
         <span
           className={`absolute z-20 rounded-full font-black text-night shadow-md tracking-tight border border-white/50 bg-gradient-to-r from-gold to-gold-light ${cfg.badgeText}`}
         >
-          Lv.{level}
+          Lv.{Math.min(12, Math.max(1, level))}
         </span>
       )}
     </div>

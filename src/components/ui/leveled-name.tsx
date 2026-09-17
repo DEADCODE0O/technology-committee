@@ -42,11 +42,12 @@ export function LeveledName({
   showLevelChip = true,
   truncate = true,
 }: LeveledNameProps) {
-  const flair = getAccountFlair(level);
+  const safeLevel = Math.min(12, Math.max(0, level));
+  const flair = getAccountFlair(safeLevel);
   const sizeCfg = SIZE_MAP[size];
   const crown = CROWN_RENDER[flair.crown];
   const showCrown = flair.crown !== "none";
-  const showChip = showLevelChip && level > 0;
+  const showChip = showLevelChip && safeLevel > 0;
 
   return (
     <span className={`inline-flex min-w-0 items-center ${sizeCfg.gap} ${className}`}>
@@ -59,7 +60,7 @@ export function LeveledName({
         className={`min-w-0 font-extrabold ${sizeCfg.text} ${flair.nameCls} ${
           truncate ? `truncate ${sizeCfg.truncate}` : ""
         }`}
-        title={`${name} — ${flair.rankTitle} (مستوى ${level})`}
+        title={`${name} — ${flair.rankTitle} (مستوى ${safeLevel})`}
       >
         {name}
       </span>
@@ -67,15 +68,7 @@ export function LeveledName({
         <span
           className={`shrink-0 inline-flex items-center justify-center rounded-md border font-black leading-none ${sizeCfg.chip} ${flair.chipCls}`}
         >
-          {level}
-        </span>
-      )}
-      {flair.halo && level >= 13 && (
-        <span
-          className="shrink-0 account-name-star"
-          aria-hidden="true"
-        >
-          ✦
+          {safeLevel}
         </span>
       )}
     </span>

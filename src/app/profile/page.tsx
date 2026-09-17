@@ -122,6 +122,7 @@ export default async function ProfilePage() {
                 avatarUrl={user.avatarUrl}
                 name={profile.fullName}
                 frameId={userRow?.avatarFrameId}
+                framesVisible={avatarFramesVisible}
                 size="2xl"
                 level={progress.level}
                 showLevel
@@ -167,6 +168,7 @@ export default async function ProfilePage() {
                   points: progress.xp,
                   provider: user.provider,
                 }}
+                framesVisible={avatarFramesVisible}
               />
               <span className="text-[11px] font-bold text-zinc-500">
                 الترتيب العام: #{rank}

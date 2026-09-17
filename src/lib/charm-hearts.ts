@@ -185,38 +185,12 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     glowColor: 'rgba(147, 51, 234, 0.9)',
     imagePath: '/images/hearts/lit_heart_12.png',
     unlockedPerk: 'أجنحة ثلاثية (3 أزواج مجنحة) وفتح إطار تنين اللهب القرمزي',
-    description: '3 طبقات من أجنحة الملاك الذهبية مع تاج الإمبراطورية الكبرى.'
-  },
-  {
-    level: 13,
-    title: 'السيادة الماسية',
-    pointsRequired: 770,
-    heartColor: '#f59e0b',
-    heartGradient: ['#fde047', '#d97706'],
-    wings: 'imperial',
-    crown: 'sovereign',
-    glowColor: 'rgba(245, 158, 11, 0.95)',
-    imagePath: '/images/hearts/lit_heart_13.png',
-    unlockedPerk: '4 طبقات من الأجنحة الذهبية الشعاعية المهيبة وتاج السيادة',
-    description: 'طاقة شعاعية خارقة تتجاوز حدود العادية مع 4 طبقات مجنحة.'
-  },
-  {
-    level: 14,
-    title: 'السفير الأسمى والقمة الكونية',
-    pointsRequired: 900,
-    heartColor: '#06b6d4',
-    heartGradient: ['#67e8f9', '#0891b2'],
-    wings: 'cosmic',
-    crown: 'sovereign',
-    glowColor: 'rgba(6, 182, 212, 1)',
-    imagePath: '/images/hearts/lit_heart_14.png',
-    unlockedPerk: '5 طبقات من الأجنحة السماوية الكونية المطلقة وأعلى رتبة في المنصة',
-    description: 'أعلى مرتبة شرفية في تاريخ المنصة مع 5 طبقات أجنحة سماوية مضيئة.'
+    description: '3 طبقات من أجنحة الملاك الذهبية مع تاج الإمبراطورية الكبرى — قمة التفاعل والتميز بالمنصة.'
   }
 ];
 
 export function getCharmTier(level: number): CharmTierConfig {
-  const safeLevel = Math.max(0, Math.min(level, CHARM_TIERS.length - 1));
+  const safeLevel = Math.max(0, Math.min(12, Math.min(level, CHARM_TIERS.length - 1)));
   return CHARM_TIERS[safeLevel] || CHARM_TIERS[0];
 }
 
@@ -233,6 +207,6 @@ export function getCharmTierByPoints(points: number): CharmTierConfig {
 }
 
 export function getNextCharmTier(currentLevel: number): CharmTierConfig | null {
-  if (currentLevel >= CHARM_TIERS.length - 1) return null;
-  return CHARM_TIERS[currentLevel + 1];
+  if (currentLevel >= 12 || currentLevel >= CHARM_TIERS.length - 1) return null;
+  return CHARM_TIERS[currentLevel + 1] || null;
 }
