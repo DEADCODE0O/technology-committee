@@ -5,8 +5,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { SignJWT } from "jose";
 import { db } from "@/lib/db";
-import { requireActionUser, getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
+import { requireActionUser, getCurrentUser, hashPassword, verifyPassword, getSecret } from "@/lib/auth";
 import { rateLimit, waitMessage } from "@/lib/rate-limit";
 import { logAudit, saveStudentCodeConfig, getStudentCodeConfig } from "@/lib/platform";
 import { MODULES } from "@/lib/permissions";
@@ -569,27 +571,124 @@ export async function toggleStudentStatus(userId: string): Promise<{ ok: boolean
   }
 }
 
-// إعادة تعيين كلمة سر طالب — كلمة مؤقتة تظهر مرة واحدة
-export async function resetStudentPassword(userId: string): Promise<{ ok: boolean; error?: string; tempPassword?: string }> {
+// ─── محاكاة حساب الطالب والدخول المباشر (Impersonation) ─────────
+export async function impersonateStudentAction(userId: string): Promise<{ ok: boolean; error?: string; redirectTo?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.STUDENTS, "manage");
+    const student = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+    if (!student || student.role !== "STUDENT") {
+      return { ok: false, error: "الطالب غير موجود" };
+    }
+    if (student.status === "SUSPENDED") {
+      return { ok: false, error: "لا يمكن محاكاة حساب طالب معلق" };
+    }
+
+    const token = await new SignJWT({
+      adminId: admin.id,
+      targetUserId: student.id,
+      adminEmail: admin.email,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setIssuedAt()
+      .setExpirationTime("2h") // ساعتان للمعاينة
+      .sign(getSecret());
+
+    const store = await cookies();
+    store.set("tc_impersonate", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 2 * 60 * 60,
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "ADMIN_IMPERSONATE_STUDENT",
+      entity: "STUDENT",
+      entityId: student.id,
+      summary: `بدء جلسة معاينة لحساب الطالب: ${student.profile?.fullName ?? student.email}`,
+      details: { studentId: student.id, studentEmail: student.email },
+    });
+
+    revalidatePath("/", "layout");
+    return { ok: true, redirectTo: "/panel" };
+  } catch (err) {
+    console.error("impersonateStudentAction error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+export async function stopImpersonationAction(): Promise<{ ok: boolean; redirectTo?: string }> {
+  try {
+    const store = await cookies();
+    store.delete("tc_impersonate");
+    revalidatePath("/", "layout");
+    return { ok: true, redirectTo: "/admin/students" };
+  } catch (err) {
+    console.error("stopImpersonationAction error:", err);
+    return { ok: false };
+  }
+}
+
+// إعادة تعيين كلمة سر طالب — كلمة مؤقتة تظهر مرة واحدة أو مخصصة
+export async function resetStudentPassword(
+  userId: string,
+  customPassword?: string
+): Promise<{ ok: boolean; error?: string; tempPassword?: string }> {
   try {
     const admin = await requireActionUser(MODULES.STUDENTS, "manage");
     const student = await db.user.findUnique({ where: { id: userId }, include: { profile: true } });
     if (!student || student.role !== "STUDENT") return { ok: false, error: "الطالب غير موجود" };
-    const temp = `TC${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}!`;
+
+    const cleanCustom = (customPassword || "").trim();
+    if (cleanCustom && cleanCustom.length < 8) {
+      return { ok: false, error: "كلمة السر المخصصة يجب أن تكون 8 أحرف على الأقل" };
+    }
+
+    const finalPassword = cleanCustom || `TC${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}!`;
 
     if (isSupabaseConfigured()) {
       const supabaseAdmin = getSupabaseAdmin();
       if (!supabaseAdmin) return { ok: false, error: "مفتاح Supabase الإداري غير مضبوط على السيرفر" };
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: temp });
-      if (error) return { ok: false, error: "تعذر إعادة تعيين كلمة السر في Supabase Auth" };
-      await db.user.update({ where: { id: userId }, data: { passwordHash: null } });
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: finalPassword,
+        email_confirm: true,
+      });
+      if (error) {
+        console.error("updateUserById error in resetStudentPassword:", error);
+        return { ok: false, error: "تعذر تحديث كلمة السر في Supabase Auth: " + error.message };
+      }
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: null,
+          provider: student.provider === "FACEBOOK" ? "EMAIL" : student.provider,
+        },
+      });
     } else {
-      await db.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(temp) } });
+      await db.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: await hashPassword(finalPassword),
+          provider: student.provider === "FACEBOOK" ? "EMAIL" : student.provider,
+        },
+      });
     }
 
-    await logAudit({ actor: admin, action: "PASSWORD_RESET", entity: "STUDENT", entityId: userId, summary: `إعادة تعيين كلمة سر ${student.profile?.fullName ?? student.email}` });
+    await logAudit({
+      actor: admin,
+      action: "PASSWORD_RESET",
+      entity: "STUDENT",
+      entityId: userId,
+      summary: `تعيين كلمة سر جديدة للطالب ${student.profile?.fullName ?? student.email}`,
+    });
     revalidatePath(`/admin/students/${userId}`);
-    return { ok: true, tempPassword: temp };
+    revalidatePath("/admin/students");
+    return { ok: true, tempPassword: finalPassword };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }

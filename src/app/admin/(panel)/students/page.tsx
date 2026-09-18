@@ -7,7 +7,7 @@ import { findTargetedStudentIds } from "@/lib/targeting";
 import { GRADES, SECTIONS, GENDERS, GRADE_LABELS, SECTION_LABELS, GENDER_LABELS, levelFromPoints } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SuspendToggle } from "@/components/admin/student-actions";
+import { SuspendToggle, ImpersonateStudentButton } from "@/components/admin/student-actions";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 export const dynamic = "force-dynamic";
@@ -228,6 +228,16 @@ export default async function AdminStudentsPage({
                               Google
                             </span>
                           )}
+                          {s.provider === "EMAIL" && (
+                            <span className="ms-1 inline-flex items-center gap-1 rounded-md border border-purple-400/25 bg-purple-400/[0.08] px-1.5 py-0.5 text-[9px] font-bold text-purple-300" title="مسجل بالبريد وكلمة السر">
+                              بريد
+                            </span>
+                          )}
+                          {!s.profile && (
+                            <span className="ms-1 inline-flex items-center gap-1 rounded-md border border-amber-400/30 bg-amber-400/[0.1] px-1.5 py-0.5 text-[9px] font-bold text-amber-300" title="لم يكتمل الملف الطلابي بعد">
+                              غير مكتمل
+                            </span>
+                          )}
                           {s.provider === "FACEBOOK" && (
                             <span className="ms-1 inline-flex items-center gap-1 rounded-md border border-blue-500/25 bg-blue-500/[0.1] px-1.5 py-0.5 text-[9px] font-bold text-blue-400" title="مسجل بحساب Facebook">
                               <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 fill-current" aria-hidden="true">
@@ -262,7 +272,14 @@ export default async function AdminStudentsPage({
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {canManage && (
+                            <ImpersonateStudentButton
+                              userId={s.id}
+                              studentName={s.profile?.fullName ?? s.email}
+                              variant="icon"
+                            />
+                          )}
                           {canManage && <SuspendToggle userId={s.id} active={s.status === "ACTIVE"} />}
                           <Link href={`/admin/students/${s.id}`} className="rounded-lg border border-gold/30 bg-gold/[0.08] px-3 py-1.5 text-xs font-extrabold text-gold-light hover:bg-gold/[0.15]">
                             الملف

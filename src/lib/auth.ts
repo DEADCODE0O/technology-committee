@@ -29,7 +29,7 @@ import { logAudit } from "@/lib/platform";
 const COOKIE_NAME = "tc_session";
 const SESSION_DAYS = 30;
 
-function getSecret(): Uint8Array {
+export function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   // في الإنتاج: رفض التشغيل بدون سر حقيقي — لا جلسات موقعة بسر افتراضي معروف
   if (!secret) {
@@ -137,18 +137,23 @@ export async function resolveSupabaseAppUser(
   const rawProvider = (authUser.app_metadata?.provider || "").toUpperCase();
   const providersList = ((authUser.app_metadata?.providers as string[] | undefined) || []).map((p) => p.toUpperCase());
   const identityProviders = (authUser.identities || []).map((i) => (i.provider || "").toUpperCase());
-  const isFacebook =
-    rawProvider === "FACEBOOK" ||
-    providersList.includes("FACEBOOK") ||
-    identityProviders.includes("FACEBOOK") ||
-    Boolean(metadata.iss && String(metadata.iss).includes("facebook")) ||
-    Boolean(metadata.provider_id);
   const isGoogle =
     rawProvider === "GOOGLE" ||
     providersList.includes("GOOGLE") ||
     identityProviders.includes("GOOGLE") ||
-    Boolean(metadata.iss && String(metadata.iss).includes("google"));
-  const userProvider = isFacebook ? "FACEBOOK" : isGoogle ? "GOOGLE" : "EMAIL";
+    Boolean(metadata.iss && String(metadata.iss).toLowerCase().includes("google")) ||
+    Boolean(metadata.iss && String(metadata.iss).includes("accounts.google.com")) ||
+    Boolean(authUser.identities?.some((id) => id.provider?.toLowerCase() === "google"));
+
+  const isFacebook =
+    !isGoogle &&
+    (rawProvider === "FACEBOOK" ||
+      providersList.includes("FACEBOOK") ||
+      identityProviders.includes("FACEBOOK") ||
+      Boolean(metadata.iss && String(metadata.iss).toLowerCase().includes("facebook")) ||
+      (typeof metadata.provider_id === "string" && metadata.provider_id.toLowerCase().includes("facebook")));
+
+  const userProvider = isGoogle ? "GOOGLE" : isFacebook ? "FACEBOOK" : "EMAIL";
 
   const googleSub = isGoogle && typeof metadata.sub === "string" ? metadata.sub : null;
   const email = (authUser.email ?? "").toLowerCase();
@@ -262,6 +267,8 @@ export type SessionUser = {
   accountAvatarUrl?: string | null; // صورة الحساب الأصلية المستوردة من OAuth (Google/Facebook)
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
+  isImpersonated?: boolean;
+  impersonatedByAdminEmail?: string;
   profile: {
     id: string;
     fullName: string;
@@ -288,6 +295,8 @@ type DbUserWithProfile = {
   accountAvatarUrl?: string | null;
   avatarFrameId?: string | null;
   profileThemeId?: string | null;
+  isImpersonated?: boolean;
+  impersonatedByAdminEmail?: string;
   profile: {
     id: string;
     fullName: string;
@@ -315,6 +324,8 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
     accountAvatarUrl: user.accountAvatarUrl ?? null,
     avatarFrameId: user.avatarFrameId ?? null,
     profileThemeId: user.profileThemeId ?? null,
+    isImpersonated: user.isImpersonated,
+    impersonatedByAdminEmail: user.impersonatedByAdminEmail,
     profile: user.profile
       ? {
           id: user.profile.id,
@@ -334,6 +345,38 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
   try {
+    // ── فحص وضع محاكاة الطالب (Impersonation) للمشرفين أولاً ──
+    const store = await cookies();
+    const impersonateToken = store.get("tc_impersonate")?.value;
+    if (impersonateToken) {
+      try {
+        const { payload } = await jwtVerify(impersonateToken, getSecret());
+        const adminId = payload.adminId as string;
+        const targetUserId = payload.targetUserId as string;
+        if (adminId && targetUserId) {
+          const adminUser = await db.user.findUnique({ where: { id: adminId } });
+          if (adminUser && isAdminRole(adminUser.role) && adminUser.status === "ACTIVE") {
+            const studentUser = await db.user.findUnique({
+              where: { id: targetUserId },
+              include: { profile: true },
+            });
+            if (studentUser && studentUser.status !== "SUSPENDED") {
+              const res = toSessionUser({
+                ...studentUser,
+                avatarUrl: studentUser.avatarUrl === "INITIALS" ? null : cleanAvatarUrl(studentUser.avatarUrl),
+                accountAvatarUrl: studentUser.avatarUrl,
+                isImpersonated: true,
+                impersonatedByAdminEmail: adminUser.email,
+              });
+              return res;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[getCurrentUser] impersonateToken error:", err);
+      }
+    }
+
     // ── وضع Supabase: الهوية من Supabase Auth ثم ربطها بصف التطبيق ──
     if (isSupabaseConfigured()) {
       const supabase = await createSupabaseServerClient();
@@ -408,6 +451,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       accountAvatarUrl: user.avatarUrl,
     });
   } catch (err) {
+    if (err && typeof err === "object" && "digest" in err) throw err;
     console.error("getCurrentUser error:", err);
     return null;
   }

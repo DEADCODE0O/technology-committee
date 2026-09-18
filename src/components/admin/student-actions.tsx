@@ -5,8 +5,8 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle } from "lucide-react";
-import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently } from "@/actions/admin";
+import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle, LogIn, Copy } from "lucide-react";
+import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently, impersonateStudentAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -212,42 +212,205 @@ export function AwardBadgeButton({ userId, studentName, badges }: { userId: stri
   );
 }
 
-// إعادة تعيين كلمة السر
-export function ResetPasswordButton({ userId, studentName }: { userId: string; studentName: string }) {
+// الدخول بحساب الطالب (محاكاة المشرف)
+export function ImpersonateStudentButton({
+  userId,
+  studentName,
+  variant = "default",
+}: {
+  userId: string;
+  studentName: string;
+  variant?: "default" | "icon";
+}) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
-  const [temp, setTemp] = useState<string | null>(null);
+
+  const handleImpersonate = () => {
+    if (!confirm(`الدخول ومعاينة المنصة بحساب الطالب «${studentName}»؟\nستتمكن من رؤية ورش الطالب ومهامه ونقاطه كأنه هو تماماً، ومعك زر للعودة للإدارة في أي لحظة.`)) return;
+    startTransition(async () => {
+      const res = await impersonateStudentAction(userId);
+      if (res.ok && res.redirectTo) {
+        toast.success(`تم الدخول بحساب الطالب: ${studentName}`);
+        router.push(res.redirectTo);
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر الدخول بحساب الطالب");
+      }
+    });
+  };
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={handleImpersonate}
+        disabled={pending}
+        title={`الدخول بحساب ${studentName}`}
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/[0.08] text-amber-400 hover:bg-amber-500/[0.18] transition-colors disabled:opacity-50"
+      >
+        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
+      </button>
+    );
+  }
+
+  return (
+    <Button
+      type="button"
+      onClick={handleImpersonate}
+      disabled={pending}
+      variant="outline"
+      className="h-9 rounded-lg border-amber-500/30 bg-amber-500/[0.08] px-3 text-xs font-extrabold text-amber-300 hover:bg-amber-500/[0.18] hover:border-amber-500/50"
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogIn className="h-3.5 w-3.5" />}
+      الدخول كطالب
+    </Button>
+  );
+}
+
+// تعيين كلمة السر للطالب (تخصيص أو عشوائية مع نسخ مباشر)
+export function ResetPasswordButton({
+  userId,
+  studentName,
+  studentEmail,
+}: {
+  userId: string;
+  studentName: string;
+  studentEmail?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [customPass, setCustomPass] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const router = useRouter();
+
+  const handleGenerate = () => {
+    setCustomPass(`TC${Math.random().toString(36).slice(2, 8)}!2026`);
+  };
+
+  const handleSubmit = () => {
+    if (customPass.trim() && customPass.trim().length < 8) {
+      return toast.error("كلمة السر يجب أن تكون 8 أحرف على الأقل");
+    }
+    startTransition(async () => {
+      const res = await resetStudentPassword(userId, customPass.trim() || undefined);
+      if (res.ok && res.tempPassword) {
+        setResult(res.tempPassword);
+        toast.success("تم تعيين كلمة السر وتفعيل الحساب بنجاح ✓");
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر تعيين كلمة السر");
+      }
+    });
+  };
+
+  const handleCopy = () => {
+    const textToCopy = `بيانات الدخول للجنة التكنولوجية:
+البريد: ${studentEmail || "—"}
+كلمة السر: ${result}
+رابط المنصة: https://technology-committee-website.vercel.app/login`;
+    navigator.clipboard.writeText(textToCopy);
+    setCopied(true);
+    toast.success("تم نسخ بيانات الدخول إلى الحافظة!");
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   return (
     <>
       <Button
         onClick={() => {
-          if (!confirm(`إعادة تعيين كلمة سر «${studentName}»؟ هتظهرلك كلمة مؤقتة مرة واحدة.`)) return;
-          startTransition(async () => {
-            const res = await resetStudentPassword(userId);
-            if (res.ok && res.tempPassword) {
-              setTemp(res.tempPassword);
-              router.refresh();
-            } else toast.error(res.error || "تعذر التعيين");
-          });
+          setOpen(true);
+          setResult(null);
+          setCustomPass("");
         }}
-        disabled={pending}
         variant="outline"
         className="h-9 rounded-lg border-white/15 bg-white/[0.03] px-3 text-xs font-extrabold text-zinc-200 hover:border-gold/30"
       >
-        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+        <KeyRound className="h-3.5 w-3.5" />
         كلمة سر
       </Button>
 
-      <Dialog open={!!temp} onOpenChange={(v) => !v && setTemp(null)}>
-        <DialogContent dir="rtl" className="max-w-sm rounded-3xl border-white/10 bg-surface">
+      <Dialog open={open} onOpenChange={(v) => { if (!pending) setOpen(v); }}>
+        <DialogContent dir="rtl" className="max-w-md rounded-3xl border-white/10 bg-surface">
           <DialogHeader>
-            <DialogTitle className="text-base font-extrabold text-gold-light">كلمة السر المؤقتة</DialogTitle>
-            <DialogDescription>ظهرت مرة واحدة فقط — انسخها وابعتها للطالب (واتساب مثلًا). تغيّرها من ملفه عند أول دخول.</DialogDescription>
+            <DialogTitle className="text-base font-extrabold text-gold-light">
+              تعيين كلمة سر للطالب
+            </DialogTitle>
+            <DialogDescription>
+              يمكنك كتابة كلمة سر مخصصة للطالب «{studentName}» أو توليد كلمة عشوائية. سيتم تفعيل حسابه فورًا بالكلمة الجديدة في Supabase.
+            </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl border border-gold/30 bg-gold/[0.08] px-5 py-4 text-center">
-            <p dir="ltr" className="select-all text-xl font-extrabold tracking-widest text-gold-light">{temp}</p>
-          </div>
+
+          {!result ? (
+            <div className="space-y-4 pt-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-zinc-300">
+                  كلمة السر الجديدة (اختياري - اتركها فارغة لتوليد كلمة عشوائية)
+                </Label>
+                <Input
+                  type="text"
+                  dir="ltr"
+                  placeholder="مثال: Ahmed@123456 أو 12345678"
+                  value={customPass}
+                  onChange={(e) => setCustomPass(e.target.value)}
+                  className="h-11 rounded-xl font-mono text-sm"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGenerate}
+                  className="h-11 flex-1 rounded-xl border-white/10 text-xs font-bold"
+                >
+                  توليد كلمة تلقائية
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={pending}
+                  className="h-11 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-xs font-extrabold text-night"
+                >
+                  {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                  حفظ وتعيين
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2">
+              <div className="rounded-2xl border border-gold/30 bg-gold/[0.08] p-4 text-center">
+                <p className="text-xs font-bold text-zinc-400 mb-1">كلمة السر النشطة الآن:</p>
+                <p dir="ltr" className="select-all font-mono text-xl font-black text-gold-light">
+                  {result}
+                </p>
+                {studentEmail && (
+                  <p dir="ltr" className="mt-2 text-xs text-zinc-400">
+                    البريد: {studentEmail}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={handleCopy}
+                  className="h-11 flex-1 rounded-xl bg-gold text-night font-bold text-xs flex items-center justify-center gap-2"
+                >
+                  {copied ? <CheckCircle2 className="h-4 w-4 text-emerald-900" /> : <Copy className="h-4 w-4" />}
+                  {copied ? "تم النسخ!" : "نسخ بيانات الدخول للطالب"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  className="h-11 rounded-xl border-white/10 text-xs font-bold px-4"
+                >
+                  إغلاق
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

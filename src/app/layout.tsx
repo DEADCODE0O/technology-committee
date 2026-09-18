@@ -10,6 +10,8 @@ import { SeasonalBanner } from "@/components/seasonal/seasonal-banner";
 import { SeasonalDecorations } from "@/components/seasonal/seasonal-decorations";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n/context";
+import { getCurrentUser } from "@/lib/auth";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import "./globals.css";
 
 // الخط العربي الأساسي للموقع
@@ -64,9 +66,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [themeConfig, avatarFramesVisible] = await Promise.all([
+  const [themeConfig, avatarFramesVisible, currentUser] = await Promise.all([
     getSiteTheme(),
     getAvatarFramesVisible(),
+    getCurrentUser(),
   ]);
   const activeThemeDef = SITE_THEMES.find((t) => t.id === themeConfig.themeId) || SITE_THEMES[0];
 
@@ -91,6 +94,12 @@ export default async function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider defaultLocale="ar">
+            {currentUser?.isImpersonated && (
+              <ImpersonationBanner
+                studentName={currentUser.profile?.fullName || currentUser.suggestedName || currentUser.email}
+                studentEmail={currentUser.email}
+              />
+            )}
             {themeConfig.showBanner && themeConfig.bannerText && (
               <SeasonalBanner
                 text={themeConfig.bannerText}

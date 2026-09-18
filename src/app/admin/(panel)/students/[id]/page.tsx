@@ -12,7 +12,7 @@ import {
   levelFromPoints, TALENT_STATUS_LABELS, talentLabel, REGISTRATION_STATUS_LABELS,
   REGISTRATION_SOURCE_LABELS,
 } from "@/lib/constants";
-import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, DeleteStudentButton } from "@/components/admin/student-actions";
+import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, DeleteStudentButton, ImpersonateStudentButton } from "@/components/admin/student-actions";
 import { ReversePointEventButton, DeletePointEventButton } from "@/components/admin/points-tools";
 import { EditStudentButton } from "@/components/admin/edit-student-form";
 import { SetTalentStatusButtons } from "@/components/admin/talent-actions";
@@ -82,6 +82,12 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
         {/* الإجراءات */}
         <div className="flex flex-wrap items-center gap-2">
           {canManage && (
+            <ImpersonateStudentButton
+              userId={student.id}
+              studentName={student.profile?.fullName ?? student.email}
+            />
+          )}
+          {canManage && (
             <EditStudentButton
               userId={student.id}
               initial={{
@@ -97,7 +103,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
           )}
           {canPoints && <AddPointsButton userId={student.id} studentName={student.profile?.fullName ?? student.email} pointRules={pointRules} />}
           {canBadges && <AwardBadgeButton userId={student.id} studentName={student.profile?.fullName ?? student.email} badges={allBadges.map((b) => ({ id: b.id, name: b.name, icon: b.icon }))} />}
-          {canManage && <ResetPasswordButton userId={student.id} studentName={student.profile?.fullName ?? student.email} />}
+          {canManage && <ResetPasswordButton userId={student.id} studentName={student.profile?.fullName ?? student.email} studentEmail={student.email} />}
           {canManage && <SuspendToggle userId={student.id} active={student.status === "ACTIVE"} />}
           {canManage && <DeleteStudentButton userId={student.id} studentName={student.profile?.fullName ?? student.email} />}
         </div>
@@ -115,12 +121,25 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 label="طريقة التسجيل"
                 value={
                   student.provider === "GOOGLE"
-                    ? "مسجل بحساب Google"
+                    ? "حساب Google الموثق (Google OAuth)"
                     : student.provider === "FACEBOOK"
-                    ? "مسجل بحساب Facebook"
-                    : "بالبريد وكلمة السر"
+                    ? "حساب Facebook (قديم)"
+                    : "البريد الإلكتروني وكلمة السر"
                 }
               />
+              <Info
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                label="حالة الملف"
+                value={student.profile ? "مكتمل ✓" : "غير مكتمل (ينقصه استكمال البيانات)"}
+              />
+              {student.googleId && (
+                <Info
+                  icon={<LogIn className="h-4 w-4" />}
+                  label="معرّف Google ID"
+                  value={student.googleId}
+                  ltr
+                />
+              )}
               <Info icon={<Phone className="h-4 w-4" />} label="الهاتف" value={student.profile?.phone ?? "—"} ltr />
               <Info icon={<GraduationCap className="h-4 w-4" />} label="الفرقة" value={GRADE_LABELS[student.profile?.grade ?? ""] ?? "—"} />
               <Info icon={<Users className="h-4 w-4" />} label="الشعبة" value={SECTION_LABELS[student.profile?.section ?? ""] ?? "—"} />

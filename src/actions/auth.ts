@@ -108,8 +108,13 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات اللجنة" };
       const codeCheck = validateStudentCodeFormat(code, data.grade);
       if (!codeCheck.ok) return { ok: false, error: codeCheck.error! };
-      const exists = await db.studentProfile.findFirst({ where: { studentCode: code } });
-      if (exists) return { ok: false, error: "كود الطالب مسجل بالفعل — تواصل مع الإدارة" };
+      const exists = await db.studentProfile.findFirst({
+        where: { studentCode: code },
+        include: { user: true },
+      });
+      if (exists && exists.user.email.toLowerCase() !== email.toLowerCase()) {
+        return { ok: false, error: "كود الطالب مسجل بالفعل لطالب آخر — تواصل مع الإدارة" };
+      }
       studentCode = code;
     }
 
@@ -190,21 +195,86 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
     }
 
     // ── التأكد من عدم تكرار البريد ──
-    const existing = await db.user.findUnique({ where: { email } });
+    const existing = await db.user.findUnique({ where: { email }, include: { profile: true } });
     if (existing) {
       if (isSupabaseConfigured()) {
         const supaAdmin = getSupabaseAdmin();
         if (supaAdmin) {
           const { data: supaUser } = await supaAdmin.auth.admin.getUserById(existing.id);
-          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نعيد إرسال الرمز وننقله لشاشة التفعيل
+          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نحدّث بياناته وكلمة السر ونعيد إرسال الرمز وننقله لشاشة التفعيل
           if (supaUser?.user && !supaUser.user.email_confirmed_at && !supaUser.user.confirmed_at) {
+            await supaAdmin.auth.admin.updateUserById(existing.id, { password: data.password });
+            await db.studentProfile.upsert({
+              where: { userId: existing.id },
+              create: {
+                userId: existing.id,
+                fullName,
+                grade: data.grade,
+                section: data.section,
+                gender: data.gender,
+                phone,
+                phoneVerified: true,
+                studentCode: studentCode ?? null,
+                discoverySource: discoverySource ?? null,
+                joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+              },
+              update: {
+                fullName,
+                grade: data.grade,
+                section: data.section,
+                gender: data.gender,
+                phone,
+                studentCode: studentCode ?? null,
+                discoverySource: discoverySource ?? null,
+                joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+              },
+            });
             const supabase = await createSupabaseServerClient();
             if (supabase) await supabase.auth.resend({ type: "signup", email }).catch(() => {});
             return { ok: true, needsEmailConfirm: true, email };
           }
         }
       }
-      return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول" };
+
+      // إذا كان الحساب مسجل مسبقاً وبلا ملف طالب مكتمل:
+      if (!existing.profile) {
+        if (existing.provider === "GOOGLE") {
+          return {
+            ok: false,
+            error: "هذا الحساب مسجّل مسبقًا عبر Google ولم تكتمل بياناته بعد — سجّل دخولك عبر Google وسيتم نقلك لإكمال بياناتك مباشرة.",
+          };
+        }
+        // مستخدم مسجل بالبريد لكن لم يكتمل ملفه
+        if (isSupabaseConfigured()) {
+          const supaAdmin = getSupabaseAdmin();
+          if (supaAdmin) {
+            await supaAdmin.auth.admin.updateUserById(existing.id, { password: data.password });
+          }
+        }
+        await db.studentProfile.create({
+          data: {
+            userId: existing.id,
+            fullName,
+            grade: data.grade,
+            section: data.section,
+            gender: data.gender,
+            phone,
+            phoneVerified: true,
+            studentCode: studentCode ?? null,
+            discoverySource: discoverySource ?? null,
+            joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+          },
+        });
+        return { ok: true, needsEmailConfirm: false };
+      }
+
+      if (existing.provider === "GOOGLE") {
+        return {
+          ok: false,
+          error: "هذا البريد مسجل بالفعل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google» أعلاه",
+        };
+      }
+      return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول بكلمة السر أو استعادة كلمة السر" };
     }
 
     // ══ وضع Supabase: الهوية في Supabase Auth + الصف بنفس UUID ══
@@ -544,21 +614,17 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
     }
 
-    const user = await db.user.findUnique({ where: { email } });
+    const user = await db.user.findUnique({ where: { email }, include: { profile: true } });
     if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
     if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
 
-    // حسابات التواصل الاجتماعي وُلدت بلا كلمة سر — لا يمكن الدخول بالبريد وكلمة السر
-    if (user.provider === "FACEBOOK") {
-      return { error: "هذا الحساب مسجّل عبر Facebook — يرجى استخدام زر «تسجيل الدخول بحساب Facebook» أعلاه" };
-    }
-    if (user.provider === "GOOGLE" || (!user.passwordHash && !isAdminRole(user.role))) {
-      return { error: "هذا الحساب مسجّل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google» أعلاه" };
-    }
-
     // تحديد الوجهة المناسبة
     const rawReturnTo = String(formData.get("returnTo") || "").trim();
-    const defaultTarget = isAdminRole(user.role) ? "/admin" : "/panel";
+    const defaultTarget = isAdminRole(user.role)
+      ? "/admin"
+      : !user.profile && user.role === ROLES.STUDENT
+      ? "/profile/complete"
+      : "/panel";
     const targetUrl =
       rawReturnTo && rawReturnTo !== "/"
         ? safeRedirectUrl(rawReturnTo, defaultTarget)
@@ -587,6 +653,12 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
         }
         // دخول فاشل — إنهاء أي جلسة جزئية
         await supabase.auth.signOut().catch(() => {});
+        if (user.provider === "GOOGLE") {
+          return { error: "كلمة السر غير صحيحة — إذا لم تكن قد عيّنت كلمة سر بعد، يمكنك تسجيل الدخول مباشرة بضغطة واحدة عبر زر «تسجيل الدخول بحساب Google» أعلاه" };
+        }
+        if (user.provider === "FACEBOOK") {
+          return { error: "هذا الحساب مسجّل عبر Facebook" };
+        }
         return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
       }
 
@@ -601,17 +673,31 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       // نجاح — تصفير عداد البريد حتى لا يتأثر مستخدم شرعي
       resetRateLimit(`login:email:${email}`);
 
+      // إذا كان طالباً وملفه لم يكتمل بعد، نوجّهه فوراً لصفحة إكمال البيانات
+      if (user.role === ROLES.STUDENT && !user.profile) {
+        return { redirectTo: "/profile/complete" };
+      }
+
       return { redirectTo: targetUrl };
     }
 
     // ══ وضع التطوير المحلي: bcrypt ══
     const valid = await verifyPassword(password, user.passwordHash || "");
-    if (!valid) return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
+    if (!valid) {
+      if (user.provider === "GOOGLE") {
+        return { error: "كلمة السر غير صحيحة — إذا لم تكن قد عيّنت كلمة سر بعد، يمكنك تسجيل الدخول بضغطة واحدة عبر زر Google أعلاه" };
+      }
+      return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
+    }
 
     // نجاح — تصفير عداد البريد حتى لا يتأثر مستخدم شرعي
     resetRateLimit(`login:email:${email}`);
 
     await createSession(user.id);
+
+    if (user.role === ROLES.STUDENT && !user.profile) {
+      return { redirectTo: "/profile/complete" };
+    }
 
     return { redirectTo: targetUrl };
   } catch (err) {
@@ -767,7 +853,7 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
     if (user.role !== ROLES.STUDENT) return { ok: false, error: "هذه الخطوة للطلاب فقط" };
 
     const existing = await db.studentProfile.findUnique({ where: { userId: user.id } });
-    if (existing) return { ok: false, error: "بياناتك مكتملة بالفعل" };
+    if (existing) return { ok: true };
 
     const fullName = normalizeArabicName(data.fullName || "");
     if (!isValidArabicFullName(fullName)) return { ok: false, error: "الاسم يجب أن يكون باللغة العربية ومن 3 أسماء على الأقل" };
