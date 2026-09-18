@@ -1,0 +1,454 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { db } from "@/lib/db";
+import { getCurrentUser, requireAdmin } from "@/lib/auth";
+import { canUser, MODULES } from "@/lib/permissions";
+import { logAudit } from "@/lib/platform";
+import { levelFromPoints } from "@/lib/constants";
+
+/**
+ * فحص صلاحية الدخول لمركز المراقبة والإشراف
+ */
+async function requireSurveillanceAuth() {
+  const admin = await requireAdmin();
+  const user = await getCurrentUser();
+  if (!user || !canUser(user, MODULES.SURVEILLANCE, "view")) {
+    throw new Error("ليس لديك صلاحية الوصول لمركز المراقبة والإشراف.");
+  }
+  return user;
+}
+
+/**
+ * البحث عن طالب لمراقبة نشاطه أو محادثاته
+ */
+export async function searchStudentsForSurveillance(query: string) {
+  await requireSurveillanceAuth();
+  const q = query.trim();
+  if (!q) return [];
+
+  const students = await db.user.findMany({
+    where: {
+      role: "STUDENT",
+      OR: [
+        { displayName: { contains: q, mode: "insensitive" } },
+        { username: { contains: q, mode: "insensitive" } },
+        { email: { contains: q, mode: "insensitive" } },
+        { profile: { fullName: { contains: q, mode: "insensitive" } } },
+        { profile: { studentCode: { contains: q, mode: "insensitive" } } },
+        { profile: { phone: { contains: q } } },
+      ],
+    },
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      email: true,
+      avatarUrl: true,
+      avatarFrameId: true,
+      lastActiveAt: true,
+      createdAt: true,
+      profile: {
+        select: {
+          fullName: true,
+          gender: true,
+          grade: true,
+          section: true,
+          phone: true,
+          studentCode: true,
+        },
+      },
+      pointEvents: { select: { points: true } },
+      _count: {
+        select: {
+          messagesSent: true,
+          messagesReceived: true,
+          chatMessages: true,
+        },
+      },
+    },
+    take: 25,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return students.map((s) => {
+    const points = s.pointEvents.reduce((acc, e) => acc + e.points, 0);
+    return {
+      id: s.id,
+      username: s.username,
+      displayName: s.displayName || s.profile?.fullName || "طالب",
+      email: s.email,
+      phone: s.profile?.phone || "غير مسجل",
+      studentCode: s.profile?.studentCode || "—",
+      gender: s.profile?.gender || "غير محدد",
+      grade: s.profile?.grade || "—",
+      section: s.profile?.section || "—",
+      avatarUrl: s.avatarUrl,
+      avatarFrameId: s.avatarFrameId,
+      level: levelFromPoints(points),
+      lastActiveAt: s.lastActiveAt,
+      createdAt: s.createdAt,
+      stats: {
+        sentDirectMessages: s._count.messagesSent,
+        receivedDirectMessages: s._count.messagesReceived,
+        publicChatMessages: s._count.chatMessages,
+      },
+    };
+  });
+}
+
+/**
+ * جلب قائمة المحادثات الخاصة لطالب معين
+ */
+export async function getStudentConversationsForAdmin(targetStudentId: string) {
+  await requireSurveillanceAuth();
+
+  const messages = await db.directMessage.findMany({
+    where: {
+      OR: [
+        { senderId: targetStudentId },
+        { receiverId: targetStudentId },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          avatarFrameId: true,
+          profile: { select: { fullName: true, gender: true, phone: true, studentCode: true } },
+          pointEvents: { select: { points: true } },
+        },
+      },
+      receiver: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          avatarFrameId: true,
+          profile: { select: { fullName: true, gender: true, phone: true, studentCode: true } },
+          pointEvents: { select: { points: true } },
+        },
+      },
+    },
+  });
+
+  // تجميع المحادثات حسب الطالب الآخر
+  const convMap = new Map<string, {
+    otherUser: {
+      id: string;
+      username: string | null;
+      displayName: string;
+      avatarUrl: string | null;
+      avatarFrameId: string | null;
+      phone: string;
+      studentCode: string;
+      gender: string;
+      level: number;
+    };
+    totalMessages: number;
+    lastMessage: {
+      body: string;
+      senderId: string;
+      createdAt: Date;
+    };
+  }>();
+
+  for (const m of messages) {
+    const isSender = m.senderId === targetStudentId;
+    const other = isSender ? m.receiver : m.sender;
+
+    if (!convMap.has(other.id)) {
+      const points = other.pointEvents.reduce((acc, e) => acc + e.points, 0);
+      convMap.set(other.id, {
+        otherUser: {
+          id: other.id,
+          username: other.username,
+          displayName: other.displayName || other.profile?.fullName || "طالب",
+          avatarUrl: other.avatarUrl,
+          avatarFrameId: other.avatarFrameId,
+          phone: other.profile?.phone || "—",
+          studentCode: other.profile?.studentCode || "—",
+          gender: other.profile?.gender || "غير محدد",
+          level: levelFromPoints(points),
+        },
+        totalMessages: 1,
+        lastMessage: {
+          body: m.body,
+          senderId: m.senderId,
+          createdAt: m.createdAt,
+        },
+      });
+    } else {
+      const existing = convMap.get(other.id)!;
+      existing.totalMessages += 1;
+    }
+  }
+
+  return Array.from(convMap.values());
+}
+
+/**
+ * وضع المراقب الخفي (Shadow Mode):
+ * جلب أرشيف الرسائل بالكامل بين طالبين بدون التأثير على حالة القراءة (readAt)
+ * وبدون تسجيل أي أثر يدل على دخول الإدارة على المحادثة!
+ */
+export async function getTranscriptBetweenStudents(
+  studentAId: string,
+  studentBId: string
+) {
+  await requireSurveillanceAuth();
+
+  const messages = await db.directMessage.findMany({
+    where: {
+      OR: [
+        { senderId: studentAId, receiverId: studentBId },
+        { senderId: studentBId, receiverId: studentAId },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          avatarUrl: true,
+          avatarFrameId: true,
+          profile: { select: { fullName: true } },
+        },
+      },
+    },
+    take: 200,
+  });
+
+  // جلب بيانات الطالبين للترويسة
+  const [studentA, studentB] = await Promise.all([
+    db.user.findUnique({
+      where: { id: studentAId },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        avatarUrl: true,
+        avatarFrameId: true,
+        profile: { select: { fullName: true, phone: true, studentCode: true } },
+      },
+    }),
+    db.user.findUnique({
+      where: { id: studentBId },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        avatarUrl: true,
+        avatarFrameId: true,
+        profile: { select: { fullName: true, phone: true, studentCode: true } },
+      },
+    }),
+  ]);
+
+  return {
+    studentA: studentA
+      ? {
+          id: studentA.id,
+          name: studentA.displayName || studentA.profile?.fullName || studentA.email,
+          username: studentA.username,
+          phone: studentA.profile?.phone || "—",
+          studentCode: studentA.profile?.studentCode || "—",
+          avatarUrl: studentA.avatarUrl,
+        }
+      : null,
+    studentB: studentB
+      ? {
+          id: studentB.id,
+          name: studentB.displayName || studentB.profile?.fullName || studentB.email,
+          username: studentB.username,
+          phone: studentB.profile?.phone || "—",
+          studentCode: studentB.profile?.studentCode || "—",
+          avatarUrl: studentB.avatarUrl,
+        }
+      : null,
+    messages: messages.map((m) => ({
+      id: m.id,
+      senderId: m.senderId,
+      senderName: m.sender.displayName || m.sender.profile?.fullName || "طالب",
+      senderAvatar: m.sender.avatarUrl,
+      body: m.body,
+      createdAt: m.createdAt.toISOString(),
+      readAt: m.readAt ? m.readAt.toISOString() : null,
+      status: m.deletedBySender ? "DELETED_BY_SENDER" : m.deletedByReceiver ? "DELETED_BY_RECEIVER" : "VISIBLE",
+    })),
+  };
+}
+
+/**
+ * جلب رسائل الشات العام للإدارة مع إمكانية التحكم والإشراف
+ */
+export async function getRecentChatMessagesForAdmin(take = 100) {
+  await requireSurveillanceAuth();
+
+  const messages = await db.chatMessage.findMany({
+    orderBy: { createdAt: "desc" },
+    take: Math.min(take, 200),
+    include: {
+      room: { select: { id: true, name: true, type: true } },
+      user: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          email: true,
+          avatarUrl: true,
+          avatarFrameId: true,
+          profile: { select: { fullName: true, phone: true, studentCode: true } },
+          pointEvents: { select: { points: true } },
+        },
+      },
+    },
+  });
+
+  return messages.map((m) => {
+    const points = m.user.pointEvents.reduce((acc, e) => acc + e.points, 0);
+    return {
+      id: m.id,
+      body: m.body,
+      status: m.status,
+      createdAt: m.createdAt.toISOString(),
+      room: m.room,
+      user: {
+        id: m.user.id,
+        username: m.user.username,
+        name: m.user.displayName || m.user.profile?.fullName || m.user.email,
+        email: m.user.email,
+        phone: m.user.profile?.phone || "—",
+        studentCode: m.user.profile?.studentCode || "—",
+        avatarUrl: m.user.avatarUrl,
+        avatarFrameId: m.user.avatarFrameId,
+        level: levelFromPoints(points),
+      },
+    };
+  });
+}
+
+/**
+ * إخفاء أو استعادة رسالة في الشات العام
+ */
+export async function toggleChatMessageVisibility(
+  messageId: string,
+  hidden: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireSurveillanceAuth();
+
+    const msg = await db.chatMessage.findUnique({
+      where: { id: messageId },
+      include: { user: { select: { email: true } } },
+    });
+
+    if (!msg) return { ok: false, error: "الرسالة غير موجودة" };
+
+    const newStatus = hidden ? "HIDDEN" : "VISIBLE";
+    await db.chatMessage.update({
+      where: { id: messageId },
+      data: { status: newStatus },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: hidden ? "chat.message.hide" : "chat.message.restore",
+      entity: "ChatMessage",
+      entityId: messageId,
+      summary: `${hidden ? "إخفاء" : "استعادة"} رسالة في الشات العام بواسطة الإدارة`,
+      details: {
+        messageId,
+        authorEmail: msg.user.email,
+        snippet: msg.body.slice(0, 80),
+      },
+      before: { status: msg.status },
+      after: { status: newStatus },
+    });
+
+    revalidatePath("/chat");
+    revalidatePath("/admin/surveillance");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "فشل تعديل حالة الرسالة" };
+  }
+}
+
+/**
+ * جلب قائمة البلاغات المقدمة من الطلاب
+ */
+export async function getReportsList() {
+  await requireSurveillanceAuth();
+
+  const reports = await db.report.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    include: {
+      reporter: {
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          email: true,
+          profile: { select: { fullName: true } },
+        },
+      },
+    },
+  });
+
+  return reports.map((r) => ({
+    id: r.id,
+    reporterId: r.reporterId,
+    reporterName: r.reporter.displayName || r.reporter.profile?.fullName || r.reporter.email,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    reason: r.reason,
+    details: r.details,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+    resolvedAt: r.resolvedAt ? r.resolvedAt.toISOString() : null,
+  }));
+}
+
+/**
+ * معالجة بلاغ (مراجعة أو تجاهل)
+ */
+export async function resolveReport(
+  reportId: string,
+  action: "REVIEWED" | "DISMISSED"
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireSurveillanceAuth();
+
+    await db.report.update({
+      where: { id: reportId },
+      data: {
+        status: action,
+        resolvedById: admin.id,
+        resolvedAt: new Date(),
+      },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: `report.${action.toLowerCase()}`,
+      entity: "Report",
+      entityId: reportId,
+      summary: `معالجة بلاغ بحالة: ${action}`,
+    });
+
+    revalidatePath("/admin/surveillance");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "فشل معالجة البلاغ" };
+  }
+}

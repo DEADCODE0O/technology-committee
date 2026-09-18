@@ -36,6 +36,12 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // ── الحقول الاجتماعية الجديدة ──
+  username          String?   @unique // اسم مستخدم فريد للبحث والمنشن @handle
+  displayName       String?   // الاسم المستعار المفضل للعرض
+  bio               String?   // نبذة تعريفية قصيرة (حد 160 حرف)
+  lastActiveAt      DateTime? // آخر نشاط للطالب (لحالة الاتصال والـ streak)
+
   profile              StudentProfile?
   registrations        Registration[]
   talents              Talent[]
@@ -63,6 +69,17 @@ model User {
   mediaAssetsCreated   MediaAsset[]     @relation("MediaAssetCreator")
   rewardsReceived      StudentReward[]  @relation("StudentRewardRecipient")
   rewardsGranted       StudentReward[]  @relation("StudentRewardAwarder")
+
+  // ── المنظومة الاجتماعية ──
+  friendshipsSent      Friendship[]          @relation("FriendshipSender")
+  friendshipsReceived  Friendship[]          @relation("FriendshipReceiver")
+  messagesSent         DirectMessage[]       @relation("MessageSender")
+  messagesReceived     DirectMessage[]       @relation("MessageReceiver")
+  chatMessages         ChatMessage[]
+  streaks              DailyStreak?
+  reportsMade          Report[]              @relation("ReportCreator")
+  studentPosts         StudentPost[]
+  studentReactions     StudentPostReaction[]
 }
 
 // ─── ملف الطالب ──────────────────────────────────────────────
@@ -846,4 +863,133 @@ model StudentData {
 model Setting {
   key   String @id
   value String // JSON
+}
+
+// ═══════════════════════════════════════════════════════════════
+// المنظومة الاجتماعية والشبكة الطلابية
+// ═══════════════════════════════════════════════════════════════
+
+// ─── نظام الصداقة ────────────────────────────────────────────
+model Friendship {
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("PENDING") // PENDING | ACCEPTED | DECLINED | BLOCKED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+  @@index([senderId, status])
+}
+
+// ─── الرسائل الخاصة (بين الأصدقاء فقط) ──────────────────────
+model DirectMessage {
+  id                String    @id @default(cuid())
+  senderId          String
+  sender            User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId        String
+  receiver          User      @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  body              String    // حد أقصى 1000 حرف
+  readAt            DateTime? // null = غير مقروءة
+  deletedBySender   Boolean   @default(false)
+  deletedByReceiver Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, readAt])
+}
+
+// ─── غرف وشات المجموعات ─────────────────────────────────────
+model ChatRoom {
+  id          String        @id @default(cuid())
+  name        String
+  type        String        @default("GENERAL") // GENERAL | ACTIVITY | COURSE | Q_AND_A
+  activityId  String?       // اختياري لربط الشات بنشاط أو ورشة معينة
+  description String?
+  icon        String        @default("💬")
+  createdAt   DateTime      @default(now())
+
+  messages    ChatMessage[]
+
+  @@index([type])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String   // حد أقصى 500 حرف
+  status    String   @default("VISIBLE") // VISIBLE | HIDDEN | FILTERED
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([userId])
+}
+
+// ─── الاستمرارية اليومية (Daily Streak) ──────────────────────
+model DailyStreak {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak  Int      @default(0) // أيام متتالية حالية
+  longestStreak  Int      @default(0) // أطول سلسلة تاريخية
+  lastActiveDate String?  // "YYYY-MM-DD" تاريخ آخر يوم نشط لمنع التكرار في نفس اليوم
+  updatedAt      DateTime @updatedAt
+}
+
+// ─── منشورات الطلاب (Feed بإشراف) ───────────────────────────
+model StudentPost {
+  id        String                @id @default(cuid())
+  userId    String
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String                // حد أقصى 2000 حرف
+  imageUrl  String?               // صورة اختيارية
+  status    String                @default("PENDING") // PENDING | APPROVED | HIDDEN
+  category  String                @default("GENERAL") // GENERAL | QUESTION | ACHIEVEMENT | RESOURCE
+  likes     Int                   @default(0) // كاش سريع لعدد الإعجابات
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  reactions StudentPostReaction[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+model StudentPostReaction {
+  postId    String
+  userId    String
+  post      StudentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@id([postId, userId])
+}
+
+// ─── نظام البلاغات (Report System) ───────────────────────────
+model Report {
+  id           String    @id @default(cuid())
+  reporterId   String
+  reporter     User      @relation("ReportCreator", fields: [reporterId], references: [id], onDelete: Cascade)
+  entityType   String    // MESSAGE | CHAT_MESSAGE | POST | COMMENT | STUDENT_POST | PROFILE
+  entityId     String
+  reason       String    // INAPPROPRIATE | SPAM | HARASSMENT | OTHER
+  details      String?   // حد أقصى 250 حرف
+  status       String    @default("PENDING") // PENDING | REVIEWED | DISMISSED
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([entityType, entityId])
+}
+
+// ─── فلتر الكلمات المحظورة ───────────────────────────────────
+model BannedWord {
+  id   String @id @default(cuid())
+  word String @unique // lowercase
 }

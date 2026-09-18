@@ -2,27 +2,29 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, User, Bell, Trophy } from "lucide-react";
+import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, User, Bell, Trophy, MessageSquare, MessageCircle } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // ═══════════════════════════════════════════════════════════════
 //  غلاف منطقة الطالب — «دي منصتك» وليست موقع تسجيل ورش
-//  • الموبايل: شريط سفلي بخمسة أقسام بمعايير التطبيقات
-//    (الرئيسية · اكتشف · مهامي · المجتمع · حسابي) — كل شيء
-//    في متناول الإبهام
-//  • الإشعارات: أيقونة علوية بشارة غير المقروء
-//  • الشاشات الكبيرة: شريط علوي كامل
+//  • الموبايل: شريط سفلي بـ 6 أقسام سريعة وتفاعلية
+//    (الرئيسية · الشات · الرسائل · الأصدقاء · مهامي · حسابي)
+//  • الإشعارات والرسائل: أيقونات علوية للوصول السريع
+//  • الشاشات الكبيرة: شريط علوي غني وكامل
 // ═══════════════════════════════════════════════════════════════
 
 const NAV = [
   { key: "dashboard", label: "الرئيسية", href: "/panel", icon: LayoutDashboard, bottom: true },
-  { key: "activities", label: "اكتشف", href: "/activities", icon: Compass, bottom: true },
+  { key: "chat", label: "الشات", href: "/chat", icon: MessageSquare, bottom: true },
+  { key: "messages", label: "الرسائل", href: "/messages", icon: MessageCircle, bottom: true },
+  { key: "friends", label: "الأصدقاء", href: "/friends", icon: Users, bottom: true },
   { key: "tasks", label: "مهامي", href: "/tasks", icon: ClipboardList, bottom: true },
-  { key: "community", label: "المجتمع", href: "/community", icon: Users, bottom: true },
-  { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: true },
   { key: "profile", label: "حسابي", href: "/profile", icon: User, bottom: true },
+  { key: "activities", label: "اكتشف", href: "/activities", icon: Compass, bottom: false },
+  { key: "community", label: "المجتمع", href: "/community", icon: Users, bottom: false },
+  { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: false },
 ];
 
 export function StudentShell({
@@ -98,6 +100,16 @@ export function StudentShell({
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
+            </Link>
+
+            {/* الرسائل الخاصة: أيقونة وصول مباشر */}
+            <Link
+              href="/messages"
+              aria-label="الرسائل والمحادثات"
+              title="الرسائل والمحادثات"
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/40 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
+            >
+              <MessageCircle className="h-4 w-4" />
             </Link>
 
             {/* محول المظهر (وضع النهار / الليل) */}

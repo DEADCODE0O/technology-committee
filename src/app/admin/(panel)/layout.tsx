@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
-  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy,
+  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy, Eye,
 } from "lucide-react";
 import { requireAdmin, getCurrentUser } from "@/lib/auth";
 import { canUser, isAdminRole, MODULES, type Module } from "@/lib/permissions";
@@ -33,6 +33,7 @@ const MENU: { key: string; label: string; href: string; icon: React.ReactNode; m
   { key: "notifications", label: "الإشعارات", href: "/admin/notifications", icon: <Bell className="h-5 w-5" />, module: MODULES.NOTIFICATIONS },
   { key: "drive", label: "مكتبة درايف", href: "/admin/drive", icon: <FolderOpen className="h-5 w-5" />, module: MODULES.DRIVE },
   { key: "dataRequests", label: "طلبات البيانات", href: "/admin/data-requests", icon: <ClipboardList className="h-5 w-5" />, module: MODULES.DATA_REQUESTS },
+  { key: "surveillance", label: "المراقبة والإشراف", href: "/admin/surveillance", icon: <Eye className="h-5 w-5" />, module: MODULES.SURVEILLANCE },
   { key: "admins", label: "المشرفون", href: "/admin/admins", icon: <ShieldCheck className="h-5 w-5" />, module: MODULES.ADMINS },
   { key: "settings", label: "الإعدادات", href: "/admin/settings", icon: <Settings className="h-5 w-5" />, module: MODULES.SETTINGS },
   { key: "audit", label: "مركز التدقيق", href: "/admin/audit", icon: <ScrollText className="h-5 w-5" />, module: MODULES.AUDIT },

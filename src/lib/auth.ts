@@ -289,6 +289,10 @@ export type SessionUser = {
   role: string;
   status: string;
   customPermissions: string | null; // JSON صلاحيات مخصصة تتجاوز الدور
+  username?: string | null;
+  displayName?: string | null;
+  bio?: string | null;
+  lastActiveAt?: Date | null;
   provider?: string;
   suggestedName?: string | null;
   avatarUrl?: string | null;
@@ -317,6 +321,10 @@ type DbUserWithProfile = {
   role: string;
   status: string;
   customPermissions: string | null;
+  username?: string | null;
+  displayName?: string | null;
+  bio?: string | null;
+  lastActiveAt?: Date | null;
   provider?: string;
   suggestedName?: string | null;
   avatarUrl?: string | null;
@@ -346,6 +354,10 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
     role: user.role,
     status: user.status,
     customPermissions: user.customPermissions,
+    username: user.username ?? null,
+    displayName: user.displayName ?? null,
+    bio: user.bio ?? null,
+    lastActiveAt: user.lastActiveAt ?? null,
     provider: user.provider ?? "EMAIL",
     suggestedName: user.suggestedName ?? null,
     avatarUrl: user.avatarUrl ?? null,

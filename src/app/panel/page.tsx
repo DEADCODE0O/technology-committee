@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   Sparkles, Trophy, Medal, CalendarDays, CheckCircle2, XCircle,
   Star, ArrowLeft, Zap, History, Palette, ClipboardList, Presentation,
-  Radio, Compass, Users, Flame, TrendingUp, Send,
+  Radio, Compass, Users, Flame, TrendingUp, Send, MessageSquare, MessageCircle,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
@@ -20,6 +20,7 @@ import { getTalentsSectionVisible } from "@/lib/platform";
 import { getStudentNotifications } from "@/lib/notifications";
 import { getSessionState, decideRegistration } from "@/lib/activities";
 import { getStudentProgress } from "@/lib/progress";
+import { recordDailyActivity } from "@/lib/streak";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,8 @@ export default async function StudentDashboardPage() {
   const user = await requireStudent();
   const profile = user.profile!;
 
-  const [progress, rank, myRegs, myBadges, myTalents, notifications, talentsSectionVisible] = await Promise.all([
+  const [streakData, progress, rank, myRegs, myBadges, myTalents, notifications, talentsSectionVisible] = await Promise.all([
+    recordDailyActivity(user.id),
     getStudentProgress(user.id),
     getStudentRank(user.id),
     db.registration.findMany({
@@ -209,11 +211,15 @@ export default async function StudentDashboardPage() {
                 <span className="flex items-center gap-1.5 rounded-xl bg-gold/[0.1] px-3 py-1.5 text-gold">
                   <Trophy className="h-3.5 w-3.5" /> المستوى {progress.level} · {progress.xp} XP
                 </span>
-                {progress.streakWeeks > 0 && (
+                {streakData.currentStreak > 0 ? (
+                  <span className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 border border-orange-500/25 px-3 py-1.5 text-orange-400 font-black shadow-sm">
+                    <Flame className="h-3.5 w-3.5 text-orange-400 fill-orange-400 animate-pulse" /> {streakData.currentStreak} {streakData.currentStreak === 1 ? "يوم استمرارية" : "أيام متتالية"}
+                  </span>
+                ) : progress.streakWeeks > 0 ? (
                   <span className="flex items-center gap-1.5 rounded-xl bg-orange-500/10 px-3 py-1.5 text-orange-300">
                     <Flame className="h-3.5 w-3.5" /> {progress.streakWeeks} أسبوعًا متتاليًا
                   </span>
-                )}
+                ) : null}
                 <span className="flex items-center gap-1.5 rounded-xl bg-white/[0.04] px-3 py-1.5 text-zinc-300">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-400" /> #{rank}
                 </span>
@@ -225,6 +231,69 @@ export default async function StudentDashboardPage() {
             <Link href="/leaderboard" className="inline-flex h-11 items-center gap-2 rounded-xl border border-gold/30 bg-gold/[0.06] px-5 text-sm font-extrabold text-gold-light transition-colors hover:bg-gold/[0.12]">
               رحلتي الكاملة
               <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ── المنظومة الاجتماعية والدردشة ── */}
+        <section className="space-y-3" aria-labelledby="social-hub">
+          <div className="flex items-center justify-between">
+            <h2 id="social-hub" className="flex items-center gap-2 text-base font-extrabold text-foreground">
+              <MessageSquare className="h-5 w-5 text-gold" />
+              تواصل ودردش مع أصدقائك
+            </h2>
+            <Link href="/friends" className="text-xs font-bold text-gold hover:underline">
+              البحث عن زملاء ←
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Link
+              href="/chat"
+              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30 shadow-inner group-hover:scale-105 transition-transform">
+                <MessageSquare className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-sm font-black text-foreground">الشات العام</h3>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                  نقاشات فورية وأسئلة برمجية
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="/messages"
+              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-inner group-hover:scale-105 transition-transform">
+                <MessageCircle className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-black text-foreground">الرسائل الخاصة</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                  محادثاتك المباشرة مع أصدقائك
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="/friends"
+              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-inner group-hover:scale-105 transition-transform">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-black text-foreground">قائمة الأصدقاء</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                  طلبات الصداقة والبحث عن زملاء
+                </p>
+              </div>
             </Link>
           </div>
         </section>

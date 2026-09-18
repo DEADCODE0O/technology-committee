@@ -22,6 +22,7 @@ export const MODULES = {
   SETTINGS: "settings",
   AUDIT: "audit",
   ADMINS: "admins",
+  SURVEILLANCE: "surveillance",
 } as const;
 
 export type Module = (typeof MODULES)[keyof typeof MODULES];
@@ -51,6 +52,7 @@ const PERMISSIONS: PermMap = {
     settings: "manage",
     audit: "manage",
     admins: "manage",
+    surveillance: "manage",
   },
   [ROLES.ADMIN]: {
     dashboard: "manage",
@@ -68,6 +70,7 @@ const PERMISSIONS: PermMap = {
     settings: "view",
     audit: "view",
     admins: false,
+    surveillance: "view",
   },
   [ROLES.WORKSHOP_MANAGER]: {
     dashboard: "view",
@@ -85,6 +88,7 @@ const PERMISSIONS: PermMap = {
     settings: false,
     audit: "view",
     admins: false,
+    surveillance: false,
   },
   [ROLES.CONTENT_MANAGER]: {
     dashboard: "view",
@@ -102,6 +106,7 @@ const PERMISSIONS: PermMap = {
     settings: false,
     audit: "view",
     admins: false,
+    surveillance: false,
   },
   [ROLES.VIEWER]: {
     dashboard: "view",
@@ -119,6 +124,7 @@ const PERMISSIONS: PermMap = {
     settings: false,
     audit: "view",
     admins: false,
+    surveillance: false,
   },
 };
 
@@ -128,6 +134,7 @@ export const EDITABLE_MODULES: { key: Module; label: string }[] = [
   { key: MODULES.STUDENTS, label: "الطلاب" },
   { key: MODULES.WORKSHOPS, label: "الأنشطة والتنفيذات" },
   { key: MODULES.PROGRAMS, label: "البرامج" },
+  { key: MODULES.SURVEILLANCE, label: "المراقبة والإشراف الأمني" },
   { key: MODULES.ATTENDANCE, label: "الحضور" },
   { key: MODULES.POINTS, label: "النقاط" },
   { key: MODULES.BADGES, label: "الشارات" },

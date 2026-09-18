@@ -121,22 +121,22 @@ export function UserCharmHeart({
         )}
       </button>
 
-      {/* ── مودال قواعد الترقية (Promotion Rules Modal) ── */}
+      {/* ── مودال مستويات القلوب المبسط والأنيق ── */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setIsOpen(false)}
         >
           <div
-            className="relative w-full max-w-2xl max-h-[92vh] bg-zinc-950 border border-zinc-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-right font-sans text-white"
+            className="relative w-full max-w-lg max-h-[88vh] bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-right font-sans text-white"
             onClick={(e) => e.stopPropagation()}
             dir="rtl"
           >
             {/* Header */}
-            <div className="relative p-6 pb-4 border-b border-zinc-800/80 bg-gradient-to-b from-zinc-900/80 to-transparent flex items-center justify-between">
+            <div className="p-5 border-b border-zinc-800/80 bg-zinc-900/40 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-lg overflow-hidden p-1"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border shadow overflow-hidden p-1"
                   style={{
                     backgroundColor: `${tier.heartColor}20`,
                     borderColor: `${tier.heartColor}50`,
@@ -145,14 +145,11 @@ export function UserCharmHeart({
                   <VectorCharmHeart level={tier.level} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    قواعد الترقية ومستوى الجاذبية
-                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-gold/20 text-gold-light border border-gold/40 font-semibold">
-                      12 مستوى ملكي
-                    </span>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    مستويات التفاعل (القلوب)
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-0.5">
-                    مستويات التفاعل تبدأ من المستوى 0 وحتى المستوى 12. تكتسب نقاطك عبر حضور الورش وتسليم المهام والمشاركات.
+                  <p className="text-xs text-zinc-400">
+                    كلما زادت نقاطك وتفاعلك ارتفع مستوى قلبك وتميز مظهر حسابك
                   </p>
                 </div>
               </div>
@@ -160,182 +157,124 @@ export function UserCharmHeart({
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
+                aria-label="إغلاق"
               >
                 ✕
               </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
-              {/* بطاقة مستوى المستخدم الحالي */}
+            <div className="p-5 overflow-y-auto space-y-4 custom-scrollbar">
+              {/* بطاقة المستوى الحالي والتقدم */}
               <div
-                className="p-5 rounded-2xl border relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5"
+                className="p-4 rounded-2xl border relative overflow-hidden flex items-center justify-between gap-4"
                 style={{
-                  background: `radial-gradient(circle at top right, ${tier.heartColor}25 0%, rgba(24,24,27,0.92) 75%)`,
-                  borderColor: `${tier.heartColor}50`,
+                  background: `radial-gradient(circle at top right, ${tier.heartColor}20 0%, rgba(24,24,27,0.95) 80%)`,
+                  borderColor: `${tier.heartColor}40`,
                 }}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3.5">
                   <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center border shadow-2xl relative overflow-hidden shrink-0 p-2"
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg shrink-0 p-1.5"
                     style={{
-                      background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(9,9,11,0.95) 100%)',
                       borderColor: tier.heartColor,
-                      boxShadow: `0 0 25px ${tier.glowColor}`,
+                      boxShadow: `0 0 15px ${tier.glowColor}`,
                     }}
                   >
                     <VectorCharmHeart level={tier.level} />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
-                        مستواك الحالي
-                      </span>
-                      <h4 className="text-base font-extrabold text-white">
-                        المستوى {tier.level}: {tier.title}
-                      </h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                      مستواك الحالي: {tier.level}
+                    </span>
+                    <h4 className="text-sm font-extrabold text-white mt-1">
+                      {tier.title}
+                    </h4>
+                    <p className="text-xs text-gold-light mt-0.5 font-bold">
+                      {effectivePoints} نقطة
+                    </p>
+                  </div>
+                </div>
+
+                {nextTier && (
+                  <div className="text-left shrink-0">
+                    <span className="text-[10px] text-zinc-400 block">المستوى التالي</span>
+                    <span className="text-xs font-bold text-zinc-200 block">
+                      متبقي {pointsToNext} نقطة
+                    </span>
+                    <div className="w-24 bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1.5 ml-auto">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${progressPercent}%`,
+                          backgroundColor: tier.heartColor,
+                        }}
+                      />
                     </div>
-                    <p className="text-xs text-zinc-400 mt-1 max-w-sm leading-5">{tier.description}</p>
                   </div>
-                </div>
-
-                {/* مؤشر التقدم نحو المستوى القادم */}
-                <div className="w-full sm:w-56 bg-zinc-900/90 border border-zinc-800 rounded-xl p-3 shrink-0">
-                  <div className="flex justify-between items-center text-xs mb-1.5 font-bold">
-                    <span className="text-zinc-400">النقاط الحالية:</span>
-                    <span className="text-gold-light">{effectivePoints} نقطة</span>
-                  </div>
-                  <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${progressPercent}%`,
-                        background: `linear-gradient(90deg, ${tier.heartColor}, #f59e0b)`,
-                      }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-zinc-400 mt-1.5 text-center">
-                    {nextTier
-                      ? `متبقي ${pointsToNext} نقطة للترقية إلى ${nextTier.title} (مستوى ${nextTier.level})`
-                      : 'لقد حققت أعلى مرتبة شرفية في المنصة (المستوى 12)! 🎉'}
-                  </p>
-                </div>
+                )}
               </div>
 
-              {/* كيف تكسب النقاط؟ */}
+              {/* قائمة المستويات المبسطة */}
               <div>
-                <h4 className="text-xs font-bold text-zinc-400 mb-2.5 flex items-center gap-1.5">
-                  <span>⚡ كيف تجمع نقاط الترقية هذا الفصل؟</span>
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 text-center">
-                    <span className="text-2xl block mb-1">🎓</span>
-                    <h5 className="text-xs font-bold text-zinc-200">حضور الورش</h5>
-                    <span className="text-[11px] font-black text-emerald-400 block mt-0.5">
-                      +25 إلى 35 نقطة
-                    </span>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 text-center">
-                    <span className="text-2xl block mb-1">💻</span>
-                    <h5 className="text-xs font-bold text-zinc-200">تسليم المهام</h5>
-                    <span className="text-[11px] font-black text-cyan-400 block mt-0.5">
-                      +30 إلى 50 نقطة
-                    </span>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 text-center">
-                    <span className="text-2xl block mb-1">🏆</span>
-                    <h5 className="text-xs font-bold text-zinc-200">المسابقات والهاكاثون</h5>
-                    <span className="text-[11px] font-black text-gold-light block mt-0.5">
-                      +80 إلى 150 نقطة
-                    </span>
-                  </div>
-                  <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3 text-center">
-                    <span className="text-2xl block mb-1">💬</span>
-                    <h5 className="text-xs font-bold text-zinc-200">نقاشات المجتمع</h5>
-                    <span className="text-[11px] font-black text-purple-400 block mt-0.5">
-                      +5 إلى 15 نقطة
-                    </span>
-                  </div>
-                </div>
-              </div>
+                <p className="text-xs font-bold text-zinc-400 mb-2">
+                  تدرج المستويات (0 إلى 12):
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {CHARM_TIERS.map((t) => {
+                    const isCurrent = t.level === tier.level;
+                    const isUnlocked = level >= t.level;
 
-              {/* جدول مستويات الترقية الشامل (12 Tiers Table) */}
-              <div>
-                <h4 className="text-xs font-bold text-zinc-400 mb-2.5 flex items-center gap-1.5">
-                  <span>📜 جدول مستويات القلوب الـ 12 ومكافآتها الفاخرة</span>
-                </h4>
-                <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900/40">
-                  <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                    <table className="w-full text-right text-xs">
-                      <thead className="bg-zinc-900/90 text-zinc-400 border-b border-zinc-800 sticky top-0 z-10 backdrop-blur">
-                        <tr>
-                          <th className="p-3 font-bold">المستوى</th>
-                          <th className="p-3 font-bold text-center">رمز القلب الفريد</th>
-                          <th className="p-3 font-bold">اللقب الشرفي</th>
-                          <th className="p-3 font-bold">النقاط</th>
-                          <th className="p-3 font-bold">المكافآت والمزايا المفتوحة</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-800/60">
-                        {CHARM_TIERS.map((t) => {
-                          const isCurrent = t.level === tier.level;
-                          return (
-                            <tr
-                              key={t.level}
-                              className={`transition-colors ${
-                                isCurrent
-                                  ? 'bg-gold/10 font-bold border-r-4 border-gold'
-                                  : 'hover:bg-zinc-900/50'
-                              }`}
-                            >
-                              <td className="p-3">
-                                <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-extrabold ${
-                                  isCurrent ? 'bg-gold text-night' : 'bg-zinc-800 text-zinc-300'
-                                }`}>
-                                  {t.level}
+                    return (
+                      <div
+                        key={t.level}
+                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                          isCurrent
+                            ? 'bg-gold/15 border-gold shadow-sm ring-1 ring-gold/40'
+                            : isUnlocked
+                            ? 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'
+                            : 'bg-zinc-900/20 border-zinc-800/40 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                            <UserCharmHeart level={t.level} size="xs" disableModal />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-extrabold text-zinc-200">
+                                {t.title}
+                              </span>
+                              {isCurrent && (
+                                <span className="text-[9px] bg-gold text-night px-1.5 py-0.2 rounded font-black">
+                                  أنت هنا
                                 </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <div className="flex items-center justify-center">
-                                  <UserCharmHeart level={t.level} size="sm" disableModal />
-                                </div>
-                              </td>
-                              <td className="p-3">
-                                <div className="flex items-center gap-2">
-                                  <span className={isCurrent ? 'text-gold-light font-extrabold' : 'text-zinc-200'}>
-                                    {t.title}
-                                  </span>
-                                  {isCurrent && (
-                                    <span className="text-[9px] bg-gold text-night px-1.5 py-0.5 rounded-full font-black">
-                                      أنت هنا
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="p-3 text-gold-light font-extrabold whitespace-nowrap">
-                                {t.pointsRequired} نقطة
-                              </td>
-                              <td className="p-3 text-zinc-400 text-[11px] leading-5">
-                                {t.unlockedPerk}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-zinc-500">
+                              مستوى {t.level}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold text-gold-light/90">
+                          {t.pointsRequired} نقطة
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end">
+            <div className="p-3 border-t border-zinc-800 bg-zinc-900/40 flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-night font-extrabold text-xs shadow-md transition-all active:scale-95"
+                className="px-4 py-2 rounded-xl bg-gold hover:bg-gold-light text-night font-extrabold text-xs shadow transition-all active:scale-95"
               >
-                فهمت، استمر في التقدم 🚀
+                إغلاق
               </button>
             </div>
           </div>

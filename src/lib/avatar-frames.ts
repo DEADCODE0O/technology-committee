@@ -15,7 +15,7 @@ export type FrameTier =
   | "SEASONAL"
   | "EXCLUSIVE";
 
-export type FrameCategory = "levels" | "seasonal" | "achievements" | "special";
+export type FrameCategory = "levels";
 
 export interface AvatarFrame {
   id: string;
@@ -240,32 +240,6 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     unlockHint: "يفتح تلقائياً عند بلوغ المستوى الأقصى للمنصة: المستوى 12 (660 نقطة)",
     imageSrc: "/images/frames/frame_lvl_12.webp",
   },
-  {
-    id: "frame_tech_champion",
-    name: "إطار بطل المسابقات",
-    category: "achievements",
-    tier: "EXCLUSIVE",
-    requiredLevel: 1,
-    description: "إطار شرفي أزرق وذهبي يمنح لأبطال المسابقات والهاكاثونات التكنولوجية.",
-    icon: "🥇",
-    color: "#0284c7",
-    glowColor: "#38bdf8",
-    unlockHint: "يمنح حصرياً لأبطال مسابقات وهاكاثونات اللجنة التكنولوجية",
-    imageSrc: "/images/frames/frame_champion.webp",
-  },
-  {
-    id: "frame_ramadan_crescent",
-    name: "إطار شهر رمضان",
-    category: "seasonal",
-    tier: "SEASONAL",
-    requiredLevel: 1,
-    description: "إطار إسلامي هادئ بهلال مذهب وزخرفة ناعمة احتفاءً بالشهر الفضيل.",
-    icon: "🌙",
-    color: "#f59e0b",
-    glowColor: "#fbbf24",
-    unlockHint: "متاح ومجاني لجميع الطلاب طوال شهر رمضان المبارك",
-    imageSrc: "/images/frames/frame_ramadan_crescent.webp",
-  },
 ];
 
 /**
@@ -313,8 +287,10 @@ export function getAvatarFrame(frameId?: string | null): AvatarFrame | null {
     frame_golden_wings: "frame_lvl_10",
     frame_angelic_wings: "frame_lvl_11",
     frame_tech_quantum: "frame_lvl_6",
-    frame_royal_emperor: "frame_tech_champion",
-    frame_national_honor: "frame_tech_champion",
+    frame_royal_emperor: "frame_lvl_12",
+    frame_national_honor: "frame_lvl_12",
+    frame_tech_champion: "frame_lvl_12",
+    frame_ramadan_crescent: "frame_lvl_4",
   };
 
   const mappedId = legacyMap[frameId];
