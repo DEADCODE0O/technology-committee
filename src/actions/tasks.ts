@@ -233,6 +233,27 @@ export async function publishTask(taskId: string): Promise<{ ok: boolean; assign
         summary: `نشر مهمة جماعية «${task.title}» لفريق «${team.name}»`,
         after: { team: team.name, members: team.members.length },
       });
+
+      // إشعار أعضاء الفريق بالمهمة الجماعية الجديدة
+      try {
+        const { createNotificationForUsers } = await import("@/lib/notifications");
+        const memberIds = team.members.map((m) => m.userId);
+        if (memberIds.length > 0) {
+          await createNotificationForUsers({
+            type: "TASK",
+            title: `مهمة جماعية جديدة: ${task.title}`,
+            body: `تم إسناد مهمة جماعية جديدة لفريقكم «${team.name}». يرجى الاطلاع على التفاصيل وموعد التسليم.`,
+            linkUrl: `/tasks/${task.id}`,
+            linkLabel: "عرض تفاصيل المهمة",
+            ctaNewTab: false,
+            target: { ...target, userIds: memberIds },
+            createdById: admin.id,
+          });
+        }
+      } catch (notifErr) {
+        console.warn("Group task notification error:", notifErr);
+      }
+
       refreshTaskPaths(task.id);
       return { ok: true, assigned: team.members.length };
     }
@@ -279,6 +300,24 @@ export async function publishTask(taskId: string): Promise<{ ok: boolean; assign
       after: { recipients: studentIds.length, distribution: task.distribution },
       correlationId: randomUUID(),
     });
+
+    // إشعار الطلاب المستهدفين بالمهمة الجديدة
+    try {
+      const { createNotificationForUsers } = await import("@/lib/notifications");
+      await createNotificationForUsers({
+        type: "TASK",
+        title: `مهمة جديدة: ${task.title}`,
+        body: task.description ? task.description.slice(0, 150) + (task.description.length > 150 ? "..." : "") : "تم نشر مهمة دراسية جديدة تتطلب تسليمك.",
+        linkUrl: `/tasks/${task.id}`,
+        linkLabel: "بدء إنجاز المهمة",
+        ctaNewTab: false,
+        target: { ...target, userIds: studentIds },
+        createdById: admin.id,
+      });
+    } catch (notifErr) {
+      console.warn("Task notification error:", notifErr);
+    }
+
     refreshTaskPaths(task.id);
     return { ok: true, assigned: studentIds.length };
   } catch (e) {

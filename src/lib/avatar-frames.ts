@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
-// منظومة إطارات الصور الرمزية ثلاثية الأبعاد (3D VIP Avatar Frames)
-// مجموعة مميزة ومختارة بدقة من 10 إطارات تدريجية + إطارات البطولات والمواسم
-// تصميم مدمج ومحكم لا يتجاوز مساحة الصورة ولا يغطي على العناصر المجاورة
+// منظومة إطارات الصور الرمزية الاحترافية (Vector VIP Avatar Frames)
+// مجموعة مميزة ومختارة بدقة من 12 إطاراً تدريجياً + إطارات البطولات والمواسم
+// تصميم مدمج ومحكم بنظام فيكتور نقي لا يحجب الصورة ولا يُقص في القوائم
 // ═══════════════════════════════════════════════════════════════
 
 export type FrameTier =
@@ -37,8 +37,8 @@ export interface AvatarFrame {
     | "cosmic-orbit"
     | "royal-crest";
   unlockHint: string;
-  imageSrc: string;
-  scale: number;
+  imageSrc?: string;
+  scale?: number;
   filter?: string;
 }
 
@@ -105,154 +105,159 @@ export const TIER_CONFIG: Record<
 export const AVATAR_FRAMES: AvatarFrame[] = [
   {
     id: "frame_lvl_1",
-    name: "إكليل البرونز والتروس الذهبية",
+    name: "طوق البرونز النحاسي الأنيق",
     category: "levels",
     tier: "BRONZE",
     requiredLevel: 1,
-    description: "إطار البداية الميكانيكي المزين بإكليل الغار والتروس النحاسية الدقيقة.",
+    description: "إطار معدني ناعم وأنيق يزين بداية انطلاقتك ومشاركتك في أنشطة اللجنة.",
     icon: "⚙️",
     color: "#b45309",
     glowColor: "#d97706",
     animationType: "pulse",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 1 (15 نقطة)",
-    imageSrc: "/images/frames/frame_bronze_gear.png",
-    scale: 1.05,
   },
   {
     id: "frame_lvl_2",
-    name: "النواة السيبرانية التكنولوجية",
+    name: "النواة الفضية السيبرانية",
     category: "levels",
     tier: "SILVER",
     requiredLevel: 2,
-    description: "مصفوفة رقمية فضية ودوائر ذكية متوهجة تميز المشارك المتفاعل.",
+    description: "مصفوفة رقمية فضية ودوائر ذكية متوهجة تميز الطالب المتفاعل والمبادر.",
     icon: "⚡",
     color: "#94a3b8",
     glowColor: "#cbd5e1",
     animationType: "pulse",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 2 (35 نقطة)",
-    imageSrc: "/images/frames/frame_tech_quantum.png",
-    scale: 1.05,
-    filter: "hue-rotate(-40deg)",
   },
   {
     id: "frame_lvl_3",
-    name: "طيف النيون والنجوم اللامعة",
+    name: "الهالة الذهبية المتوهجة",
     category: "levels",
     tier: "GOLD",
     requiredLevel: 3,
-    description: "طيف نيون ليزري ساحر محاط بنجوم مشعة للمبادرين النشطين.",
+    description: "إطار ذهبي مصقول مرصع بماسات رقيقة عند الأركان لأصحاب النشاط المستمر.",
     icon: "✨",
     color: "#eab308",
     glowColor: "#facc15",
     animationType: "neon-flow",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 3 (65 نقطة)",
-    imageSrc: "/images/frames/frame_neon_rainbow.png",
-    scale: 1.05,
   },
   {
     id: "frame_lvl_4",
-    name: "أجنحة الفارس الصقيعي",
+    name: "درع البلاتين الصقيعي",
     category: "levels",
     tier: "PLATINUM",
     requiredLevel: 4,
-    description: "أجنحة فضية كريستالية ودرع الفارس البلوري المخصص لنجم الورش.",
+    description: "درع بلاتيني بلوري مع أطياف ضوئية سماوية لنجم الورش المتألق.",
     icon: "🛡️",
     color: "#22d3ee",
     glowColor: "#38bdf8",
     animationType: "shimmer",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 4 (100 نقطة)",
-    imageSrc: "/images/frames/frame_silver_knight.png",
-    scale: 1.05,
   },
   {
     id: "frame_lvl_5",
-    name: "درع الزمرد الملكي",
+    name: "درع الزمرد الملكي المذهب",
     category: "levels",
     tier: "PLATINUM",
     requiredLevel: 5,
-    description: "أجنحة زمردية خضراء مرصعة بالذهب الخالص لخبراء التكنولوجيا.",
+    description: "أجنحة زمردية محاطة بإطار من الذهب الخالص لخبراء التكنولوجيا.",
     icon: "💎",
     color: "#10b981",
     glowColor: "#34d399",
     animationType: "shimmer",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 5 (145 نقطة)",
-    imageSrc: "/images/frames/frame_emerald_vip.png",
-    scale: 1.05,
   },
   {
     id: "frame_lvl_6",
-    name: "تاج الألماس والياقوت الأزرق",
+    name: "صرح الياقوت الأزرق الملكي",
     category: "levels",
     tier: "DIAMOND",
     requiredLevel: 6,
-    description: "تاج ملكي فاخر مرصع بأحجار الياقوت الأزرق والألماس الصافي.",
+    description: "إطار ماسي فاخر مرصع بأحجار الياقوت الأزرق لفرسان الإبداع.",
     icon: "👑",
     color: "#3b82f6",
     glowColor: "#60a5fa",
     animationType: "shimmer",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 6 (195 نقطة)",
-    imageSrc: "/images/frames/frame_diamond_sapphire.png",
-    scale: 1.05,
   },
   {
     id: "frame_lvl_7",
-    name: "سديم المجرة الكوني",
+    name: "سديم الجمشت النجمي",
     category: "levels",
     tier: "COSMIC",
     requiredLevel: 7,
-    description: "حلقات كوكبية وغمام سديمي أرجواني من أعماق الفضاء الخارجي.",
+    description: "حلقات طيفية بنفسجية ومشاعل كوكبية متلألئة من أعماق الفضاء.",
     icon: "🌌",
     color: "#a855f7",
     glowColor: "#c084fc",
     animationType: "cosmic-orbit",
-    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 7 (250 نقطة)",
-    imageSrc: "/images/frames/frame_cosmic_galaxy.png",
-    scale: 1.05,
+    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 7 (255 نقطة)",
   },
   {
     id: "frame_lvl_8",
-    name: "صعود الفينيق واللهب الناري",
+    name: "صعود الفينيق الناري",
     category: "levels",
     tier: "MYTHIC",
     requiredLevel: 8,
-    description: "أجنحة طائر الفينيق الأسطورية تتوهج بحمم نارية حية لأبطال المنصة.",
+    description: "أجنحة طائر الفينيق المتقدة وشعلة الصعود الأسطورية لأبطال المنصة.",
     icon: "🔥",
     color: "#f97316",
     glowColor: "#ea580c",
     animationType: "fire-flicker",
-    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 8 (310 نقطة)",
-    imageSrc: "/images/frames/frame_phoenix_blaze.png",
-    scale: 1.05,
+    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 8 (320 نقطة)",
   },
   {
     id: "frame_lvl_9",
-    name: "تنين اللهب القرمزي الأسطوري",
+    name: "تنين الشرف القرمزي الملكي",
     category: "levels",
     tier: "MYTHIC",
     requiredLevel: 9,
-    description: "تنين قرمزي مهيب بحراشف نارية متقدة لرواد الابتكار المتفوقين.",
+    description: "درع التنين القرمزي المهيب بحراشف نارية متقدة لرواد الابتكار.",
     icon: "🐉",
     color: "#ef4444",
     glowColor: "#dc2626",
     animationType: "fire-flicker",
-    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 9 (375 نقطة)",
-    imageSrc: "/images/frames/frame_crimson_dragon.png",
-    scale: 1.05,
+    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 9 (390 نقطة)",
   },
   {
     id: "frame_lvl_10",
-    name: "أسد الفخامة الملكي وأجنحة الذهب",
+    name: "التاج الإمبراطوري الذهبي",
     category: "levels",
     tier: "EXCLUSIVE",
     requiredLevel: 10,
-    description: "أعلى أوسمة القمة التكنولوجية؛ أسد ذهبي شامخ بتاج وأجنحة العرش.",
-    icon: "🦁",
+    description: "تاج ملكي شامخ مرصع بالألماس لفرسان أساطير التكنولوجيا.",
+    icon: "👑",
     color: "#eab308",
     glowColor: "#ca8a04",
     animationType: "royal-crest",
-    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 10 (445 نقطة)",
-    imageSrc: "/images/frames/frame_golden_lion.png",
-    scale: 1.05,
+    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 10 (470 نقطة)",
+  },
+  {
+    id: "frame_lvl_11",
+    name: "سديم المجرة والمدارات الكونية",
+    category: "levels",
+    tier: "COSMIC",
+    requiredLevel: 11,
+    description: "مدارات كوكبية وجزيئات بولسار مضيئة لنخبة المنصة الياقوتية العليا.",
+    icon: "🪐",
+    color: "#0284c7",
+    glowColor: "#38bdf8",
+    animationType: "cosmic-orbit",
+    unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 11 (560 نقطة)",
+  },
+  {
+    id: "frame_lvl_12",
+    name: "العرش الكوني الأسمى — القمة الملكية",
+    category: "levels",
+    tier: "EXCLUSIVE",
+    requiredLevel: 12,
+    description: "تاج العرش الإمبراطوري الأسمى محاط بهالة المدارات السماوية والنجوم الرباعية — قمة الشرف والتميز.",
+    icon: "💎",
+    color: "#ffd700",
+    glowColor: "#eab308",
+    animationType: "royal-crest",
+    unlockHint: "يفتح تلقائياً عند الوصول إلى أعلى مستويات المنصة المستوى 12 (660 نقطة)",
   },
   {
     id: "frame_tech_champion",
@@ -266,8 +271,6 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     glowColor: "#38bdf8",
     animationType: "royal-crest",
     unlockHint: "يمنح حصرياً لأبطال مسابقات التكنولوجيا والهاكاثون",
-    imageSrc: "/images/frames/frame_royal_emperor.png",
-    scale: 1.05,
   },
   {
     id: "frame_ramadan_crescent",
@@ -281,8 +284,6 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     glowColor: "#fbbf24",
     animationType: "shimmer",
     unlockHint: "متاح ومجاني لجميع الطلاب طوال شهر رمضان المبارك",
-    imageSrc: "/images/frames/frame_ramadan_crescent.png",
-    scale: 1.05,
   },
   {
     id: "frame_angelic_wings",
@@ -296,8 +297,6 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     glowColor: "#38bdf8",
     animationType: "wings-float",
     unlockHint: "إطار أسطوري نادر متاح للمتميزين بدءاً من المستوى 5",
-    imageSrc: "/images/frames/frame_angelic_wings.png",
-    scale: 1.08,
   },
   {
     id: "frame_tech_quantum",
@@ -311,8 +310,6 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     glowColor: "#22d3ee",
     animationType: "neon-flow",
     unlockHint: "إطار تقني حصري لرواد التكنولوجيا بدءاً من المستوى 4",
-    imageSrc: "/images/frames/frame_tech_quantum.png",
-    scale: 1.05,
   },
 ];
 
@@ -330,25 +327,35 @@ export function getAvatarFrame(frameId?: string | null): AvatarFrame | null {
   if (frameId.startsWith("frame_lvl_")) {
     const num = parseInt(frameId.replace("frame_lvl_", ""), 10);
     if (!isNaN(num)) {
-      const mapped = Math.max(1, Math.min(10, Math.ceil(num / 5)));
+      const mapped = Math.max(1, Math.min(12, num));
       return AVATAR_FRAMES.find((f) => f.id === `frame_lvl_${mapped}`) || AVATAR_FRAMES[0];
     }
   }
 
   const legacyMap: Record<string, string> = {
     frame_bronze_ring: "frame_lvl_1",
+    frame_bronze_gear: "frame_lvl_1",
     frame_silver_shield: "frame_lvl_2",
     frame_golden_laurel: "frame_lvl_3",
+    frame_neon_rainbow: "frame_lvl_3",
     frame_cyber_matrix: "frame_lvl_2",
     frame_platinum_knight: "frame_lvl_4",
+    frame_silver_knight: "frame_lvl_4",
     frame_emerald_crown: "frame_lvl_5",
+    frame_emerald_vip: "frame_lvl_5",
     frame_sapphire_crest: "frame_lvl_6",
+    frame_diamond_sapphire: "frame_lvl_6",
     frame_ruby_warlord: "frame_lvl_8",
     frame_cosmic_nebula: "frame_lvl_7",
+    frame_cosmic_galaxy: "frame_lvl_7",
     frame_phoenix_rebirth: "frame_lvl_8",
+    frame_phoenix_blaze: "frame_lvl_8",
     frame_dragon_fire: "frame_lvl_9",
+    frame_crimson_dragon: "frame_lvl_9",
     frame_lion_emperor: "frame_lvl_10",
+    frame_golden_lion: "frame_lvl_10",
     frame_golden_wings: "frame_lvl_10",
+    frame_royal_emperor: "frame_tech_champion",
     frame_national_honor: "frame_tech_champion",
   };
 
@@ -374,7 +381,6 @@ export function isFrameUnlocked(
   if (frame.category === "seasonal") {
     return isSeasonalActive;
   }
-  // إطارات الفعاليات الخاصة تحتاج شروط إضافية أو فتح يدوي
   return userLevel >= frame.requiredLevel;
 }
 

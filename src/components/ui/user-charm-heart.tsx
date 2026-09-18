@@ -5,8 +5,8 @@ import {
   getCharmTier,
   getNextCharmTier,
   CHARM_TIERS,
-  type CharmTierConfig,
 } from '@/lib/charm-hearts';
+import { VectorCharmHeart } from '@/components/ui/vector-charm-heart';
 
 interface UserCharmHeartProps {
   level: number;
@@ -28,7 +28,8 @@ export function UserCharmHeart({
   visible = true,
 }: UserCharmHeartProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const tier = getCharmTier(level);
+  const safeLevel = Math.max(0, Math.min(12, level));
+  const tier = getCharmTier(safeLevel);
 
   if (!visible) return null;
 
@@ -36,25 +37,21 @@ export function UserCharmHeart({
   const sizeConfig = {
     xs: {
       wrapper: 'w-7 h-7',
-      img: 'w-7 h-7',
       badge: 'min-w-[13px] h-[13px] text-[8px] -bottom-0.5 -right-0.5 px-0.5',
       titleText: 'text-[11px]',
     },
     sm: {
       wrapper: 'w-9 h-9',
-      img: 'w-9 h-9',
       badge: 'min-w-[15px] h-[15px] text-[9px] -bottom-0.5 -right-0.5 px-1',
       titleText: 'text-xs',
     },
     md: {
       wrapper: 'w-11 h-11',
-      img: 'w-11 h-11',
       badge: 'min-w-[18px] h-[18px] text-[10px] -bottom-1 -right-1 px-1',
       titleText: 'text-xs',
     },
     lg: {
       wrapper: 'w-14 h-14',
-      img: 'w-14 h-14',
       badge: 'min-w-[20px] h-[20px] text-[11px] -bottom-1.5 -right-1.5 px-1.5',
       titleText: 'text-sm',
     },
@@ -74,21 +71,15 @@ export function UserCharmHeart({
       )
     : 100;
 
-  // المحتوى الداخلي لأيقونة القلب وشارة المستوى في الزاوية السفلية (Litmatch 3D Heart Icon)
+  // المحتوى الداخلي لأيقونة القلب الفيكتور ثلاثية الأبعاد
   const heartIconContent = (
     <div className={`relative inline-flex items-center justify-center shrink-0 ${sizeConfig.wrapper}`}>
-      <img
-        src={tier.imagePath}
-        alt={`مستوى ${tier.level}`}
-        className={`${sizeConfig.img} object-contain transition-transform duration-200 group-hover:scale-115 select-none`}
-        style={{
-          filter: `drop-shadow(0 2px 6px ${tier.glowColor})`,
-        }}
-        loading="lazy"
-      />
-      {/* شارة رقم المستوى في الزاوية السفلية اليمنى مثل لتماتش تماماً */}
+      <div className="w-full h-full transition-transform duration-200 group-hover:scale-110 flex items-center justify-center">
+        <VectorCharmHeart level={tier.level} />
+      </div>
+      {/* شارة رقم المستوى في الزاوية السفلية اليمنى */}
       <span
-        className={`absolute rounded-full font-black text-night flex items-center justify-center shadow-md border border-white/80 leading-none select-none ${sizeConfig.badge}`}
+        className={`absolute rounded-full font-black flex items-center justify-center shadow-md border border-white/80 leading-none select-none z-10 ${sizeConfig.badge}`}
         style={{
           background:
             tier.level === 0
@@ -130,7 +121,7 @@ export function UserCharmHeart({
         )}
       </button>
 
-      {/* ── مودال قواعد الترقية (Litmatch Promotion Rules Modal) ── */}
+      {/* ── مودال قواعد الترقية (Promotion Rules Modal) ── */}
       {isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
@@ -145,27 +136,23 @@ export function UserCharmHeart({
             <div className="relative p-6 pb-4 border-b border-zinc-800/80 bg-gradient-to-b from-zinc-900/80 to-transparent flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-lg overflow-hidden"
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-lg overflow-hidden p-1"
                   style={{
                     backgroundColor: `${tier.heartColor}20`,
                     borderColor: `${tier.heartColor}50`,
                   }}
                 >
-                  <img
-                    src={tier.imagePath}
-                    alt=""
-                    className="w-8 h-8 object-contain"
-                  />
+                  <VectorCharmHeart level={tier.level} />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     قواعد الترقية ومستوى الجاذبية
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-gold/20 text-gold-light border border-gold/40 font-semibold">
-                      15 مستوى ملكي
+                      12 مستوى ملكي
                     </span>
                   </h3>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    الآن مستوى الجاذبية والتفاعل له عدة مستويات. عندما تكتسب نقاط المشاركة والورش، سيزداد مستواك وفقًا لذلك.
+                    مستويات التفاعل تبدأ من المستوى 0 وحتى المستوى 12. تكتسب نقاطك عبر حضور الورش وتسليم المهام والمشاركات.
                   </p>
                 </div>
               </div>
@@ -190,18 +177,14 @@ export function UserCharmHeart({
               >
                 <div className="flex items-center gap-4">
                   <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center border shadow-2xl relative overflow-hidden shrink-0"
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center border shadow-2xl relative overflow-hidden shrink-0 p-2"
                     style={{
                       background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(9,9,11,0.95) 100%)',
                       borderColor: tier.heartColor,
                       boxShadow: `0 0 25px ${tier.glowColor}`,
                     }}
                   >
-                    <img
-                      src={tier.imagePath}
-                      alt={tier.title}
-                      className="w-16 h-16 object-contain drop-shadow-[0_0_12px_rgba(255,255,255,0.3)] hover:scale-110 transition-transform duration-300"
-                    />
+                    <VectorCharmHeart level={tier.level} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -234,7 +217,7 @@ export function UserCharmHeart({
                   <p className="text-[10px] text-zinc-400 mt-1.5 text-center">
                     {nextTier
                       ? `متبقي ${pointsToNext} نقطة للترقية إلى ${nextTier.title} (مستوى ${nextTier.level})`
-                      : 'لقد حققت أعلى مرتبة شرفية في المنصة! 🎉'}
+                      : 'لقد حققت أعلى مرتبة شرفية في المنصة (المستوى 12)! 🎉'}
                   </p>
                 </div>
               </div>
@@ -276,10 +259,10 @@ export function UserCharmHeart({
                 </div>
               </div>
 
-              {/* جدول مستويات الترقية الشامل (Litmatch 15 Tiers Table) */}
+              {/* جدول مستويات الترقية الشامل (12 Tiers Table) */}
               <div>
                 <h4 className="text-xs font-bold text-zinc-400 mb-2.5 flex items-center gap-1.5">
-                  <span>📜 جدول مستويات القلوب الـ 15 ومكافآتها</span>
+                  <span>📜 جدول مستويات القلوب الـ 12 ومكافآتها الفاخرة</span>
                 </h4>
                 <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-zinc-900/40">
                   <div className="max-h-80 overflow-y-auto custom-scrollbar">
@@ -287,7 +270,7 @@ export function UserCharmHeart({
                       <thead className="bg-zinc-900/90 text-zinc-400 border-b border-zinc-800 sticky top-0 z-10 backdrop-blur">
                         <tr>
                           <th className="p-3 font-bold">المستوى</th>
-                          <th className="p-3 font-bold text-center">أيقونة القلب ثلاثية الأبعاد</th>
+                          <th className="p-3 font-bold text-center">رمز القلب الفريد</th>
                           <th className="p-3 font-bold">اللقب الشرفي</th>
                           <th className="p-3 font-bold">النقاط</th>
                           <th className="p-3 font-bold">المكافآت والمزايا المفتوحة</th>

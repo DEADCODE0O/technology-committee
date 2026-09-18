@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { CheckCheck, Loader2, Pin, Image as ImageIcon, Link2 } from "lucide-react";
 import { studentMarkAllRead, studentMarkNotificationRead } from "@/actions/notifications";
 import { CtaLink } from "@/components/platform/cta-link";
-import { NOTIFICATION_TYPE_ICONS, LINK_TYPE_LABELS } from "@/lib/constants";
+import { NOTIFICATION_TYPE_ICONS, NOTIFICATION_TYPE_LABELS, LINK_TYPE_LABELS } from "@/lib/constants";
 import { parseNotificationButtons, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 
@@ -71,6 +71,11 @@ function Card({ n, onRead }: { n: CenterNotification; onRead: (id: string) => vo
             {isImportant && (
               <span className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold-light">
                 <Pin className="h-3 w-3" /> مهم
+              </span>
+            )}
+            {n.type && n.type !== "INFO" && n.type !== "IMPORTANT" && NOTIFICATION_TYPE_LABELS[n.type] && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold/5 px-2 py-0.5 text-[10px] font-bold text-gold-light/90">
+                {NOTIFICATION_TYPE_LABELS[n.type].split(" — ")[0].split(" / ")[0]}
               </span>
             )}
             {btns.length > 1 && (

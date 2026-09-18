@@ -106,6 +106,26 @@ export async function saveCommunityPost(input: PostInput): Promise<{ ok: boolean
       summary: `منشور جديد (${created.type}): ${created.title}`,
       after: { title: created.title, pinned: created.pinned },
     });
+
+    // إشعار موجه للطلاب بالمنشور الجديد
+    try {
+      const { createNotificationForUsers } = await import("@/lib/notifications");
+      const { parseTarget } = await import("@/lib/targeting");
+      const targetObj = targetRaw ? parseTarget(targetRaw) : parseTarget("{}");
+      await createNotificationForUsers({
+        type: created.pinned ? "IMPORTANT" : "COMMUNITY",
+        title: `منشور جديد في المجتمع: ${created.title}`,
+        body: created.body.slice(0, 150) + (created.body.length > 150 ? "..." : ""),
+        linkUrl: `/community#${created.id}`,
+        linkLabel: "قراءة المنشور والتفاعل",
+        target: targetObj,
+        createdById: admin.id,
+        pinned: created.pinned,
+      });
+    } catch (notifErr) {
+      console.warn("Community post notification error:", notifErr);
+    }
+
     refreshCommunity(created.id);
     return { ok: true, id: created.id };
   } catch (e) {
@@ -243,6 +263,45 @@ export async function addComment(
         moderatedAt: shouldApprove ? new Date() : null,
       },
     });
+
+    if (shouldApprove) {
+      try {
+        const { createNotificationForUsers } = await import("@/lib/notifications");
+        const { parseTarget } = await import("@/lib/targeting");
+        const authorName = user.profile?.fullName || user.suggestedName || user.email.split("@")[0];
+
+        if (parentId) {
+          const parentComment = await db.comment.findUnique({
+            where: { id: parentId },
+            select: { userId: true },
+          });
+          if (parentComment && parentComment.userId !== user.id) {
+            await createNotificationForUsers({
+              type: "COMMUNITY",
+              title: "رد جديد على تعليقك",
+              body: `${authorName} قام بالرد على تعليقك في: «${post.title}»`,
+              linkUrl: `/community#${postId}`,
+              linkLabel: "عرض الرد",
+              target: { ...parseTarget("{}"), userIds: [parentComment.userId] },
+              createdById: user.id,
+            });
+          }
+        } else if (post.createdById && post.createdById !== user.id) {
+          await createNotificationForUsers({
+            type: "COMMUNITY",
+            title: "تعليق جديد على منشورك",
+            body: `${authorName} أضاف تعليقًا على منشورك: «${post.title}»`,
+            linkUrl: `/community#${postId}`,
+            linkLabel: "عرض التعليق",
+            target: { ...parseTarget("{}"), userIds: [post.createdById] },
+            createdById: user.id,
+          });
+        }
+      } catch (notifErr) {
+        console.warn("Comment notification error:", notifErr);
+      }
+    }
+
     refreshCommunity(postId);
     if (isAdmin) revalidatePath("/admin/community");
     return { ok: true };
@@ -333,7 +392,10 @@ export async function moderateComment(
     const admin = await requireActionUser(MODULES.NEWS, "manage");
     const comment = await db.comment.findUnique({
       where: { id: commentId },
-      include: { post: { select: { title: true } } },
+      include: {
+        post: { select: { id: true, title: true, createdById: true } },
+        user: { select: { id: true, email: true, profile: { select: { fullName: true } } } },
+      },
     });
     if (!comment) return { ok: false, error: "التعليق غير موجود" };
 
@@ -348,6 +410,58 @@ export async function moderateComment(
           moderatedAt: new Date(),
         },
       });
+
+      if (action === "APPROVE") {
+        try {
+          const { createNotificationForUsers } = await import("@/lib/notifications");
+          const { parseTarget } = await import("@/lib/targeting");
+          const commentAuthorName = comment.user?.profile?.fullName || comment.user?.email.split("@")[0] || "مستخدم";
+
+          // إشعار صاحب التعليق باعتماد تعليقه
+          if (comment.userId !== admin.id) {
+            await createNotificationForUsers({
+              type: "COMMUNITY",
+              title: "تم اعتماد تعليقك",
+              body: `تمت الموافقة على تعليقك في المنشور «${comment.post.title}» ونشره بنجاح.`,
+              linkUrl: `/community#${comment.postId}`,
+              linkLabel: "عرض التعليق",
+              target: { ...parseTarget("{}"), userIds: [comment.userId] },
+              createdById: admin.id,
+            });
+          }
+
+          // إشعار صاحب التعليق الأصلي أو صاحب المنشور
+          if (comment.parentId) {
+            const parentComment = await db.comment.findUnique({
+              where: { id: comment.parentId },
+              select: { userId: true },
+            });
+            if (parentComment && parentComment.userId !== comment.userId) {
+              await createNotificationForUsers({
+                type: "COMMUNITY",
+                title: "رد جديد على تعليقك",
+                body: `${commentAuthorName} قام بالرد على تعليقك في: «${comment.post.title}»`,
+                linkUrl: `/community#${comment.postId}`,
+                linkLabel: "عرض الرد",
+                target: { ...parseTarget("{}"), userIds: [parentComment.userId] },
+                createdById: comment.userId,
+              });
+            }
+          } else if (comment.post.createdById && comment.post.createdById !== comment.userId) {
+            await createNotificationForUsers({
+              type: "COMMUNITY",
+              title: "تعليق جديد على منشورك",
+              body: `${commentAuthorName} أضاف تعليقًا على منشورك: «${comment.post.title}»`,
+              linkUrl: `/community#${comment.postId}`,
+              linkLabel: "عرض التعليق",
+              target: { ...parseTarget("{}"), userIds: [comment.post.createdById] },
+              createdById: comment.userId,
+            });
+          }
+        } catch (notifErr) {
+          console.warn("Moderate comment notification error:", notifErr);
+        }
+      }
     }
     await logAudit({
       actor: admin,

@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // منظومة قلوب التفاعل والمستويات (Litmatch-style Charm Hearts System)
 // نظام تدرج القلوب والأجنحة والتيجان حسب مستويات الفصل الدراسي الواقعية
+// السقف الأقصى للمستويات: المستوى 12 (العرش الإمبراطوري الأسمى)
 // ═══════════════════════════════════════════════════════════════
 
 export interface CharmTierConfig {
@@ -12,7 +13,6 @@ export interface CharmTierConfig {
   wings: 'none' | 'mini' | 'golden' | 'radiant' | 'imperial' | 'cosmic';
   crown: 'none' | 'mini' | 'crystal' | 'royal' | 'sapphire' | 'sovereign';
   glowColor: string;
-  imagePath: string;
   unlockedPerk: string;
   description: string;
 }
@@ -27,7 +27,6 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'none',
     crown: 'none',
     glowColor: 'rgba(100, 116, 139, 0.35)',
-    imagePath: '/images/hearts/lit_heart_0.png',
     unlockedPerk: 'المشاركة في ورش العمل وفعاليات اللجنة',
     description: 'بداية رحلتك الاستكشافية في أنشطة وورش اللجنة التكنولوجية.'
   },
@@ -40,8 +39,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'none',
     crown: 'none',
     glowColor: 'rgba(236, 72, 153, 0.45)',
-    imagePath: '/images/hearts/lit_heart_1.png',
-    unlockedPerk: 'قلب حلوى وردي ثلاثي الأبعاد وكتابة المنشورات',
+    unlockedPerk: 'جوهرة الكوارتز الوردي وإمكانية كتابة التعليقات بالمنصة',
     description: 'إثبات الحضور والمشاركة الفعالة في أول ورشة عمل.'
   },
   {
@@ -53,22 +51,20 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'none',
     crown: 'none',
     glowColor: 'rgba(239, 68, 68, 0.45)',
-    imagePath: '/images/hearts/lit_heart_2.png',
-    unlockedPerk: 'قلب ياقوتي متوهج وإطار التروس البرونزية',
+    unlockedPerk: 'قلب ياقوتي متوهج وإطار النواة الفضية السيبرانية',
     description: 'حضور منتظم وتسليم المهام والتفاعل المثمر مع المدربين.'
   },
   {
     level: 3,
     title: 'مبادر واعد',
     pointsRequired: 65,
-    heartColor: '#f472b6',
+    heartColor: '#f43f5e',
     heartGradient: ['#fb7185', '#e11d48'],
     wings: 'mini',
     crown: 'none',
-    glowColor: 'rgba(244, 114, 182, 0.5)',
-    imagePath: '/images/hearts/lit_heart_3.png',
-    unlockedPerk: 'ظهور أول زوج من أجنحة الملاك الذهبية الملكية',
-    description: 'مبادرة متميزة في النقاشات التقنية والمساعدة في المجتمع.'
+    glowColor: 'rgba(244, 63, 94, 0.5)',
+    unlockedPerk: 'ظهور أول زوج من أجنحة الملاك الذهبية الملكية وإطار الهالة الذهبية',
+    description: 'مبادرة متميزة في النقاشات التقنية ومساعدة الزملاء بالمجتمع.'
   },
   {
     level: 4,
@@ -79,8 +75,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'mini',
     crown: 'mini',
     glowColor: 'rgba(245, 158, 11, 0.55)',
-    imagePath: '/images/hearts/lit_heart_4.png',
-    unlockedPerk: 'تتويج القلب بتاج الذهب الملكي وإطار طيف النيون',
+    unlockedPerk: 'تتويج القلب بتاج الذهب الملكي وإطار درع البلاتين الصقيعي',
     description: 'الوصول لمئوية النقاط الأولى وإتقان ورش تكنولوجية متعددة.'
   },
   {
@@ -92,8 +87,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'crystal',
     glowColor: 'rgba(236, 72, 153, 0.55)',
-    imagePath: '/images/hearts/lit_heart_5.png',
-    unlockedPerk: 'تاج الكريستال الوردي وإطار فارس الفضة الكريستالي',
+    unlockedPerk: 'تاج الكريستال الزمردي وإطار درع الزمرد الملكي المذهب',
     description: 'مستوى احترافي عالي في تسليم المشروعات البرمجية والتطبيقية.'
   },
   {
@@ -105,8 +99,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'royal',
     glowColor: 'rgba(220, 38, 38, 0.6)',
-    imagePath: '/images/hearts/lit_heart_6.png',
-    unlockedPerk: 'أجنحة ذهبية حاضنة لقلب الياقوت وفتح إطار سديم المجرة',
+    unlockedPerk: 'أجنحة ذهبية مفرودة لقلب الياقوت وفتح إطار صرح الياقوت الأزرق',
     description: 'حضور نخبة الورش وتقديم حلول إبداعية في التحديات والهاكاثونات.'
   },
   {
@@ -118,8 +111,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'crystal',
     glowColor: 'rgba(217, 70, 239, 0.65)',
-    imagePath: '/images/hearts/lit_heart_7.png',
-    unlockedPerk: 'قلب ماسي وردي فخم وفتح إطار درع الزمرد الملكي',
+    unlockedPerk: 'قلب الجمشت الماسي المتلألئ وفتح إطار سديم الجمشت النجمي',
     description: 'قيادة فرق العمل والمساهمة في تأهيل زملائك بالأنشطة الطلابية.'
   },
   {
@@ -131,8 +123,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'sapphire',
     glowColor: 'rgba(14, 165, 233, 0.7)',
-    imagePath: '/images/hearts/lit_heart_8.png',
-    unlockedPerk: 'قلب الياقوت الأزرق الملكي وإطار طائر الفينيق الأسطوري',
+    unlockedPerk: 'قلب الياقوت الأزرق الملكي وإطار صعود الفينيق الناري',
     description: 'أحد أبرز فرسان التكنولوجيا المداومين على صدارة لوحة الشرف.'
   },
   {
@@ -144,8 +135,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'royal',
     glowColor: 'rgba(139, 92, 246, 0.75)',
-    imagePath: '/images/hearts/lit_heart_9.png',
-    unlockedPerk: 'قلب الجمشت الإمبراطوري المتلألئ وإطار التاج الإمبراطوري',
+    unlockedPerk: 'قلب الجمشت الإمبراطوري المتلألئ وإطار تنين الشرف القرمزي',
     description: 'ابتكارات استثنائية وتحقيق مراكز متقدمة على مستوى الكلية.'
   },
   {
@@ -157,8 +147,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'radiant',
     crown: 'royal',
     glowColor: 'rgba(244, 63, 94, 0.8)',
-    imagePath: '/images/hearts/lit_heart_10.png',
-    unlockedPerk: 'أجنحة مزدوجة فائقة (زوجان من الأجنحة الذهبية)',
+    unlockedPerk: 'أجنحة مزدوجة فائقة (زوجان من الأجنحة الذهبية 4 Wings) وإطار التاج الإمبراطوري',
     description: 'تطور أجنحة القلب إلى زوجين مجنحين فاخرين مع تاج العرش الملكي.'
   },
   {
@@ -170,22 +159,20 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'radiant',
     crown: 'sapphire',
     glowColor: 'rgba(2, 132, 199, 0.85)',
-    imagePath: '/images/hearts/lit_heart_11.png',
-    unlockedPerk: 'أجنحة مزدوجة مع قلب وتاج الياقوت النادر وإطار الأسد المجنح',
-    description: 'مرتبة النخبة الملكية العليا وتتويج شرفي خاص في المجتمع.'
+    unlockedPerk: 'أجنحة مزدوجة سماوية مع قلب وتاج الياقوت النادر وإطار سديم المجرة',
+    description: 'مرتبة النخبة الملكية العليا وتتويج شرفي استثنائي بالمنصة.'
   },
   {
     level: 12,
-    title: 'العرش الإمبراطوري',
+    title: 'العرش الإمبراطوري الأسمى',
     pointsRequired: 660,
     heartColor: '#9333ea',
     heartGradient: ['#c084fc', '#7e22ce'],
     wings: 'imperial',
     crown: 'sovereign',
     glowColor: 'rgba(147, 51, 234, 0.9)',
-    imagePath: '/images/hearts/lit_heart_12.png',
-    unlockedPerk: 'أجنحة ثلاثية (3 أزواج مجنحة) وفتح إطار تنين اللهب القرمزي',
-    description: '3 طبقات من أجنحة الملاك الذهبية مع تاج الإمبراطورية الكبرى — قمة التفاعل والتميز بالمنصة.'
+    unlockedPerk: '3 أزواج مجنحة ملكية (6 أجنحة سيرافيم) مع تاج السيادة وإطار العرش الكوني الأسمى',
+    description: '3 طبقات من أجنحة الملاك الملكية مع تاج الإمبراطورية الكبرى — قمة التفاعل والتميز والخلود بالمنصة.'
   }
 ];
 

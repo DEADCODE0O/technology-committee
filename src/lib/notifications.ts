@@ -145,16 +145,18 @@ export async function dismissNotification(userId: string, notificationId: string
 // ═══════════════════════════════════════════════════════════════
 
 export async function createNotificationForUsers(params: {
-  type: string; // INFO | IMPORTANT | ANNOUNCEMENT | TASK
+  type: string; // INFO | IMPORTANT | ANNOUNCEMENT | TASK | COMMUNITY | POINTS
   title: string;
   body?: string | null;
   linkUrl?: string | null;
   linkLabel?: string | null;
+  ctaNewTab?: boolean;
   target: StudentTarget;
   createdById: string;
   pinned?: boolean;
 }): Promise<string | null> {
   try {
+    const isInternal = params.linkUrl?.startsWith("/");
     const notification = await db.notification.create({
       data: {
         type: params.type,
@@ -163,7 +165,7 @@ export async function createNotificationForUsers(params: {
         body: params.body?.slice(0, 2000) ?? null,
         ctaLabel: params.linkLabel ?? null,
         ctaUrl: params.linkUrl ?? null,
-        ctaNewTab: true,
+        ctaNewTab: params.ctaNewTab ?? (isInternal ? false : true),
         target: JSON.stringify(params.target),
         createdById: params.createdById,
       },

@@ -486,7 +486,7 @@ export async function setAvatarFramesVisibleAction(visible: boolean): Promise<{ 
     revalidatePath("/profile");
     revalidatePath("/leaderboard");
     revalidatePath("/community");
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -513,6 +513,7 @@ export async function setBadgesVisibleAction(visible: boolean): Promise<{ ok: bo
     revalidatePath("/admin/settings");
     revalidatePath("/profile");
     revalidatePath("/leaderboard");
+    revalidatePath("/", "layout");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -536,6 +537,7 @@ export async function setCharmHeartsVisibleAction(visible: boolean): Promise<{ o
     revalidatePath("/profile");
     revalidatePath("/community");
     revalidatePath("/leaderboard");
+    revalidatePath("/", "layout");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };

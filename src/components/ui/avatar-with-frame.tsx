@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { cleanAvatarUrl } from "@/lib/utils";
 import { getAvatarFrame } from "@/lib/avatar-frames";
+import { VectorAvatarFrame } from "@/components/ui/vector-avatar-frame";
 
 type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 
@@ -112,23 +113,13 @@ export function AvatarWithFrame({
         )}
       </div>
 
-      {/* ── طبقة الإطار الزخرفي ثلاثي الأبعاد (3D Avatar Frame Layer) ── */}
+      {/* ── طبقة الإطار الزخرفي الفيكتور (Vector Avatar Frame Layer) ── */}
       {frame && framesVisible !== false && (
         <div
-          className="avatar-frame-layer pointer-events-none absolute inset-[-14%] z-10 flex items-center justify-center select-none"
+          className="avatar-frame-layer pointer-events-none absolute inset-[-15%] z-10 flex items-center justify-center select-none"
           aria-hidden="true"
         >
-          <img
-            src={frame.imageSrc}
-            alt={frame.name}
-            className="h-full w-full object-contain"
-            style={{
-              transform: `scale(${frame.scale || 1.05})`,
-              filter: frame.filter
-                ? `${frame.filter} drop-shadow(0 2px 8px ${frame.glowColor || "rgba(201, 164, 92, 0.4)"})`
-                : `drop-shadow(0 2px 8px ${frame.glowColor || "rgba(201, 164, 92, 0.4)"})`,
-            }}
-          />
+          <VectorAvatarFrame frameId={frame.id} />
         </div>
       )}
 

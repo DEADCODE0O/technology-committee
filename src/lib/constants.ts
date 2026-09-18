@@ -246,6 +246,8 @@ export const NOTIFICATION_TYPES = [
   { value: "WELCOME", label: "ترحيب بالطلاب الجدد / توجيه", icon: "👋" },
   { value: "ANNOUNCEMENT", label: "إعلان", icon: "📢" },
   { value: "TASK", label: "مهمة / تكليف", icon: "📋" },
+  { value: "COMMUNITY", label: "المجتمع والتعليقات", icon: "💬" },
+  { value: "POINTS", label: "النقاط والتكريم", icon: "🏆" },
   { value: "INFO", label: "معلومة", icon: "ℹ️" },
 ] as const;
 
