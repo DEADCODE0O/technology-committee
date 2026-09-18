@@ -5,7 +5,7 @@
 //  تدعم التبديل بين الصور الرمزية وإطارات المستويات والبطولات
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { toast } from "sonner";
 import {
   User,
@@ -17,6 +17,9 @@ import {
   Lock,
   Palette,
   CircleOff,
+  Upload,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react";
 import { PRESET_AVATARS, getPresetAvatar } from "@/lib/avatars";
 import {
@@ -70,6 +73,10 @@ export function FrameWardrobeModal({
   );
   const [frameFilter, setFrameFilter] = useState<"ALL" | FrameCategory>("ALL");
 
+  // حالة رفع صورة مخصصة
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const isAvatarEquipped = previewAvatarUrl === currentAvatarUrl;
   const isAccountPhotoSelected = Boolean(
     user.accountAvatarUrl && previewAvatarUrl === user.accountAvatarUrl
@@ -84,12 +91,43 @@ export function FrameWardrobeModal({
     : true;
   const isFrameEquipped = previewFrameId === currentFrameId;
 
+  // رفع صورة مخصصة من الجهاز
+  const handleUploadCustomAvatar = async (file: File) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/profile/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "تعذر رفع الصورة");
+      }
+      setPreviewAvatarUrl(data.url);
+      setCurrentAvatarUrl(data.url);
+      toast.success(data.message || "تم رفع صورتك الشخصية واعتمادها بنجاح! 📸");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "فشل رفع الصورة الشخصية");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   // حفظ الصورة الرمزية
   const handleSaveAvatar = (url: string | null) => {
     startTransition(async () => {
       const res = await setAvatarUrlAction(url);
       if (res.ok) {
-        setCurrentAvatarUrl(url === "INITIALS" ? null : url);
+        const nextEquipped = url === "INITIALS" ? null : (url || user.accountAvatarUrl || null);
+        setCurrentAvatarUrl(nextEquipped);
         if (url && url !== "INITIALS") {
           if (url === user.accountAvatarUrl) {
             toast.success("تم تفعيل صورتك الشخصية الأصلية بنجاح! 📸");
@@ -101,6 +139,8 @@ export function FrameWardrobeModal({
                 : "تم تحديث صورتك الرمزية بنجاح!"
             );
           }
+        } else if (url === null) {
+          toast.success("تمت استعادة صورة الحساب الأصلية بنجاح! 📸");
         } else {
           toast.success("تمت استعادة الوضع البسيط (الحروف الأولى).");
         }
@@ -285,14 +325,14 @@ export function FrameWardrobeModal({
                   {/* أزرار الحفظ أو استعادة الافتراضي */}
                   <div className="flex flex-col gap-2 w-full sm:w-auto shrink-0">
                     {isAvatarEquipped ? (
-                      <div className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-xs font-extrabold text-emerald-500 dark:text-emerald-400">
+                      <div className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-extrabold text-emerald-500 dark:text-emerald-400">
                         <CheckCircle2 className="h-4 w-4" />
                         صورتك الحالية
                       </div>
                     ) : (
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isPending || isUploading}
                         onClick={() => handleSaveAvatar(previewAvatarUrl)}
                         className="flex items-center justify-center gap-1.5 rounded-xl bg-gold px-5 py-2.5 text-xs font-extrabold text-night hover:bg-gold-light transition-all disabled:opacity-50 shadow-md"
                       >
@@ -304,18 +344,35 @@ export function FrameWardrobeModal({
                         اعتماد هذه الصورة
                       </button>
                     )}
+
+                    {/* زر استعادة صورة الحساب الأصلية */}
+                    {user.accountAvatarUrl && (currentAvatarUrl !== user.accountAvatarUrl || previewAvatarUrl !== user.accountAvatarUrl) && (
+                      <button
+                        type="button"
+                        disabled={isPending || isUploading}
+                        onClick={() => {
+                          setPreviewAvatarUrl(user.accountAvatarUrl!);
+                          handleSaveAvatar(user.accountAvatarUrl!);
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all shadow-sm"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        استعادة صورة الحساب الأصلية
+                      </button>
+                    )}
+
                     {currentAvatarUrl && (
                       <button
                         type="button"
-                        disabled={isPending}
+                        disabled={isPending || isUploading}
                         onClick={() => {
                           setPreviewAvatarUrl(null);
                           handleSaveAvatar("INITIALS");
                         }}
-                        className="flex items-center justify-center gap-1 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:text-red-500 transition-colors"
+                        className="flex items-center justify-center gap-1 rounded-xl border border-border bg-card/60 px-3 py-1 text-[11px] font-bold text-muted-foreground hover:text-red-500 transition-colors"
                       >
-                        <RotateCcw className="h-3 w-3" />
-                        استعادة الحروف الأولى
+                        <CircleOff className="h-3 w-3" />
+                        الوضع البسيط (الحروف الأولى)
                       </button>
                     )}
                   </div>
@@ -323,7 +380,22 @@ export function FrameWardrobeModal({
 
                 {/* خيار صورة الحساب الأصلية (جوجل / حسابك) إن وُجدت */}
                 {user.accountAvatarUrl && (
-                  <div className="mb-4 flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-2xl border border-blue-500/25 bg-blue-500/[0.04] p-3.5 sm:p-4 dark:border-blue-500/20 dark:bg-blue-500/[0.03]">
+                  <div
+                    onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setPreviewAvatarUrl(user.accountAvatarUrl!);
+                      }
+                    }}
+                    className={`mb-4 flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer ${
+                      isAccountPhotoSelected
+                        ? "border-gold bg-gold/[0.08] shadow-[0_0_20px_-5px_rgba(201,164,92,0.3)] ring-1 ring-gold/40"
+                        : "border-blue-500/25 bg-blue-500/[0.04] hover:border-blue-500/50 hover:bg-blue-500/[0.08] dark:border-blue-500/20 dark:bg-blue-500/[0.03]"
+                    }`}
+                  >
                     <div className="flex items-center gap-3.5 w-full sm:w-auto">
                       <AvatarWithFrame
                         avatarUrl={user.accountAvatarUrl}
@@ -340,40 +412,119 @@ export function FrameWardrobeModal({
                           <span className="rounded-full bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
                             {user.provider === "GOOGLE" ? "جوجل 🌐" : "صورة الحساب"}
                           </span>
+                          {isAccountPhotoSelected && (
+                            <span className="rounded-full bg-gold/15 border border-gold/40 px-2 py-0.5 text-[10px] font-extrabold text-gold">
+                              المحددة في المعاينة
+                            </span>
+                          )}
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          صورتك الشخصية الحقيقية المستوردة عند تسجيل الدخول
+                          صورتك الشخصية الحقيقية المستوردة عند تسجيل الدخول — انقر في أي مكان لمعاينتها
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                    <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end" onClick={(e) => e.stopPropagation()}>
                       {isAccountPhotoEquipped ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-extrabold text-emerald-500">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          مستخدمة حالياً
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() => {
-                            setPreviewAvatarUrl(user.accountAvatarUrl!);
-                            handleSaveAvatar(user.accountAvatarUrl!);
-                          }}
-                          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-extrabold text-night hover:bg-gold-light transition-all disabled:opacity-50 shadow-sm"
-                        >
-                          {isPending && previewAvatarUrl === user.accountAvatarUrl ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                        <div className="flex items-center gap-2">
+                          {!isAccountPhotoSelected && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
+                              className="inline-flex items-center justify-center gap-1 rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
+                            >
+                              معاينة صورتي
+                            </button>
                           )}
-                          استخدام صورة حسابي
-                        </button>
+                          <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-extrabold text-emerald-500">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            مستخدمة حالياً
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {!isAccountPhotoSelected && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
+                              className="inline-flex items-center justify-center gap-1 rounded-xl border border-border bg-card/70 px-3 py-1.5 text-xs font-extrabold text-foreground hover:border-gold/50 transition-all"
+                            >
+                              معاينة
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={isPending || isUploading}
+                            onClick={() => {
+                              setPreviewAvatarUrl(user.accountAvatarUrl!);
+                              handleSaveAvatar(user.accountAvatarUrl!);
+                            }}
+                            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-extrabold text-night hover:bg-gold-light transition-all disabled:opacity-50 shadow-sm"
+                          >
+                            {isPending && previewAvatarUrl === user.accountAvatarUrl ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                            )}
+                            استعادة واعتماد صورة حسابي
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
+
+                {/* خيار رفع صورة شخصية من الجهاز */}
+                <div className="mb-4 flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-2xl border border-dashed border-border/80 bg-muted/20 p-3.5 sm:p-4 hover:border-gold/40 hover:bg-gold/[0.02] transition-all dark:border-white/10 dark:bg-white/[0.01]">
+                  <div className="flex items-center gap-3.5 w-full sm:w-auto">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gold/10 text-gold border border-gold/20">
+                      {isUploading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Upload className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-extrabold text-foreground flex items-center gap-2">
+                        رفع صورة مخصصة من جهازك
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        صورة من هاتفك أو حاسوبك (JPG · PNG · WEBP — حتى 5MB)
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleUploadCustomAvatar(file);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={isPending || isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-xs font-extrabold text-gold hover:bg-gold/20 transition-all disabled:opacity-50"
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          جاري الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <Camera className="h-3.5 w-3.5" />
+                          اختر صورة للرفع
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
                 {/* فلاتر تصنيف الشخصيات */}
                 <div className="mb-3 flex items-center justify-between border-b border-border/80 pb-2.5 dark:border-white/[0.06]">

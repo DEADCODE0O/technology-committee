@@ -188,9 +188,12 @@ export async function setAvatarUrlAction(
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "يجب تسجيل الدخول أولاً" };
 
+    // القيمة null أو "DEFAULT" تعني استعادة الصورة الأصلية المسجلة بالحساب
+    const targetUrl = !avatarUrl || avatarUrl === "DEFAULT" ? null : avatarUrl;
+
     await db.user.update({
       where: { id: user.id },
-      data: { avatarUrl },
+      data: { avatarUrl: targetUrl },
     });
 
     await logAudit({
@@ -198,9 +201,14 @@ export async function setAvatarUrlAction(
       action: "AVATAR_IMAGE_UPDATED",
       entity: "USER",
       entityId: user.id,
-      summary: avatarUrl ? "تحديث الصورة الرمزية (أفاتار)" : "حذف الصورة الرمزية",
+      summary: targetUrl
+        ? targetUrl === "INITIALS"
+          ? "تفعيل الحروف الأولى كصورة رمزية"
+          : "تحديث الصورة الرمزية"
+        : "استعادة صورة الحساب الأصلية",
     });
 
+    revalidatePath("/", "layout");
     revalidatePath("/profile");
     revalidatePath("/panel");
     revalidatePath("/tasks");

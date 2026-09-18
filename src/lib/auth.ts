@@ -169,12 +169,32 @@ export async function resolveSupabaseAppUser(
       rawAvatar = picData.url;
     }
   }
+
+  // فحص الهويات المتصلة (مثل Google Identity) في حال خلو الميتاداتا
+  if (!rawAvatar && Array.isArray(authUser.identities)) {
+    for (const identity of authUser.identities) {
+      const idData = identity?.identity_data as Record<string, unknown> | undefined;
+      if (idData) {
+        if (typeof idData.avatar_url === "string" && idData.avatar_url) {
+          rawAvatar = idData.avatar_url;
+          break;
+        } else if (typeof idData.picture === "string" && idData.picture) {
+          rawAvatar = idData.picture;
+          break;
+        }
+      }
+    }
+  }
+
   const avatar = cleanAvatarUrl(rawAvatar);
 
   // 1) نفس الـ UUID
   const byId = await db.user.findUnique({ where: { id: authUser.id } });
   if (byId) {
-    const isPresetAvatar = byId.avatarUrl?.startsWith("/avatars/");
+    const isPresetAvatar = Boolean(
+      byId.avatarUrl?.startsWith("/images/avatars/") ||
+      byId.avatarUrl?.startsWith("/avatars/")
+    );
     const isInitials = byId.avatarUrl === "INITIALS";
     const isOldBrokenFb = byId.avatarUrl?.includes("graph.facebook.com") || byId.avatarUrl?.includes("height=500&width=500");
     const isTinyGoogle = byId.avatarUrl?.includes("=s96-c");
@@ -402,11 +422,27 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
           rawMetaAvatar = picData.url;
         }
       }
+
+      // فحص الهويات المتصلة (مثل Google Identity)
+      if (!rawMetaAvatar && Array.isArray(authUser.identities)) {
+        for (const identity of authUser.identities) {
+          const idData = identity?.identity_data as Record<string, unknown> | undefined;
+          if (idData) {
+            if (typeof idData.avatar_url === "string" && idData.avatar_url) {
+              rawMetaAvatar = idData.avatar_url;
+              break;
+            } else if (typeof idData.picture === "string" && idData.picture) {
+              rawMetaAvatar = idData.picture;
+              break;
+            }
+          }
+        }
+      }
       const metaAvatar = cleanAvatarUrl(rawMetaAvatar);
 
       // تحديد الصورة النشطة المعروضة:
       // 1) إذا اختار الطالب يدويًا "INITIALS" تكون null لتعرض الحروف
-      // 2) إذا اختار الطالب أفاتار (/avatars/...) أو أي رابط مخصص نستخدمه
+      // 2) إذا اختار الطالب أفاتار (/images/avatars/...) أو أي رابط مخصص نستخدمه
       // 3) إذا لم يسبق للطالب تعيين صورة نستخدم صورة الحساب (metaAvatar)
       let finalAvatar: string | null = null;
       if (row.avatarUrl === "INITIALS") {
@@ -416,6 +452,18 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       } else {
         finalAvatar = metaAvatar;
       }
+
+      const isPreset = Boolean(
+        row.avatarUrl?.startsWith("/images/avatars/") ||
+        row.avatarUrl?.startsWith("/avatars/")
+      );
+      const isCustomPhoto = Boolean(
+        row.avatarUrl &&
+        !isPreset &&
+        row.avatarUrl !== "INITIALS"
+      );
+      // صورة الحساب الأصلية (جوجل أو صورة مخصصة مرفوعة)
+      const effectiveAccountAvatar = metaAvatar || (isCustomPhoto ? cleanAvatarUrl(row.avatarUrl) : null);
 
       const metaName =
         typeof meta.full_name === "string" && meta.full_name.trim()
@@ -429,7 +477,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       return toSessionUser({
         ...row,
         avatarUrl: finalAvatar,
-        accountAvatarUrl: metaAvatar,
+        accountAvatarUrl: effectiveAccountAvatar,
         suggestedName: metaName,
         profile,
       });
@@ -445,10 +493,20 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     });
     if (!user || user.status === "SUSPENDED") return null;
 
+    const isPresetLocal = Boolean(
+      user.avatarUrl?.startsWith("/images/avatars/") ||
+      user.avatarUrl?.startsWith("/avatars/")
+    );
+    const isRealPhotoLocal = Boolean(
+      user.avatarUrl &&
+      !isPresetLocal &&
+      user.avatarUrl !== "INITIALS"
+    );
+
     return toSessionUser({
       ...user,
       avatarUrl: user.avatarUrl === "INITIALS" ? null : cleanAvatarUrl(user.avatarUrl),
-      accountAvatarUrl: user.avatarUrl,
+      accountAvatarUrl: isRealPhotoLocal ? cleanAvatarUrl(user.avatarUrl) : null,
     });
   } catch (err) {
     if (err && typeof err === "object" && "digest" in err) throw err;

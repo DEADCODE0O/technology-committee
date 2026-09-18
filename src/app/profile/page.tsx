@@ -106,7 +106,7 @@ export default async function ProfilePage() {
       user={{
         name: profile.fullName,
         email: user.email,
-        avatarUrl: userRow?.avatarUrl,
+        avatarUrl: user.avatarUrl,
         avatarFrameId: userRow?.avatarFrameId,
         level: progress.level,
       }}
