@@ -116,7 +116,7 @@ export function AvatarWithFrame({
       {/* ── طبقة الإطار الزخرفي الفيكتور (Vector Avatar Frame Layer) ── */}
       {frame && framesVisible !== false && (
         <div
-          className="avatar-frame-layer pointer-events-none absolute inset-[-15%] z-10 flex items-center justify-center select-none"
+          className="avatar-frame-layer pointer-events-none absolute inset-[-5%] z-10 flex items-center justify-center select-none"
           aria-hidden="true"
         >
           <VectorAvatarFrame frameId={frame.id} />

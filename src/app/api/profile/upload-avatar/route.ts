@@ -11,12 +11,12 @@ import { rateLimit, clientIp, waitMessage } from "@/lib/rate-limit";
 //  تدعم الرفع المباشر وتعمل على Supabase Storage أو uploads/ محلياً
 // ═══════════════════════════════════════════════════════════════
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 1.5 * 1024 * 1024; // 1.5MB حد أقصى (العميل يقوم بالضغط المسبق إلى 25-35KB WebP)
 
 const SIGNATURES = [
+  { ext: "webp", mime: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] },
   { ext: "jpg", mime: "image/jpeg", bytes: [0xff, 0xd8, 0xff] },
   { ext: "png", mime: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47] },
-  { ext: "webp", mime: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] },
   { ext: "gif", mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] },
 ] as const;
 
@@ -35,7 +35,7 @@ function detectImage(bytes: Uint8Array) {
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers);
-  const limit = rateLimit(`avatar-upload:${ip}`, 15, 60 * 60 * 1000);
+  const limit = rateLimit(`avatar-upload:${ip}`, 20, 60 * 60 * 1000);
   if (!limit.ok) {
     return NextResponse.json({ error: waitMessage(limit.retryAfterSec) }, { status: 429 });
   }
@@ -58,29 +58,35 @@ export async function POST(req: NextRequest) {
   }
 
   if (file.size <= 0 || file.size > MAX_SIZE) {
-    return NextResponse.json({ error: "حجم الصورة يجب ألا يتجاوز 5 ميجابايت" }, { status: 400 });
+    return NextResponse.json(
+      { error: "حجم الصورة يجب ألا يتجاوز 1.5 ميجابايت لحماية خطة التخزين المجانية" },
+      { status: 400 }
+    );
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const detected = detectImage(bytes);
   if (!detected) {
     return NextResponse.json(
-      { error: "الصيغ المدعومة فقط: JPG · PNG · WEBP · GIF" },
+      { error: "الصيغ المدعومة فقط: WEBP · JPG · PNG · GIF" },
       { status: 415 }
     );
   }
 
-  const uniqueName = `avatar-${user.id.slice(0, 8)}-${Date.now()}.${detected.ext}`;
+  // اسم ومسار ثابت ومحدد لكل مستخدم (ملف واحد فقط لكل طالب بدلاً من التراكم العشوائي)
+  const userFileBase = `user-${user.id}`;
+  const fileName = `${userFileBase}.${detected.ext}`;
+  const timestamp = Date.now();
   let finalUrl = "";
 
-  // 1) محاولة الرفع على Supabase Storage إن وُجد الإعداد
+  // 1) محاولة الرفع على Supabase Storage مع استبدال الملف القديم (x-upsert)
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_BUCKET || "avatars";
 
   if (supabaseUrl && serviceKey) {
     try {
-      const storagePath = `user-avatars/${uniqueName}`;
+      const storagePath = `user-avatars/${fileName}`;
       const res = await fetch(
         `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${bucket}/${storagePath}`,
         {
@@ -88,35 +94,48 @@ export async function POST(req: NextRequest) {
           headers: {
             Authorization: `Bearer ${serviceKey}`,
             "Content-Type": detected.mime,
-            "x-upsert": "true",
+            "x-upsert": "true", // استبدال فوري للملف القديم لعدم استهلاك مساحة التخزين المجانية
           },
           body: bytes,
         }
       );
 
       if (res.ok) {
-        finalUrl = `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storagePath}`;
+        // نضع معامل كاش بستر حتى يتم تحديث الصورة فوراً في المتصفح
+        finalUrl = `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storagePath}?v=${timestamp}`;
       }
     } catch {
-      // الرجوع للتخزين المحلي في حال حدوث أي خطأ في شبكة التخزين السحابي
+      // الرجوع للتخزين المحلي في حال حدوث أي انقطاع في التخزين السحابي
       finalUrl = "";
     }
   }
 
-  // 2) التخزين المحلي الاحتياطي
+  // 2) التخزين المحلي الاحتياطي (تنظيف أي ملف سابق لنفس المستخدم)
   if (!finalUrl) {
     try {
       const uploadsDir = path.join(process.cwd(), "uploads");
       await mkdir(uploadsDir, { recursive: true });
-      await writeFile(path.join(uploadsDir, uniqueName), bytes);
-      finalUrl = `/api/uploads/${uniqueName}`;
+
+      // تنظيف أي صورة قديمة لنفس المستخدم لتوفير المساحة
+      const exts = ["webp", "jpg", "png", "gif"];
+      for (const e of exts) {
+        try {
+          const { unlink } = await import("fs/promises");
+          await unlink(path.join(uploadsDir, `${userFileBase}.${e}`));
+        } catch {
+          // الملف غير موجود - لا مشكلة
+        }
+      }
+
+      await writeFile(path.join(uploadsDir, fileName), bytes);
+      finalUrl = `/api/uploads/${fileName}?v=${timestamp}`;
     } catch (err) {
       console.error("Local avatar save error:", err);
       return NextResponse.json({ error: "تعذر حفظ الصورة على السيرفر" }, { status: 500 });
     }
   }
 
-  // حفظ الصورة الجديدة في ملف المستخدم
+  // حفظ مسار الرابط الصغير فقط (~80 حرفاً) في قاعدة البيانات (حجم يكاد لا يذكر لحماية 500MB)
   await db.user.update({
     where: { id: user.id },
     data: { avatarUrl: finalUrl },
@@ -127,13 +146,13 @@ export async function POST(req: NextRequest) {
     action: "AVATAR_IMAGE_UPDATED",
     entity: "USER",
     entityId: user.id,
-    summary: "رفع صورة شخصية مخصصة جديدة من الجهاز",
-    details: { url: finalUrl },
+    summary: "رفع صورة شخصية مخصصة ومضغوطة بنجاح",
+    details: { url: finalUrl, sizeBytes: bytes.length, format: detected.ext },
   });
 
   return NextResponse.json({
     ok: true,
     url: finalUrl,
-    message: "تم رفع صورتك الشخصية وتعيينها بنجاح! 📸",
+    message: "تم رفع صورتك الشخصية وتعيينها بنجاح مع الحفاظ على سرعة وأداء الحساب! 📸",
   });
 }

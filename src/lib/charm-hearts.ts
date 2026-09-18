@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // منظومة قلوب التفاعل والمستويات (Litmatch-style Charm Hearts System)
-// نظام تدرج القلوب والأجنحة والتيجان حسب مستويات الفصل الدراسي الواقعية
-// السقف الأقصى للمستويات: المستوى 12 (العرش الإمبراطوري الأسمى)
+// تدرج فني متناسق لقلوب التفاعل حسب مستويات المنصة الواقعية
+// السقف الأقصى للمستويات: المستوى 12 (القمة التكنولوجية)
 // ═══════════════════════════════════════════════════════════════
 
 export interface CharmTierConfig {
@@ -39,7 +39,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'none',
     crown: 'none',
     glowColor: 'rgba(236, 72, 153, 0.45)',
-    unlockedPerk: 'جوهرة الكوارتز الوردي وإمكانية كتابة التعليقات بالمنصة',
+    unlockedPerk: 'جوهرة الكوارتز الوردي وإطار البداية',
     description: 'إثبات الحضور والمشاركة الفعالة في أول ورشة عمل.'
   },
   {
@@ -51,7 +51,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'none',
     crown: 'none',
     glowColor: 'rgba(239, 68, 68, 0.45)',
-    unlockedPerk: 'قلب ياقوتي متوهج وإطار النواة الفضية السيبرانية',
+    unlockedPerk: 'قلب الياقوت الأحمر وإطار المبادرة',
     description: 'حضور منتظم وتسليم المهام والتفاعل المثمر مع المدربين.'
   },
   {
@@ -63,7 +63,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'mini',
     crown: 'none',
     glowColor: 'rgba(244, 63, 94, 0.5)',
-    unlockedPerk: 'ظهور أول زوج من أجنحة الملاك الذهبية الملكية وإطار الهالة الذهبية',
+    unlockedPerk: 'أول زوج من أجنحة الملاك الذهبية وإطار المشاركة',
     description: 'مبادرة متميزة في النقاشات التقنية ومساعدة الزملاء بالمجتمع.'
   },
   {
@@ -75,7 +75,7 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'mini',
     crown: 'mini',
     glowColor: 'rgba(245, 158, 11, 0.55)',
-    unlockedPerk: 'تتويج القلب بتاج الذهب الملكي وإطار درع البلاتين الصقيعي',
+    unlockedPerk: 'تاج الذهب المصغر وإطار النشاط الذهبي',
     description: 'الوصول لمئوية النقاط الأولى وإتقان ورش تكنولوجية متعددة.'
   },
   {
@@ -87,92 +87,92 @@ export const CHARM_TIERS: CharmTierConfig[] = [
     wings: 'golden',
     crown: 'crystal',
     glowColor: 'rgba(236, 72, 153, 0.55)',
-    unlockedPerk: 'تاج الكريستال الزمردي وإطار درع الزمرد الملكي المذهب',
+    unlockedPerk: 'تاج الكريستال الزمردي وإطار الإنجاز المتألق',
     description: 'مستوى احترافي عالي في تسليم المشروعات البرمجية والتطبيقية.'
   },
   {
     level: 6,
-    title: 'فارس الإبداع',
+    title: 'فارس التميز',
     pointsRequired: 195,
-    heartColor: '#dc2626',
-    heartGradient: ['#ef4444', '#b91c1c'],
+    heartColor: '#06b6d4',
+    heartGradient: ['#38bdf8', '#0284c7'],
     wings: 'golden',
     crown: 'royal',
-    glowColor: 'rgba(220, 38, 38, 0.6)',
-    unlockedPerk: 'أجنحة ذهبية مفرودة لقلب الياقوت وفتح إطار صرح الياقوت الأزرق',
-    description: 'حضور نخبة الورش وتقديم حلول إبداعية في التحديات والهاكاثونات.'
+    glowColor: 'rgba(6, 182, 212, 0.6)',
+    unlockedPerk: 'أجنحة ذهبية لقلب الياقوت الأزرق وإطار التميز البلاتيني',
+    description: 'حضور نخبة الورش وتقديم حلول إبداعية في التحديات والمسابقات.'
   },
   {
     level: 7,
-    title: 'قائد تقني',
+    title: 'نجم الموهبة',
     pointsRequired: 255,
-    heartColor: '#d946ef',
-    heartGradient: ['#e879f9', '#c026d3'],
+    heartColor: '#10b981',
+    heartGradient: ['#34d399', '#059669'],
     wings: 'golden',
     crown: 'crystal',
-    glowColor: 'rgba(217, 70, 239, 0.65)',
-    unlockedPerk: 'قلب الجمشت الماسي المتلألئ وفتح إطار سديم الجمشت النجمي',
-    description: 'قيادة فرق العمل والمساهمة في تأهيل زملائك بالأنشطة الطلابية.'
+    glowColor: 'rgba(16, 185, 129, 0.65)',
+    unlockedPerk: 'قلب الزمرد الملكي المضيء وإطار الموهبة',
+    description: 'موهبة متألقة ومساهمة فعالة في تطوير المشاريع التقنية.'
   },
   {
     level: 8,
-    title: 'بطل المنصة',
+    title: 'رائد الإبداع',
     pointsRequired: 320,
-    heartColor: '#0ea5e9',
-    heartGradient: ['#38bdf8', '#0284c7'],
+    heartColor: '#ef4444',
+    heartGradient: ['#f87171', '#dc2626'],
     wings: 'golden',
     crown: 'sapphire',
-    glowColor: 'rgba(14, 165, 233, 0.7)',
-    unlockedPerk: 'قلب الياقوت الأزرق الملكي وإطار صعود الفينيق الناري',
-    description: 'أحد أبرز فرسان التكنولوجيا المداومين على صدارة لوحة الشرف.'
+    glowColor: 'rgba(239, 68, 68, 0.7)',
+    unlockedPerk: 'قلب الياقوت الملكي المشع وإطار الإبداع الفاخر',
+    description: 'أحد أبرز رواد التكنولوجيا المداومين على صدارة لوحة الشرف.'
   },
   {
     level: 9,
-    title: 'رائد الابتكار',
+    title: 'قائد تقني',
     pointsRequired: 390,
-    heartColor: '#8b5cf6',
-    heartGradient: ['#a78bfa', '#7c3aed'],
+    heartColor: '#eab308',
+    heartGradient: ['#fde047', '#ca8a04'],
     wings: 'golden',
     crown: 'royal',
-    glowColor: 'rgba(139, 92, 246, 0.75)',
-    unlockedPerk: 'قلب الجمشت الإمبراطوري المتلألئ وإطار تنين الشرف القرمزي',
-    description: 'ابتكارات استثنائية وتحقيق مراكز متقدمة على مستوى الكلية.'
+    glowColor: 'rgba(234, 179, 8, 0.75)',
+    unlockedPerk: 'قلب الذهب الملكي الخالص وإطار القيادة',
+    description: 'قيادة الفرق الطلابية وتحقيق مراكز متقدمة على مستوى المدرسة والكلية.'
   },
   {
     level: 10,
-    title: 'أسطورة التكنولوجيا',
+    title: 'رائد المنصة',
     pointsRequired: 470,
-    heartColor: '#f43f5e',
-    heartGradient: ['#fb7185', '#e11d48'],
+    heartColor: '#3b82f6',
+    heartGradient: ['#60a5fa', '#1d4ed8'],
     wings: 'radiant',
     crown: 'royal',
-    glowColor: 'rgba(244, 63, 94, 0.8)',
-    unlockedPerk: 'أجنحة مزدوجة فائقة (زوجان من الأجنحة الذهبية 4 Wings) وإطار التاج الإمبراطوري',
+    glowColor: 'rgba(59, 130, 246, 0.8)',
+    unlockedPerk: 'أجنحة مزدوجة ملكية وتاج العرش وإطار الرواد',
     description: 'تطور أجنحة القلب إلى زوجين مجنحين فاخرين مع تاج العرش الملكي.'
   },
   {
     level: 11,
-    title: 'النخبة الياقوتية',
+    title: 'نخبة التكنولوجيا',
     pointsRequired: 560,
-    heartColor: '#0284c7',
-    heartGradient: ['#38bdf8', '#0369a1'],
+    heartColor: '#8b5cf6',
+    heartGradient: ['#a78bfa', '#6d28d9'],
     wings: 'radiant',
     crown: 'sapphire',
-    glowColor: 'rgba(2, 132, 199, 0.85)',
-    unlockedPerk: 'أجنحة مزدوجة سماوية مع قلب وتاج الياقوت النادر وإطار سديم المجرة',
+    glowColor: 'rgba(139, 92, 246, 0.85)',
+    unlockedPerk: 'أجنحة مدارية مشعة وتاج الياقوت الكوني وإطار النخبة',
     description: 'مرتبة النخبة الملكية العليا وتتويج شرفي استثنائي بالمنصة.'
   },
   {
     level: 12,
-    title: 'العرش الإمبراطوري الأسمى',
+    title: 'القمة التكنولوجية',
     pointsRequired: 660,
-    heartColor: '#9333ea',
-    heartGradient: ['#c084fc', '#7e22ce'],
+    heartColor: '#ffd700',
+    heartGradient: ['#fef08a', '#d97706'],
     wings: 'imperial',
     crown: 'sovereign',
-    glowColor: 'rgba(147, 51, 234, 0.9)',
-    unlockedPerk: '3 أزواج مجنحة ملكية (6 أجنحة سيرافيم) مع تاج السيادة وإطار العرش الكوني الأسمى',
-    description: '3 طبقات من أجنحة الملاك الملكية مع تاج الإمبراطورية الكبرى — قمة التفاعل والتميز والخلود بالمنصة.'
+    glowColor: 'rgba(255, 215, 0, 0.9)',
+    unlockedPerk: 'تاج السيادة الكبرى والأجنحة الإمبراطورية وإطار القمة التكنولوجية الأسمى',
+    description: 'قمة الشرف والتفاعل والتميز بالمنصة — المستوى 12 الأسمى.'
   }
 ];
 

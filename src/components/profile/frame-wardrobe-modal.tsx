@@ -106,17 +106,80 @@ export function FrameWardrobeModal({
     });
   };
 
-  // رفع صورة مخصصة من الجهاز
-  const handleUploadCustomAvatar = async (file: File) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب ألا يتجاوز 5 ميجابايت");
+  // ضغط فوري للصورة على المتصفح إلى WebP بجودة عالية وحجم خفيف (~25-35KB) لحماية خطة Supabase
+  const compressImageToWebp = async (file: File, maxSize = 320, quality = 0.82): Promise<File> => {
+    return new Promise((resolve) => {
+      // إذا كانت الصورة خفيفة جداً وبالفعل بصيغة WebP
+      if (file.type === "image/webp" && file.size <= 45 * 1024) {
+        resolve(file);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onerror = () => resolve(file); // تجاوز آمن في حال الخطأ
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => resolve(file);
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              resolve(file);
+              return;
+            }
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+
+            // Center-crop مربع بدون تشويه أبعاد وجه الطالب
+            const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+            const sx = (img.naturalWidth - minDim) / 2;
+            const sy = (img.naturalHeight - minDim) / 2;
+
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const compressed = new File([blob], "avatar.webp", {
+                    type: "image/webp",
+                    lastModified: Date.now(),
+                  });
+                  resolve(compressed);
+                } else {
+                  resolve(file);
+                }
+              },
+              "image/webp",
+              quality
+            );
+          } catch {
+            resolve(file);
+          }
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // رفع صورة مخصصة من الجهاز مع الضغط السحابي السريع
+  const handleUploadCustomAvatar = async (rawFile: File) => {
+    if (!rawFile) return;
+    if (rawFile.size > 20 * 1024 * 1024) {
+      toast.error("حجم الصورة الأصلي يجب ألا يتجاوز 20 ميجابايت");
       return;
     }
     setIsUploading(true);
     try {
+      // ضغط فوري للصورة في جهاز الطالب إلى ~30KB بصيغة WebP الحديثة
+      const fileToUpload = await compressImageToWebp(rawFile);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       const res = await fetch("/api/profile/upload-avatar", {
         method: "POST",
         body: formData,
@@ -512,7 +575,7 @@ export function FrameWardrobeModal({
                         رفع صورة مخصصة من جهازك
                       </h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        صورة من هاتفك أو حاسوبك (JPG · PNG · WEBP — حتى 5MB)
+                        صورة من هاتفك أو حاسوبك (يتم تحسينها وضغطها فائقاً بتقنية WebP السريعة لحماية باقتك وسرعة الموقع)
                       </p>
                     </div>
                   </div>

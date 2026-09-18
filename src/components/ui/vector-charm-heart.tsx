@@ -23,7 +23,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 0:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt0_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#94a3b8" />
@@ -57,7 +57,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 1:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt1_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f472b6" />
@@ -89,7 +89,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 2:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt2_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f87171" />
@@ -127,7 +127,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 3:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt3_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fb7185" />
@@ -163,7 +163,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 4:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt4_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fef08a" />
@@ -207,7 +207,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 5:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt5_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f472b6" />
@@ -250,7 +250,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 6:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt6_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f87171" />
@@ -294,7 +294,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 7:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt7_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f5d0fe" />
@@ -338,7 +338,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 8:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt8_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#7dd3fc" />
@@ -381,7 +381,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 9:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt9_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#c084fc" />
@@ -426,7 +426,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 10:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt10_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fb7185" />
@@ -473,7 +473,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     // ═══════════════════════════════════════════════════════════════
     case 11:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt11_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#38bdf8" />
@@ -520,7 +520,7 @@ export function VectorCharmHeart({ level = 0, className = '' }: VectorCharmHeart
     case 12:
     default:
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full select-none ${className}`} fill="none">
+        <svg viewBox="-12 -12 124 124" overflow="visible" className={`w-full h-full select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`hrt12_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#e879f9" />
