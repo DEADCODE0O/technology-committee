@@ -229,7 +229,15 @@ export async function resolveSupabaseAppUser(
   // 2) googleId
   if (googleSub) {
     const byGoogle = await db.user.findUnique({ where: { googleId: googleSub } });
-    if (byGoogle) return byGoogle;
+    if (byGoogle) {
+      if (!byGoogle.avatarUrl && avatar) {
+        return db.user.update({
+          where: { id: byGoogle.id },
+          data: { avatarUrl: avatar },
+        });
+      }
+      return byGoogle;
+    }
   }
 
   // 3) البريد — ربط حساب قائم بالهوية الموثقة

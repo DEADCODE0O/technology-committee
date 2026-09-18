@@ -30,7 +30,7 @@ import {
   type FrameCategory,
 } from "@/lib/avatar-frames";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { setAvatarUrlAction, equipAvatarFrame } from "@/actions/profile";
+import { setAvatarUrlAction, equipAvatarFrame, restoreAccountAvatarAction } from "@/actions/profile";
 
 interface AvatarWardrobeModalProps {
   user: {
@@ -78,6 +78,7 @@ export function FrameWardrobeModal({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAvatarEquipped = previewAvatarUrl === currentAvatarUrl;
+  const hasAccountPhoto = Boolean(user.accountAvatarUrl || user.provider === "GOOGLE");
   const isAccountPhotoSelected = Boolean(
     user.accountAvatarUrl && previewAvatarUrl === user.accountAvatarUrl
   );
@@ -90,6 +91,20 @@ export function FrameWardrobeModal({
     ? isFrameUnlocked(selectedFrame, user.level, true)
     : true;
   const isFrameEquipped = previewFrameId === currentFrameId;
+
+  // استعادة صورة الحساب الأصلية (جوجل) واعتمادها مباشرة
+  const handleRestoreAccountAvatar = () => {
+    startTransition(async () => {
+      const res = await restoreAccountAvatarAction();
+      if (res.ok && res.avatarUrl) {
+        setCurrentAvatarUrl(res.avatarUrl);
+        setPreviewAvatarUrl(res.avatarUrl);
+        toast.success("تمت استعادة صورتك الشخصية الأصلية من Google بنجاح! 📸");
+      } else {
+        toast.error(res.error || "تعذر استعادة صورة الحساب الأصلية");
+      }
+    });
+  };
 
   // رفع صورة مخصصة من الجهاز
   const handleUploadCustomAvatar = async (file: File) => {
@@ -346,18 +361,19 @@ export function FrameWardrobeModal({
                     )}
 
                     {/* زر استعادة صورة الحساب الأصلية */}
-                    {user.accountAvatarUrl && (currentAvatarUrl !== user.accountAvatarUrl || previewAvatarUrl !== user.accountAvatarUrl) && (
+                    {hasAccountPhoto && (currentAvatarUrl !== user.accountAvatarUrl || previewAvatarUrl !== user.accountAvatarUrl) && (
                       <button
                         type="button"
                         disabled={isPending || isUploading}
-                        onClick={() => {
-                          setPreviewAvatarUrl(user.accountAvatarUrl!);
-                          handleSaveAvatar(user.accountAvatarUrl!);
-                        }}
+                        onClick={handleRestoreAccountAvatar}
                         className="flex items-center justify-center gap-1.5 rounded-xl border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-extrabold text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all shadow-sm"
                       >
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        استعادة صورة الحساب الأصلية
+                        {isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        )}
+                        استعادة صورة حساب Google الأصلية
                       </button>
                     )}
 
@@ -379,15 +395,25 @@ export function FrameWardrobeModal({
                 </div>
 
                 {/* خيار صورة الحساب الأصلية (جوجل / حسابك) إن وُجدت */}
-                {user.accountAvatarUrl && (
+                {hasAccountPhoto && (
                   <div
-                    onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
+                    onClick={() => {
+                      if (user.accountAvatarUrl) {
+                        setPreviewAvatarUrl(user.accountAvatarUrl);
+                      } else {
+                        handleRestoreAccountAvatar();
+                      }
+                    }}
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        setPreviewAvatarUrl(user.accountAvatarUrl!);
+                        if (user.accountAvatarUrl) {
+                          setPreviewAvatarUrl(user.accountAvatarUrl);
+                        } else {
+                          handleRestoreAccountAvatar();
+                        }
                       }
                     }}
                     className={`mb-4 flex flex-col sm:flex-row items-center justify-between gap-3.5 rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer ${
@@ -398,7 +424,7 @@ export function FrameWardrobeModal({
                   >
                     <div className="flex items-center gap-3.5 w-full sm:w-auto">
                       <AvatarWithFrame
-                        avatarUrl={user.accountAvatarUrl}
+                        avatarUrl={user.accountAvatarUrl || currentAvatarUrl}
                         name={user.fullName}
                         frameId={currentFrameId}
                         framesVisible={framesVisible}
@@ -419,7 +445,7 @@ export function FrameWardrobeModal({
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          صورتك الشخصية الحقيقية المستوردة عند تسجيل الدخول — انقر في أي مكان لمعاينتها
+                          صورتك الشخصية الحقيقية المستوردة عند تسجيل الدخول عبر Google — انقر للاستعادة والاعتماد المباشر
                         </p>
                       </div>
                     </div>
@@ -427,7 +453,7 @@ export function FrameWardrobeModal({
                     <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end" onClick={(e) => e.stopPropagation()}>
                       {isAccountPhotoEquipped ? (
                         <div className="flex items-center gap-2">
-                          {!isAccountPhotoSelected && (
+                          {!isAccountPhotoSelected && user.accountAvatarUrl && (
                             <button
                               type="button"
                               onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
@@ -443,7 +469,7 @@ export function FrameWardrobeModal({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {!isAccountPhotoSelected && (
+                          {!isAccountPhotoSelected && user.accountAvatarUrl && (
                             <button
                               type="button"
                               onClick={() => setPreviewAvatarUrl(user.accountAvatarUrl!)}
@@ -455,13 +481,10 @@ export function FrameWardrobeModal({
                           <button
                             type="button"
                             disabled={isPending || isUploading}
-                            onClick={() => {
-                              setPreviewAvatarUrl(user.accountAvatarUrl!);
-                              handleSaveAvatar(user.accountAvatarUrl!);
-                            }}
+                            onClick={handleRestoreAccountAvatar}
                             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-extrabold text-night hover:bg-gold-light transition-all disabled:opacity-50 shadow-sm"
                           >
-                            {isPending && previewAvatarUrl === user.accountAvatarUrl ? (
+                            {isPending ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
                               <CheckCircle2 className="h-3.5 w-3.5" />

@@ -10,6 +10,9 @@ import { db } from "@/lib/db";
 import { getAvatarFrame, isFrameUnlocked } from "@/lib/avatar-frames";
 import { getStudentLevel, logAudit } from "@/lib/platform";
 import { MAX_TALENTS } from "@/lib/constants";
+import { cleanAvatarUrl } from "@/lib/utils";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export async function equipAvatarFrame(
   frameId: string | null
@@ -181,6 +184,135 @@ export async function deleteStudentTalentAction(talentId: string): Promise<{ ok:
   }
 }
 
+export async function restoreAccountAvatarAction(): Promise<{
+  ok: boolean;
+  avatarUrl?: string | null;
+  error?: string;
+}> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "يجب تسجيل الدخول أولاً" };
+
+    let googleAvatar: string | null = null;
+
+    // 1) فحص جلسة Supabase الحالية
+    if (isSupabaseConfigured()) {
+      const supabase = await createSupabaseServerClient();
+      if (supabase) {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+
+        if (authUser) {
+          const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
+          if (typeof meta.avatar_url === "string" && meta.avatar_url) {
+            googleAvatar = meta.avatar_url;
+          } else if (typeof meta.picture === "string" && meta.picture) {
+            googleAvatar = meta.picture;
+          } else if (meta.picture && typeof meta.picture === "object" && "data" in meta.picture) {
+            const picData = (meta.picture as { data?: { url?: string } }).data;
+            if (picData && typeof picData.url === "string") {
+              googleAvatar = picData.url;
+            }
+          }
+
+          if (!googleAvatar && Array.isArray(authUser.identities)) {
+            for (const identity of authUser.identities) {
+              const idData = identity?.identity_data as Record<string, unknown> | undefined;
+              if (idData) {
+                if (typeof idData.avatar_url === "string" && idData.avatar_url) {
+                  googleAvatar = idData.avatar_url;
+                  break;
+                } else if (typeof idData.picture === "string" && idData.picture) {
+                  googleAvatar = idData.picture;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // إذا لم يُعثر عليها في الكوكيز، نبحث عبر Supabase Admin بواسطة معرف المستخدم أو البريد
+      if (!googleAvatar) {
+        const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (supabaseUrl && serviceKey) {
+          try {
+            const { createClient } = await import("@supabase/supabase-js");
+            const adminClient = createClient(supabaseUrl, serviceKey, {
+              auth: { autoRefreshToken: false, persistSession: false },
+            });
+            const { data: adminUser } = await adminClient.auth.admin.getUserById(user.id);
+            const userMeta = adminUser?.user?.user_metadata as Record<string, unknown> | undefined;
+            if (userMeta) {
+              if (typeof userMeta.avatar_url === "string") googleAvatar = userMeta.avatar_url;
+              else if (typeof userMeta.picture === "string") googleAvatar = userMeta.picture;
+            }
+            if (!googleAvatar && adminUser?.user?.identities) {
+              for (const identity of adminUser.user.identities) {
+                const idData = identity?.identity_data as Record<string, unknown> | undefined;
+                if (idData?.avatar_url && typeof idData.avatar_url === "string") {
+                  googleAvatar = idData.avatar_url;
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[restoreAccountAvatarAction] admin lookup:", e);
+          }
+        }
+      }
+    }
+
+    // 2) فحص صورة الحساب المخزنة في الكائن أو قاعدة البيانات
+    if (!googleAvatar && user.accountAvatarUrl) {
+      googleAvatar = user.accountAvatarUrl;
+    }
+
+    const cleanedAvatar = cleanAvatarUrl(googleAvatar);
+    if (!cleanedAvatar) {
+      return {
+        ok: false,
+        error: "لم يتم العثور على صورة شخصية مسجلة بحساب Google المرتبط بهذا الحساب.",
+      };
+    }
+
+    // 3) حفظ رابط الصورة الفعلي الكامل في قاعدة البيانات
+    await db.user.update({
+      where: { id: user.id },
+      data: { avatarUrl: cleanedAvatar },
+    });
+
+    await logAudit({
+      actor: user,
+      action: "AVATAR_IMAGE_UPDATED",
+      entity: "USER",
+      entityId: user.id,
+      summary: "استعادة صورة حساب Google الأصلية بنجاح",
+      details: { restoredAvatarUrl: cleanedAvatar },
+    });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/profile");
+    revalidatePath("/panel");
+    revalidatePath("/tasks");
+    revalidatePath("/activities");
+    revalidatePath("/leaderboard");
+    revalidatePath("/community");
+    revalidatePath("/welcome");
+    revalidatePath("/");
+
+    return { ok: true, avatarUrl: cleanedAvatar };
+  } catch (err: unknown) {
+    console.error("restoreAccountAvatarAction error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "حدث خطأ أثناء استعادة صورة الحساب",
+    };
+  }
+}
+
 export async function setAvatarUrlAction(
   avatarUrl: string | null
 ): Promise<{ ok: boolean; error?: string }> {
@@ -188,8 +320,19 @@ export async function setAvatarUrlAction(
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "يجب تسجيل الدخول أولاً" };
 
-    // القيمة null أو "DEFAULT" تعني استعادة الصورة الأصلية المسجلة بالحساب
-    const targetUrl = !avatarUrl || avatarUrl === "DEFAULT" ? null : avatarUrl;
+    let targetUrl: string | null = null;
+    if (avatarUrl === "INITIALS") {
+      targetUrl = "INITIALS";
+    } else if (!avatarUrl || avatarUrl === "DEFAULT") {
+      // إذا طُلب الافتراضي، نحاول استخدام صورة الحساب الرسمية إن وُجدت
+      if (user.accountAvatarUrl) {
+        targetUrl = cleanAvatarUrl(user.accountAvatarUrl);
+      } else {
+        targetUrl = "INITIALS";
+      }
+    } else {
+      targetUrl = cleanAvatarUrl(avatarUrl);
+    }
 
     await db.user.update({
       where: { id: user.id },
@@ -201,11 +344,10 @@ export async function setAvatarUrlAction(
       action: "AVATAR_IMAGE_UPDATED",
       entity: "USER",
       entityId: user.id,
-      summary: targetUrl
-        ? targetUrl === "INITIALS"
-          ? "تفعيل الحروف الأولى كصورة رمزية"
-          : "تحديث الصورة الرمزية"
-        : "استعادة صورة الحساب الأصلية",
+      summary: targetUrl === "INITIALS"
+        ? "تفعيل الحروف الأولى كصورة رمزية"
+        : "تحديث الصورة الرمزية للملف الشخصي",
+      details: { avatarUrl: targetUrl },
     });
 
     revalidatePath("/", "layout");
