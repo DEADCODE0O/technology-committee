@@ -28,6 +28,7 @@ export interface AvatarFrame {
   color: string;
   glowColor: string;
   unlockHint: string;
+  imageSrc?: string;
 }
 
 export const TIER_CONFIG: Record<
@@ -174,6 +175,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#10b981",
     glowColor: "#34d399",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 7 (255 نقطة)",
+    imageSrc: "/images/frames/frame_lvl_7.webp",
   },
   {
     id: "frame_lvl_8",
@@ -210,6 +212,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#1e3a8a",
     glowColor: "#3b82f6",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 10 (470 نقطة)",
+    imageSrc: "/images/frames/frame_lvl_10.webp",
   },
   {
     id: "frame_lvl_11",
@@ -222,6 +225,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#8b5cf6",
     glowColor: "#a78bfa",
     unlockHint: "يفتح تلقائياً عند الوصول إلى المستوى 11 (560 نقطة)",
+    imageSrc: "/images/frames/frame_lvl_11.webp",
   },
   {
     id: "frame_lvl_12",
@@ -234,6 +238,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#ffd700",
     glowColor: "#f59e0b",
     unlockHint: "يفتح تلقائياً عند بلوغ المستوى الأقصى للمنصة: المستوى 12 (660 نقطة)",
+    imageSrc: "/images/frames/frame_lvl_12.webp",
   },
   {
     id: "frame_tech_champion",
@@ -246,6 +251,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#0284c7",
     glowColor: "#38bdf8",
     unlockHint: "يمنح حصرياً لأبطال مسابقات وهاكاثونات اللجنة التكنولوجية",
+    imageSrc: "/images/frames/frame_champion.webp",
   },
   {
     id: "frame_ramadan_crescent",
@@ -258,6 +264,7 @@ export const AVATAR_FRAMES: AvatarFrame[] = [
     color: "#f59e0b",
     glowColor: "#fbbf24",
     unlockHint: "متاح ومجاني لجميع الطلاب طوال شهر رمضان المبارك",
+    imageSrc: "/images/frames/frame_ramadan_crescent.webp",
   },
 ];
 

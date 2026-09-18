@@ -113,13 +113,27 @@ export function AvatarWithFrame({
         )}
       </div>
 
-      {/* ── طبقة الإطار الزخرفي الفيكتور (Vector Avatar Frame Layer) ── */}
+      {/* ── طبقة الإطار الزخرفي (3D Game Asset WebP or Vector Bezel) ── */}
       {frame && framesVisible !== false && (
         <div
-          className="avatar-frame-layer pointer-events-none absolute inset-[-5%] z-10 flex items-center justify-center select-none"
+          className={`avatar-frame-layer pointer-events-none absolute z-10 flex items-center justify-center select-none ${
+            frame.imageSrc ? "inset-[-36%]" : "inset-[-22%]"
+          }`}
           aria-hidden="true"
         >
-          <VectorAvatarFrame frameId={frame.id} />
+          {frame.imageSrc ? (
+            <img
+              src={frame.imageSrc}
+              alt=""
+              width={160}
+              height={160}
+              className="w-full h-full object-contain pointer-events-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+              loading="lazy"
+              draggable={false}
+            />
+          ) : (
+            <VectorAvatarFrame frameId={frame.id} />
+          )}
         </div>
       )}
 

@@ -8,287 +8,369 @@ export interface VectorAvatarFrameProps {
 }
 
 /**
- * محرك إطارات الصور الرمزية الفيكتور الاحترافي (Vector Avatar Frame Engine)
- * - مركز دائري نقي ومفتوح 100% لا يحجب وجه المستخدم نهائياً
- * - إطارات فيكتور فائقة النقاء والدقة لا تبهت مع التكبير
- * - أبعاد هندسية محكمة داخل نطاق (viewBox 0 0 100 100) تمنع أي اقتصاص خارجي (No clipping / overflow)
- * - تدرج فني حقيقي من البساطة الهادئة للمبتدئين وحتى الفخامة الملكية للقمة (المستوى 12)
+ * محرك إطارات الصور الرمزية الفيكتور الاحترافي فائق الفخامة والبروز (High-Impact Vector Avatar Frame Engine)
+ * - مركز دائري نقي ومفتوح (Radius < 35.5) لا يحجب وجه المستخدم نهائياً
+ * - حزام معدني عريض وثقيل (سُمك من 8 إلى 10 وحدات فيكتور) يظهر بوضوح فائق وفخامة لافتة
+ * - تدرجات لونية معدنية متعددة المحطات مع ظلال ثلاثية الأبعاد (Drop Shadows) وحواف بارزة (Bevels)
+ * - أحجار كريمة، تيجان، أجنحة، ومثبتات صناعية ثلاثية الأبعاد تعطي إحساس ألعاب AAA
  */
 export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrameProps) {
   const uid = useId().replace(/[:]/g, '_');
 
   switch (frameId) {
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 1: إطار البداية (Starting Bronze Ring) — بسيط وناعم
+    // المستوى 1: إطار البداية (Starting Bronze Bezel) — نحاس صناعي مصقول وثقيل
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_1':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`brz1_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#d97706" />
-              <stop offset="50%" stopColor="#b45309" />
-              <stop offset="100%" stopColor="#78350f" />
+            <linearGradient id={`brz1_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#f59e0b" />
+              <stop offset="25%" stopColor="#b45309" />
+              <stop offset="55%" stopColor="#78350f" />
+              <stop offset="85%" stopColor="#d97706" />
+              <stop offset="100%" stopColor="#92400e" />
             </linearGradient>
-            <filter id={`brz1_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.2" floodColor="#d97706" floodOpacity="0.4" />
+            <filter id={`brz1_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#451a03" floodOpacity="0.8" />
             </filter>
           </defs>
-          {/* حلقة برونزية أساسية ناعمة تطوق الأفاتار */}
-          <circle cx="50" cy="50" r="46" stroke={`url(#brz1_${uid})`} strokeWidth="1.2" strokeOpacity="0.6" strokeDasharray="3 2" />
-          <circle cx="50" cy="50" r="44" stroke={`url(#brz1_${uid})`} strokeWidth="1.8" filter={`url(#brz1_glow_${uid})`} />
-          {/* نقاط ارتكاز برونزية مصقولة ناعمة */}
-          <circle cx="50" cy="6" r="1.5" fill="#f59e0b" />
-          <circle cx="50" cy="94" r="1.5" fill="#f59e0b" />
-          <circle cx="6" cy="50" r="1.5" fill="#f59e0b" />
-          <circle cx="94" cy="50" r="1.5" fill="#f59e0b" />
+          {/* الحزام البرونزي الرئيسي العريض */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#brz1_body_${uid})`} strokeWidth="7.5" filter={`url(#brz1_shadow_${uid})`} />
+          {/* حافة خارجية مصقولة */}
+          <circle cx="50" cy="50" r="45" stroke="#f59e0b" strokeWidth="1" strokeOpacity="0.8" />
+          {/* حافة داخلية مشطوفة تبرز وجه الأفاتار */}
+          <circle cx="50" cy="50" r="37.2" stroke="#451a03" strokeWidth="1.2" strokeOpacity="0.9" />
+          {/* 4 براغي نحاسية ضخمة ثلاثية الأبعاد عند الأركان الرئيسية */}
+          {[0, 90, 180, 270].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="9" r="3.2" fill="#78350f" stroke="#f59e0b" strokeWidth="0.8" />
+              <circle cx="49" cy="8.2" r="1.2" fill="#fef08a" />
+            </g>
+          ))}
+          {/* تروس وعلامات تقنية دقيقة بين البراغي */}
+          {[45, 135, 225, 315].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <rect x="49" y="6.5" width="2" height="3" rx="0.5" fill="#f59e0b" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 2: إطار المبادرة (Initiative Silver Bezel) — فضي تقني ناعم
+    // المستوى 2: إطار المبادرة (Silver Cyber Bezel) — كروم فضي بضوء سيان
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_2':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`slv2_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`slv2_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="50%" stopColor="#94a3b8" />
+              <stop offset="25%" stopColor="#94a3b8" />
+              <stop offset="50%" stopColor="#334155" />
+              <stop offset="75%" stopColor="#cbd5e1" />
               <stop offset="100%" stopColor="#64748b" />
             </linearGradient>
-            <filter id={`slv2_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#94a3b8" floodOpacity="0.4" />
+            <filter id={`slv2_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="2.5" floodColor="#0284c7" floodOpacity="0.6" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="46.5" stroke={`url(#slv2_${uid})`} strokeWidth="0.8" strokeOpacity="0.5" />
-          <circle cx="50" cy="50" r="44" stroke={`url(#slv2_${uid})`} strokeWidth="2" strokeDasharray="14 3 4 3" filter={`url(#slv2_glow_${uid})`} />
-          {/* مؤشرات فضية دقيقة */}
-          <rect x="48.5" y="4.5" width="3" height="2" rx="0.8" fill="#ffffff" />
-          <rect x="48.5" y="93.5" width="3" height="2" rx="0.8" fill="#ffffff" />
-          <rect x="4.5" y="48.5" width="2" height="3" rx="0.8" fill="#ffffff" />
-          <rect x="93.5" y="48.5" width="2" height="3" rx="0.8" fill="#ffffff" />
+          {/* حزام الكروم الفضي العريض */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#slv2_body_${uid})`} strokeWidth="8" filter={`url(#slv2_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="45.2" stroke="#ffffff" strokeWidth="1" strokeOpacity="0.9" />
+          <circle cx="50" cy="50" r="36.8" stroke="#0f172a" strokeWidth="1.2" />
+          {/* 4 مشابك تقنية سيبرانية زرقاء مضيئة */}
+          {[0, 90, 180, 270].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <rect x="47" y="5.5" width="6" height="4.5" rx="1.2" fill="#0284c7" stroke="#38bdf8" strokeWidth="0.8" />
+              <circle cx="50" cy="7.8" r="1.3" fill="#ffffff" />
+            </g>
+          ))}
+          {/* نقاط طاقة سيان عند الـ 45 درجة */}
+          {[45, 135, 225, 315].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="8.5" r="1.8" fill="#22d3ee" stroke="#0891b2" strokeWidth="0.6" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 3: إطار المشاركة (Participation Two-Tone) — فضي بلمسات ذهب
+    // المستوى 3: إطار المشاركة (Two-Tone Silver & Gold) — فضة وذهب ملكي متداخل
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_3':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`slv3_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="60%" stopColor="#cbd5e1" />
-              <stop offset="100%" stopColor="#94a3b8" />
-            </linearGradient>
-            <linearGradient id={`gld3_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`tt3_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="100%" stopColor="#d97706" />
+              <stop offset="40%" stopColor="#eab308" />
+              <stop offset="70%" stopColor="#b45309" />
+              <stop offset="100%" stopColor="#fde047" />
             </linearGradient>
+            <linearGradient id={`tt3_slv_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="50%" stopColor="#94a3b8" />
+              <stop offset="100%" stopColor="#475569" />
+            </linearGradient>
+            <filter id={`tt3_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2.5" stdDeviation="2.8" floodColor="#b45309" floodOpacity="0.65" />
+            </filter>
           </defs>
-          <circle cx="50" cy="50" r="46" stroke={`url(#gld3_${uid})`} strokeWidth="0.8" strokeOpacity="0.6" strokeDasharray="2 3" />
-          <circle cx="50" cy="50" r="44" stroke={`url(#slv3_${uid})`} strokeWidth="2.2" />
-          {/* أربع ماسات رقيقة عند الزوايا الـ 45 */}
-          {[45, 135, 225, 315].map((deg) => {
-            const rad = (deg * Math.PI) / 180;
-            const x = 50 + 44 * Math.cos(rad);
-            const y = 50 + 44 * Math.sin(rad);
-            return (
-              <polygon
-                key={deg}
-                points={`${x},${y - 2.5} ${x + 2.5},${y} ${x},${y + 2.5} ${x - 2.5},${y}`}
-                fill="#fde047"
-                stroke="#b45309"
-                strokeWidth="0.5"
-              />
-            );
-          })}
+          {/* حلقة خارجية ذهبية عريضة */}
+          <circle cx="50" cy="50" r="42.5" stroke={`url(#tt3_gold_${uid})`} strokeWidth="5.5" filter={`url(#tt3_shadow_${uid})`} />
+          {/* حلقة داخلية فضية مصقولة */}
+          <circle cx="50" cy="50" r="38" stroke={`url(#tt3_slv_${uid})`} strokeWidth="4" />
+          <circle cx="50" cy="50" r="45.5" stroke="#fef08a" strokeWidth="0.8" />
+          <circle cx="50" cy="50" r="36" stroke="#78350f" strokeWidth="1" />
+          {/* 4 ماسات ذهبية ثلاثية الأبعاد عند الزوايا */}
+          {[45, 135, 225, 315].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <polygon points="50,4.5 53.5,8 50,11.5 46.5,8" fill="#fef08a" stroke="#b45309" strokeWidth="0.8" />
+              <polygon points="50,5.5 52.2,8 50,10.5 47.8,8" fill="#ffffff" />
+            </g>
+          ))}
+          {/* أزرار فضية عند المحاور */}
+          {[0, 90, 180, 270].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="8" r="2.2" fill="#ffffff" stroke="#475569" strokeWidth="0.8" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 4: إطار النشاط (Activity Pure Gold Ring) — ذهبي مزدوج نقي
+    // المستوى 4: إطار النشاط (Activity Pure Gold Bezel) — ذهب خالص 24K مضلع
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_4':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`gld4_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="35%" stopColor="#eab308" />
-              <stop offset="70%" stopColor="#ca8a04" />
-              <stop offset="100%" stopColor="#fde047" />
+            <linearGradient id={`gld4_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="20%" stopColor="#fef08a" />
+              <stop offset="45%" stopColor="#eab308" />
+              <stop offset="70%" stopColor="#92400e" />
+              <stop offset="88%" stopColor="#facc15" />
+              <stop offset="100%" stopColor="#ca8a04" />
             </linearGradient>
-            <filter id={`gld4_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#eab308" floodOpacity="0.5" />
+            <filter id={`gld4_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2.5" stdDeviation="3" floodColor="#ca8a04" floodOpacity="0.75" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="46.5" stroke={`url(#gld4_${uid})`} strokeWidth="1" strokeOpacity="0.7" />
-          <circle cx="50" cy="50" r="43.8" stroke={`url(#gld4_${uid})`} strokeWidth="2" filter={`url(#gld4_glow_${uid})`} />
-          {/* خطوط تكنولوجية رقيقة للأركان */}
-          {[0, 90, 180, 270].map((deg) => (
+          {/* حزام ذهبي مصمت عريض جداً */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#gld4_body_${uid})`} strokeWidth="9" filter={`url(#gld4_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="45.8" stroke="#ffffff" strokeWidth="1" strokeOpacity="0.95" />
+          <circle cx="50" cy="50" r="36.5" stroke="#78350f" strokeWidth="1.2" />
+          {/* حفر هندسي داخلي */}
+          <circle cx="50" cy="50" r="41" stroke="#fef08a" strokeWidth="1" strokeDasharray="3 3" opacity="0.8" />
+          {/* 8 قباب ذهبية ثلاثية الأبعاد على المحيط */}
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <line x1="50" y1="3.5" x2="50" y2="7.5" stroke="#fef08a" strokeWidth="1.2" strokeLinecap="round" />
+              <circle cx="50" cy="8.2" r="2.6" fill="#fef08a" stroke="#78350f" strokeWidth="0.7" />
+              <circle cx="49" cy="7.2" r="0.9" fill="#ffffff" />
             </g>
           ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 5: إطار الإنجاز (Achievement Faceted Gold) — ذهبي بهندسة دقيقة
+    // المستوى 5: إطار الإنجاز (Achievement Royal Crest) — درع ذهبي بثمانية أوجه
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_5':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`gld5_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="40%" stopColor="#f59e0b" />
-              <stop offset="80%" stopColor="#d97706" />
-              <stop offset="100%" stopColor="#fbbf24" />
+            <linearGradient id={`gld5_crest_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="25%" stopColor="#fde047" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="75%" stopColor="#b45309" />
+              <stop offset="100%" stopColor="#d97706" />
             </linearGradient>
-            <filter id={`gld5_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#f59e0b" floodOpacity="0.6" />
+            <filter id={`gld5_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3.2" floodColor="#b45309" floodOpacity="0.8" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47" stroke={`url(#gld5_${uid})`} strokeWidth="0.8" strokeDasharray="3 3" />
-          <circle cx="50" cy="50" r="44" stroke={`url(#gld5_${uid})`} strokeWidth="2.4" filter={`url(#gld5_glow_${uid})`} />
-          {/* 8 أزرار هندسية ذهبية مرصعة */}
-          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
-            const rad = (deg * Math.PI) / 180;
-            const x = 50 + 44 * Math.cos(rad);
-            const y = 50 + 44 * Math.sin(rad);
-            return (
-              <circle key={deg} cx={x} cy={y} r="1.8" fill="#fef08a" stroke="#b45309" strokeWidth="0.6" />
-            );
-          })}
+          {/* مضلع ثماني هندسي خارجي يمنح الإطار طابع الدروع الملكية */}
+          <polygon
+            points="50,2.5 83.5,16.5 97.5,50 83.5,83.5 50,97.5 16.5,83.5 2.5,50 16.5,16.5"
+            stroke={`url(#gld5_crest_${uid})`}
+            strokeWidth="3.2"
+            fill="none"
+            filter={`url(#gld5_shadow_${uid})`}
+          />
+          {/* الحزام الدائري الذهبي الصلب */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#gld5_crest_${uid})`} strokeWidth="9.2" />
+          <circle cx="50" cy="50" r="45.8" stroke="#fef08a" strokeWidth="1" />
+          <circle cx="50" cy="50" r="36.4" stroke="#78350f" strokeWidth="1.2" />
+          {/* 4 أهرامات ذهبية ثلاثية الأبعاد عند الأركان */}
+          {[0, 90, 180, 270].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <polygon points="50,4.2 54,8.5 50,11.5 46,8.5" fill="#fef08a" stroke="#78350f" strokeWidth="0.8" />
+              <polygon points="50,4.2 50,11.5 46,8.5" fill="#ca8a04" />
+            </g>
+          ))}
+          {/* أزرار كروية بالأقطار */}
+          {[45, 135, 225, 315].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="8" r="2.4" fill="#ffffff" stroke="#92400e" strokeWidth="0.8" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 6: إطار التميز (Excellence Cyan Platinum) — بلاتيني سماوي مشع
+    // المستوى 6: إطار التميز (Cyan Platinum Accelerator) — محرك بلاتيني سيبراني
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_6':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`plt6_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#e0f2fe" />
-              <stop offset="40%" stopColor="#38bdf8" />
-              <stop offset="80%" stopColor="#0284c7" />
-              <stop offset="100%" stopColor="#bae6fd" />
+            <linearGradient id={`plt6_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="25%" stopColor="#bae6fd" />
+              <stop offset="50%" stopColor="#0284c7" />
+              <stop offset="75%" stopColor="#0f172a" />
+              <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
-            <filter id={`plt6_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#38bdf8" floodOpacity="0.7" />
+            <filter id={`plt6_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#38bdf8" floodOpacity="0.9" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.2" stroke={`url(#plt6_${uid})`} strokeWidth="0.8" strokeDasharray="8 4" opacity="0.6" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#plt6_${uid})`} strokeWidth="2.5" filter={`url(#plt6_glow_${uid})`} />
-          {/* أقواس الطاقة الجانبية الدقيقة */}
-          <path d="M 43 5.5 A 44.5 44.5 0 0 1 57 5.5" stroke="#e0f2fe" strokeWidth="2.2" strokeLinecap="round" />
-          <path d="M 43 94.5 A 44.5 44.5 0 0 0 57 94.5" stroke="#e0f2fe" strokeWidth="2.2" strokeLinecap="round" />
-          <circle cx="50" cy="5.5" r="2.2" fill="#ffffff" />
-          <circle cx="50" cy="94.5" r="2.2" fill="#ffffff" />
+          {/* حزام بلاتيني عريض مشع */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#plt6_body_${uid})`} strokeWidth="9.5" filter={`url(#plt6_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46" stroke="#e0f2fe" strokeWidth="1.2" />
+          <circle cx="50" cy="50" r="36.2" stroke="#0369a1" strokeWidth="1.2" />
+          {/* قوسي تسارع علوي وسفلي فائقين الفخامة */}
+          <path d="M 32 8.5 A 43 43 0 0 1 68 8.5" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
+          <path d="M 32 91.5 A 43 43 0 0 0 68 91.5" stroke="#ffffff" strokeWidth="3.5" strokeLinecap="round" />
+          {/* نوى طاقة سيان مشعة في الأقطار */}
+          {[0, 90, 180, 270].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="8.2" r="3.2" fill="#38bdf8" stroke="#ffffff" strokeWidth="1" />
+              <circle cx="50" cy="8.2" r="1.5" fill="#ffffff" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 7: إطار الموهبة (Talent Emerald & Gold) — زمردي بأطياف ذهبية
+    // المستوى 7: إطار الموهبة (Emerald Royalty) — زمرد ملكي وذهب
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_7':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`emr7_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6ee7b7" />
-              <stop offset="50%" stopColor="#10b981" />
-              <stop offset="100%" stopColor="#047857" />
+            <linearGradient id={`emr7_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a7f3d0" />
+              <stop offset="30%" stopColor="#10b981" />
+              <stop offset="65%" stopColor="#047857" />
+              <stop offset="100%" stopColor="#064e3b" />
             </linearGradient>
-            <linearGradient id={`gld7_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`emr7_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="100%" stopColor="#d97706" />
+              <stop offset="50%" stopColor="#eab308" />
+              <stop offset="100%" stopColor="#b45309" />
             </linearGradient>
-            <filter id={`emr7_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#10b981" floodOpacity="0.65" />
+            <filter id={`emr7_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2.5" stdDeviation="3.2" floodColor="#10b981" floodOpacity="0.8" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47" stroke={`url(#gld7_${uid})`} strokeWidth="1" />
-          <circle cx="50" cy="50" r="44" stroke={`url(#emr7_${uid})`} strokeWidth="2.6" filter={`url(#emr7_glow_${uid})`} />
-          {/* زخارف أوراق الزمرد الملكية المحكمة بالمدار */}
-          {[30, 60, 120, 150, 210, 240, 300, 330].map((deg) => {
-            const rad = (deg * Math.PI) / 180;
-            const x = 50 + 44 * Math.cos(rad);
-            const y = 50 + 44 * Math.sin(rad);
-            return (
-              <circle key={deg} cx={x} cy={y} r="1.6" fill="#a7f3d0" stroke="#047857" strokeWidth="0.5" />
-            );
-          })}
-          {/* قمم ذهبية متقاطعة */}
-          <polygon points="50,3 52,6 50,7 48,6" fill="#fef08a" />
-          <polygon points="50,97 52,94 50,93 48,94" fill="#fef08a" />
+          {/* حزام الزمرد العريض */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#emr7_body_${uid})`} strokeWidth="9.5" filter={`url(#emr7_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46" stroke={`url(#emr7_gold_${uid})`} strokeWidth="1.5" />
+          <circle cx="50" cy="50" r="36.2" stroke={`url(#emr7_gold_${uid})`} strokeWidth="1.5" />
+          {/* 8 أحجار زمرد كابوشون مصقولة داخل مخالب ذهبية */}
+          {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <circle cx="50" cy="8.2" r="3" fill="#6ee7b7" stroke="#b45309" strokeWidth="0.8" />
+              <circle cx="49" cy="7.2" r="1.1" fill="#ffffff" />
+            </g>
+          ))}
+          {/* قمة التاج الزمردية العلوية */}
+          <polygon points="50,2.5 53.5,6.5 50,8 46.5,6.5" fill="#fef08a" stroke="#b45309" strokeWidth="0.6" />
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 8: إطار الإبداع (Creativity Ruby Crest) — ياقوتي بنقوش هندسية
+    // المستوى 8: إطار الإبداع (Ruby Sovereign Relic) — ياقوت دموي فخم ومذهب
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_8':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`rby8_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fca5a5" />
-              <stop offset="40%" stopColor="#ef4444" />
-              <stop offset="80%" stopColor="#b91c1c" />
-              <stop offset="100%" stopColor="#f87171" />
+            <linearGradient id={`rby8_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fecaca" />
+              <stop offset="25%" stopColor="#ef4444" />
+              <stop offset="60%" stopColor="#991b1b" />
+              <stop offset="100%" stopColor="#450a0a" />
             </linearGradient>
-            <filter id={`rby8_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.8" floodColor="#ef4444" floodOpacity="0.7" />
+            <linearGradient id={`rby8_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="40%" stopColor="#fde047" />
+              <stop offset="100%" stopColor="#ca8a04" />
+            </linearGradient>
+            <filter id={`rby8_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor="#ef4444" floodOpacity="0.85" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.5" stroke="#fca5a5" strokeWidth="0.6" opacity="0.6" strokeDasharray="5 3" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#rby8_${uid})`} strokeWidth="2.8" filter={`url(#rby8_glow_${uid})`} />
-          {/* أركان ياقوتية هندسية مصقولة */}
+          {/* حزام الياقوت القرمزي الثقيل */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#rby8_body_${uid})`} strokeWidth="10" filter={`url(#rby8_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.2" stroke={`url(#rby8_gold_${uid})`} strokeWidth="1.5" />
+          <circle cx="50" cy="50" r="35.8" stroke={`url(#rby8_gold_${uid})`} strokeWidth="1.5" />
+          {/* 4 أحجار ياقوت ماسية بارزة عند المحاور الأربعة مع مخالب ذهبية */}
           {[0, 90, 180, 270].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <polygon points="50,3.5 53.5,6.5 50,9.5 46.5,6.5" fill="#fecaca" stroke="#991b1b" strokeWidth="0.6" />
+              <polygon points="50,3 55,8.2 50,13.4 45,8.2" fill="#ef4444" stroke="#fde047" strokeWidth="1" />
+              <polygon points="50,4.5 53.5,8.2 50,11.9 46.5,8.2" fill="#fecaca" />
+              <circle cx="49" cy="7.2" r="1.2" fill="#ffffff" />
             </g>
           ))}
+          {/* أزرار ذهبية عند الزوايا الـ 45 */}
           {[45, 135, 225, 315].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <circle cx="50" cy="5.8" r="1.4" fill="#f87171" />
+              <circle cx="50" cy="8.2" r="2.5" fill="#fde047" stroke="#7f1d1d" strokeWidth="0.8" />
             </g>
           ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 9: إطار القيادة (Leadership Imperial Gold) — ذهبي ملكي متدرج
+    // المستوى 9: إطار القيادة (Monarch Imperial Gold) — ذهب إمبراطوري مع أكاليل الغار
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_9':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`ldr9_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="30%" stopColor="#eab308" />
-              <stop offset="70%" stopColor="#ca8a04" />
-              <stop offset="100%" stopColor="#fef08a" />
+            <linearGradient id={`ldr9_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="20%" stopColor="#fef08a" />
+              <stop offset="45%" stopColor="#eab308" />
+              <stop offset="75%" stopColor="#854d0e" />
+              <stop offset="90%" stopColor="#ffd700" />
+              <stop offset="100%" stopColor="#b45309" />
             </linearGradient>
-            <filter id={`ldr9_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#ca8a04" floodOpacity="0.75" />
+            <filter id={`ldr9_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3.8" floodColor="#ca8a04" floodOpacity="0.85" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.5" stroke={`url(#ldr9_${uid})`} strokeWidth="1" strokeDasharray="6 3" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#ldr9_${uid})`} strokeWidth="3" filter={`url(#ldr9_glow_${uid})`} />
-          {/* زخارف أركان قيادية فخمة */}
-          {[0, 60, 120, 180, 240, 300].map((deg) => (
+          {/* حزام ذهب قيادي ملكي فائق السمك */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#ldr9_body_${uid})`} strokeWidth="10" filter={`url(#ldr9_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.5" stroke="#ffffff" strokeWidth="1.2" strokeOpacity="0.95" />
+          <circle cx="50" cy="50" r="35.5" stroke="#78350f" strokeWidth="1.5" />
+          {/* أوراق غار إمبراطورية تحيط بالإطار */}
+          {[20, 40, 60, 120, 140, 160, 200, 220, 240, 300, 320, 340].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <polygon points="50,2.8 53,6 50,7.8 47,6" fill="#fef08a" stroke="#854d0e" strokeWidth="0.5" />
+              <ellipse cx="50" cy="7.5" rx="3" ry="1.8" fill="#fef08a" stroke="#854d0e" strokeWidth="0.6" />
             </g>
           ))}
+          {/* تاج القيادة الإمبراطوري في قمة الإطار */}
+          <g transform="translate(50, 4)">
+            <polygon points="-6,3 -8,-1.5 -3,0.5 0,-3.5 3,0.5 8,-1.5 6,3" fill="#ffffff" stroke="#854d0e" strokeWidth="0.7" />
+            <circle cx="0" cy="-4" r="1.2" fill="#ffd700" stroke="#78350f" strokeWidth="0.5" />
+          </g>
         </svg>
       );
 
@@ -300,63 +382,71 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
             <linearGradient id={`pnr10_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="50%" stopColor="#eab308" />
-              <stop offset="100%" stopColor="#b45309" />
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="35%" stopColor="#fde047" />
+              <stop offset="70%" stopColor="#eab308" />
+              <stop offset="100%" stopColor="#854d0e" />
             </linearGradient>
             <linearGradient id={`pnr10_blue_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="60%" stopColor="#1e3a8a" />
-              <stop offset="100%" stopColor="#172554" />
+              <stop offset="0%" stopColor="#38bdf8" />
+              <stop offset="40%" stopColor="#1e3a8a" />
+              <stop offset="100%" stopColor="#0f172a" />
             </linearGradient>
-            <filter id={`pnr10_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#3b82f6" floodOpacity="0.7" />
+            <filter id={`pnr10_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="4" floodColor="#1e3a8a" floodOpacity="0.9" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.5" stroke={`url(#pnr10_gold_${uid})`} strokeWidth="1" opacity="0.8" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#pnr10_blue_${uid})`} strokeWidth="3" filter={`url(#pnr10_glow_${uid})`} />
-          <circle cx="50" cy="50" r="43" stroke={`url(#pnr10_gold_${uid})`} strokeWidth="0.8" />
-          {/* تاج ملكي علوي مصغر ومتناسق ضمن الحدود دون أي خروج */}
-          <g transform="translate(50, 4.5)">
-            <polygon points="-5,2 -7,-2 -3,-0.5 0,-3 3,-0.5 7,-2 5,2" fill={`url(#pnr10_gold_${uid})`} stroke="#854d0e" strokeWidth="0.4" />
-            <circle cx="0" cy="-3.5" r="0.8" fill="#ffffff" />
-            <circle cx="-7" cy="-2.5" r="0.6" fill="#ffffff" />
-            <circle cx="7" cy="-2.5" r="0.6" fill="#ffffff" />
+          <circle cx="50" cy="50" r="41" stroke={`url(#pnr10_blue_${uid})`} strokeWidth="10.5" filter={`url(#pnr10_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.5" stroke={`url(#pnr10_gold_${uid})`} strokeWidth="1.8" />
+          <circle cx="50" cy="50" r="35.5" stroke={`url(#pnr10_gold_${uid})`} strokeWidth="1.8" />
+          {/* تاج الرواد الملكي الذهبي في الأعلى */}
+          <g transform="translate(50, 4)">
+            <polygon points="-7,3.5 -9,-2 -3.5,0.5 0,-4.5 3.5,0.5 9,-2 7,3.5" fill={`url(#pnr10_gold_${uid})`} stroke="#78350f" strokeWidth="0.8" />
+            <circle cx="0" cy="-5" r="1.4" fill="#ffffff" stroke="#0284c7" strokeWidth="0.5" />
+            <circle cx="-9" cy="-2.5" r="1" fill="#ffffff" />
+            <circle cx="9" cy="-2.5" r="1" fill="#ffffff" />
           </g>
-          {/* دروع سفلية ناعمة */}
-          <polygon points="50,97.5 53,94.5 47,94.5" fill="#fef08a" stroke="#854d0e" strokeWidth="0.4" />
+          {/* 6 ماسات كحلية في الأسفل والجوانب */}
+          {[60, 120, 180, 240, 300].map((deg) => (
+            <g key={deg} transform={`rotate(${deg} 50 50)`}>
+              <polygon points="50,4.5 53,8.2 50,12 47,8.2" fill="#38bdf8" stroke="#ffffff" strokeWidth="0.6" />
+            </g>
+          ))}
         </svg>
       );
 
     // ═══════════════════════════════════════════════════════════════
-    // المستوى 11: إطار النخبة (Elite Cosmic Orbit) — ماسي بنفسجي كوني
+    // المستوى 11: إطار النخبة (Elite Cosmic Orbit) — ماسي كوني بحلقات مدارية
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_11':
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`elt11_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`elt11_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f5d0fe" />
-              <stop offset="35%" stopColor="#c084fc" />
-              <stop offset="70%" stopColor="#7c3aed" />
+              <stop offset="30%" stopColor="#c084fc" />
+              <stop offset="60%" stopColor="#7c3aed" />
+              <stop offset="85%" stopColor="#4c1d95" />
               <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
-            <filter id={`elt11_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3.2" floodColor="#a855f7" floodOpacity="0.8" />
+            <filter id={`elt11_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="4.5" floodColor="#a855f7" floodOpacity="0.9" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.8" stroke="#e9d5ff" strokeWidth="0.8" strokeDasharray="6 3 2 3" opacity="0.8" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#elt11_${uid})`} strokeWidth="3" filter={`url(#elt11_glow_${uid})`} />
-          {/* نجوم المدار الكونية الأربع المشعة */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#elt11_body_${uid})`} strokeWidth="10.5" filter={`url(#elt11_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.8" stroke="#ffffff" strokeWidth="1.5" />
+          <circle cx="50" cy="50" r="35.2" stroke="#e879f9" strokeWidth="1.5" />
+          {/* نجوم مدارية متألقة عند الأركان */}
           {[0, 90, 180, 270].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <polygon points="50,2.5 51.5,5.5 54.5,5.5 52,7.5 53,10.5 50,8.5 47,10.5 48,7.5 45.5,5.5 48.5,5.5" fill="#ffffff" />
+              <polygon points="50,2 51.8,6 55.8,6 52.8,8.8 54,12.8 50,10.2 46,12.8 47.2,8.8 44.2,6 48.2,6" fill="#ffffff" stroke="#7c3aed" strokeWidth="0.6" />
+              <circle cx="50" cy="8.2" r="1.5" fill="#fde047" />
             </g>
           ))}
-          {/* كويكبات مدارية لامعة */}
+          {/* كويكبات سماوية مشعة بالأقطار */}
           {[45, 135, 225, 315].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <circle cx="50" cy="5.8" r="1.6" fill="#38bdf8" />
+              <circle cx="50" cy="8.2" r="2.8" fill="#38bdf8" stroke="#ffffff" strokeWidth="0.8" />
             </g>
           ))}
         </svg>
@@ -364,7 +454,6 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
 
     // ═══════════════════════════════════════════════════════════════
     // المستوى 12: إطار القمة التكنولوجية (Technology Summit Sovereign)
-    // قمة الفخامة: ذهب خالص 24K وألماس نقي محكم بلا أي بروز مشوه
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_12':
       return (
@@ -382,34 +471,30 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
               <stop offset="50%" stopColor="#67e8f9" />
               <stop offset="100%" stopColor="#0284c7" />
             </linearGradient>
-            <filter id={`smt12_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#f59e0b" floodOpacity="0.85" />
+            <filter id={`smt12_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="4.5" floodColor="#f59e0b" floodOpacity="0.9" />
             </filter>
           </defs>
-          {/* هالة الحافة الخارجية المصقولة */}
-          <circle cx="50" cy="50" r="48" stroke={`url(#smt12_gold_${uid})`} strokeWidth="1" strokeDasharray="8 3" opacity="0.85" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#smt12_gold_${uid})`} strokeWidth="3.2" filter={`url(#smt12_glow_${uid})`} />
-          <circle cx="50" cy="50" r="42.6" stroke={`url(#smt12_dia_${uid})`} strokeWidth="0.8" />
-          
-          {/* تاج القمة الملكي المتناسق أعلى الإطار ضمن الحدود الدقيقة */}
-          <g transform="translate(50, 4)">
-            <polygon points="-6,2.5 -8,-1.5 -3,0.2 0,-3.2 3,0.2 8,-1.5 6,2.5" fill={`url(#smt12_gold_${uid})`} stroke="#78350f" strokeWidth="0.4" />
-            {/* ماسات التاج */}
-            <circle cx="0" cy="-3.6" r="1" fill="#ffffff" stroke="#0284c7" strokeWidth="0.3" />
-            <circle cx="-8" cy="-1.8" r="0.7" fill="#ffffff" />
-            <circle cx="8" cy="-1.8" r="0.7" fill="#ffffff" />
+          <circle cx="50" cy="50" r="41" stroke={`url(#smt12_gold_${uid})`} strokeWidth="11" filter={`url(#smt12_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="47" stroke="#ffffff" strokeWidth="1.8" />
+          <circle cx="50" cy="50" r="35" stroke={`url(#smt12_dia_${uid})`} strokeWidth="1.8" />
+          {/* التاج الأسمى الملكي ذو الألماسات السبع في القمة */}
+          <g transform="translate(50, 3.5)">
+            <polygon points="-8,4 -10,-2 -4,0.5 0,-5 4,0.5 10,-2 8,4" fill={`url(#smt12_gold_${uid})`} stroke="#78350f" strokeWidth="0.9" />
+            <circle cx="0" cy="-5.5" r="1.6" fill="#ffffff" stroke="#0284c7" strokeWidth="0.6" />
+            <circle cx="-10" cy="-2.5" r="1.2" fill="#ffffff" />
+            <circle cx="10" cy="-2.5" r="1.2" fill="#ffffff" />
           </g>
-
-          {/* درع شرفي ذهبي سفلي */}
-          <g transform="translate(50, 95.8)">
-            <polygon points="0,2.4 4,-1 -4,-1" fill={`url(#smt12_gold_${uid})`} stroke="#78350f" strokeWidth="0.4" />
-            <circle cx="0" cy="0" r="0.8" fill="#ffffff" />
+          {/* درع شرفي سفلي */}
+          <g transform="translate(50, 96.5)">
+            <polygon points="0,2.5 5,-1.5 -5,-1.5" fill={`url(#smt12_gold_${uid})`} stroke="#78350f" strokeWidth="0.8" />
+            <circle cx="0" cy="0" r="1.2" fill="#ffffff" />
           </g>
-
-          {/* ماسات زوايا الأركان الفخمة */}
+          {/* ألماسات ماسية فاخرة عند الزوايا الـ 45 */}
           {[45, 135, 225, 315].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <polygon points="50,4.2 52.2,6.4 50,8.6 47.8,6.4" fill={`url(#smt12_dia_${uid})`} stroke="#0369a1" strokeWidth="0.3" />
+              <polygon points="50,4 53.5,7.5 50,11 46.5,7.5" fill={`url(#smt12_dia_${uid})`} stroke="#0369a1" strokeWidth="0.8" />
+              <polygon points="50,5.2 52.2,7.5 50,9.8 47.8,7.5" fill="#ffffff" />
             </g>
           ))}
         </svg>
@@ -422,25 +507,28 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`chmp_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={`chmp_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="50%" stopColor="#0284c7" />
-              <stop offset="100%" stopColor="#f59e0b" />
+              <stop offset="45%" stopColor="#0284c7" />
+              <stop offset="80%" stopColor="#1e3a8a" />
+              <stop offset="100%" stopColor="#ffd700" />
             </linearGradient>
-            <filter id={`chmp_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.8" floodColor="#0284c7" floodOpacity="0.75" />
+            <filter id={`chmp_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3.8" floodColor="#0284c7" floodOpacity="0.85" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.5" stroke="#f59e0b" strokeWidth="1" strokeDasharray="4 2" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#chmp_${uid})`} strokeWidth="3" filter={`url(#chmp_glow_${uid})`} />
-          {/* نجمة البطولة الشرفية الذهبية في الأعلى */}
-          <g transform="translate(50, 4.5)">
-            <polygon points="0,-3.2 1,-0.8 3.2,-0.8 1.5,0.6 2.2,2.8 0,1.4 -2.2,2.8 -1.5,0.6 -3.2,-0.8 -1,-0.8" fill="#ffd700" stroke="#b45309" strokeWidth="0.4" />
+          <circle cx="50" cy="50" r="41" stroke={`url(#chmp_body_${uid})`} strokeWidth="10.5" filter={`url(#chmp_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.8" stroke="#ffd700" strokeWidth="1.8" />
+          <circle cx="50" cy="50" r="35.2" stroke="#ffd700" strokeWidth="1.5" />
+          {/* نجمة البطولة الذهبية في القمة */}
+          <g transform="translate(50, 4)">
+            <polygon points="0,-4.5 1.5,-1 5,-1 2.2,1.2 3.2,4.5 0,2.5 -3.2,4.5 -2.2,1.2 -5,-1 -1.5,-1" fill="#ffd700" stroke="#78350f" strokeWidth="0.7" />
+            <circle cx="0" cy="0" r="1.2" fill="#ffffff" />
           </g>
-          {/* نقاط ذهبية للبطولة */}
-          {[90, 180, 270].map((deg) => (
+          {/* أكاليل الغار الذهبية الأولمبية */}
+          {[45, 90, 135, 225, 270, 315].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <circle cx="50" cy="5.8" r="1.8" fill="#ffd700" stroke="#b45309" strokeWidth="0.4" />
+              <circle cx="50" cy="8.2" r="2.8" fill="#ffd700" stroke="#78350f" strokeWidth="0.8" />
             </g>
           ))}
         </svg>
@@ -453,31 +541,32 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
       return (
         <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
           <defs>
-            <linearGradient id={`rmd_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fef08a" />
-              <stop offset="40%" stopColor="#f59e0b" />
-              <stop offset="80%" stopColor="#b45309" />
-              <stop offset="100%" stopColor="#fde047" />
+            <linearGradient id={`rmd_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="30%" stopColor="#fef08a" />
+              <stop offset="60%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#b45309" />
             </linearGradient>
-            <filter id={`rmd_glow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#f59e0b" floodOpacity="0.7" />
+            <filter id={`rmd_shadow_${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3.5" floodColor="#f59e0b" floodOpacity="0.85" />
             </filter>
           </defs>
-          <circle cx="50" cy="50" r="47.2" stroke={`url(#rmd_${uid})`} strokeWidth="0.8" strokeDasharray="4 4" opacity="0.75" />
-          <circle cx="50" cy="50" r="44.2" stroke={`url(#rmd_${uid})`} strokeWidth="2.6" filter={`url(#rmd_glow_${uid})`} />
-          {/* هلال رمضاني إسلامي ذهبي أعلى الإطار */}
+          <circle cx="50" cy="50" r="41" stroke={`url(#rmd_gold_${uid})`} strokeWidth="10" filter={`url(#rmd_shadow_${uid})`} />
+          <circle cx="50" cy="50" r="46.5" stroke="#ffffff" strokeWidth="1.5" />
+          <circle cx="50" cy="50" r="35.5" stroke="#78350f" strokeWidth="1.5" />
+          {/* هلال إسلامي ذهبي في القمة */}
           <g transform="translate(50, 4.5)">
             <path
-              d="M 1.5,-3.2 A 3.2 3.2 0 1 0 3.2,1.8 A 2.5 2.5 0 1 1 1.5,-3.2 Z"
+              d="M 2.2,-4.5 A 4.5 4.5 0 1 0 4.5,2.5 A 3.5 3.5 0 1 1 2.2,-4.5 Z"
               fill="#fef08a"
-              stroke="#b45309"
-              strokeWidth="0.4"
+              stroke="#78350f"
+              strokeWidth="0.8"
             />
           </g>
-          {/* نجوم إسلامية ثمانية ناعمة */}
+          {/* نجوم إسلامية ثمانية */}
           {[90, 180, 270].map((deg) => (
             <g key={deg} transform={`rotate(${deg} 50 50)`}>
-              <polygon points="50,4.2 51.5,5.8 53.5,5.8 52,7.2 52.8,9.2 50,8 47.2,9.2 48,7.2 46.5,5.8 48.5,5.8" fill="#fef08a" />
+              <polygon points="50,4.5 51.8,6.8 54.5,6.8 52.5,8.8 53.5,11.5 50,9.8 46.5,11.5 47.5,8.8 45.5,6.8 48.2,6.8" fill="#fef08a" stroke="#78350f" strokeWidth="0.6" />
             </g>
           ))}
         </svg>
