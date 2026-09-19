@@ -69,6 +69,7 @@ export interface StudentPostFeedItem {
 export async function getStudentFeed(options?: {
   category?: string;
   limit?: number;
+  userId?: string;
 }): Promise<StudentPostFeedItem[]> {
   try {
     const user = await getCurrentUser();
@@ -76,7 +77,14 @@ export async function getStudentFeed(options?: {
 
     const posts = await db.studentPost.findMany({
       where: {
-        status: { in: ["APPROVED", "PUBLISHED"] },
+        ...(options?.userId
+          ? {
+              userId: options.userId,
+              status: options.userId === currentUserId
+                ? { in: ["APPROVED", "PUBLISHED", "PENDING"] }
+                : { in: ["APPROVED", "PUBLISHED"] },
+            }
+          : { status: { in: ["APPROVED", "PUBLISHED"] } }),
         ...(options?.category && options.category !== "ALL" ? { category: options.category } : {}),
       },
       include: {

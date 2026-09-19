@@ -45,6 +45,7 @@ interface AvatarWardrobeModalProps {
   framesVisible?: boolean;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
 export function FrameWardrobeModal({
@@ -53,6 +54,7 @@ export function FrameWardrobeModal({
   framesVisible = true,
   externalOpen,
   onExternalOpenChange,
+  hideTrigger = false,
 }: AvatarWardrobeModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -270,26 +272,28 @@ export function FrameWardrobeModal({
   return (
     <>
       {/* زر فتح نافذة التخصيص في صفحة الملف الشخصي */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className={
-          triggerClassName ||
-          "inline-flex items-center gap-2 rounded-2xl border border-gold/30 bg-gold/[0.08] px-4 py-2.5 text-xs font-extrabold text-gold hover:border-gold/60 hover:bg-gold/[0.15] transition-all shadow-sm"
-        }
-      >
-        {framesVisible ? (
-          <>
-            <Sparkles className="h-4 w-4 text-gold" />
-            تخصيص المظهر (الأفاتار والإطارات)
-          </>
-        ) : (
-          <>
-            <User className="h-4 w-4 text-gold" />
-            تغيير الصورة الرمزية (أفاتار / حسابك)
-          </>
-        )}
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className={
+            triggerClassName ||
+            "inline-flex items-center gap-2 rounded-2xl border border-gold/30 bg-gold/[0.08] px-4 py-2.5 text-xs font-extrabold text-gold hover:border-gold/60 hover:bg-gold/[0.15] transition-all shadow-sm"
+          }
+        >
+          {framesVisible ? (
+            <>
+              <Sparkles className="h-4 w-4 text-gold" />
+              تخصيص المظهر (الأفاتار والإطارات)
+            </>
+          ) : (
+            <>
+              <User className="h-4 w-4 text-gold" />
+              تغيير الصورة الرمزية (أفاتار / حسابك)
+            </>
+          )}
+        </button>
+      )}
 
       {/* النافذة المنبثقة */}
       {isOpen && (

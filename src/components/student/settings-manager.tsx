@@ -586,6 +586,7 @@ export function SettingsManager({ user }: SettingsManagerProps) {
           setWardrobeOpen(open);
           if (!open) router.refresh();
         }}
+        hideTrigger={true}
       />
     </div>
   );
