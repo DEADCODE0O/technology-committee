@@ -18,6 +18,7 @@ import { getLeaderboard, type LeaderboardEntry } from "@/lib/platform";
 import { getActiveSeason, getStudentProgress } from "@/lib/progress";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentNotifications } from "@/lib/notifications";
+import { getSocialCounters } from "@/actions/messaging";
 import { monthStart, semesterStart, GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { LeveledName } from "@/components/ui/leveled-name";
@@ -94,10 +95,12 @@ export default async function LeaderboardPage({
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+  let unreadMessagesCount = 0;
   if (isStudent && user) {
-    const [progress, notifs] = await Promise.all([
+    const [progress, notifs, socialCounters] = await Promise.all([
       getStudentProgress(user.id),
       getStudentNotifications(user),
+      getSocialCounters(user.id),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -107,6 +110,7 @@ export default async function LeaderboardPage({
       level: progress.level,
     };
     unreadCount = notifs.unreadCount;
+    unreadMessagesCount = socialCounters.totalSocialAlerts;
   }
 
   const leaderboardContent = (
@@ -486,6 +490,7 @@ export default async function LeaderboardPage({
         user={shellUser}
         active="leaderboard"
         unreadCount={unreadCount}
+        unreadMessagesCount={unreadMessagesCount}
       >
         <div className="mb-8">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50">

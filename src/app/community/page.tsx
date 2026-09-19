@@ -11,6 +11,7 @@ import { levelFromPoints } from "@/lib/constants";
 import { getStudentProgress } from "@/lib/progress";
 import { getCharmHeartsVisible } from "@/lib/platform";
 import { getStudentFeed } from "@/actions/student-posts";
+import { getSocialCounters } from "@/actions/messaging";
 import { CommunityFeedView } from "@/components/community/community-feed-view";
 
 export const dynamic = "force-dynamic";
@@ -44,10 +45,15 @@ export default async function CommunityPage() {
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+  let unreadMessagesCount = 0;
 
   if (isStudent) {
     const student = await requireStudent();
-    const progress = await getStudentProgress(student.id);
+    const [progress, notifs, socialCounters] = await Promise.all([
+      getStudentProgress(student.id).catch(() => ({ level: 1 })),
+      getStudentNotifications(student).catch(() => ({ unreadCount: 0 })),
+      getSocialCounters(student.id).catch(() => ({ totalSocialAlerts: 0 })),
+    ]);
     shellUser = {
       name: student.profile?.fullName ?? student.email,
       email: student.email,
@@ -55,8 +61,8 @@ export default async function CommunityPage() {
       avatarFrameId: student.avatarFrameId,
       level: progress.level,
     };
-    const notifs = await getStudentNotifications(student);
     unreadCount = notifs.unreadCount;
+    unreadMessagesCount = socialCounters.totalSocialAlerts;
   }
 
   // أوسمة الطالب الحالي
@@ -237,7 +243,12 @@ export default async function CommunityPage() {
   }
 
   return (
-    <StudentShell user={shellUser} active="community" unreadCount={unreadCount}>
+    <StudentShell
+      user={shellUser}
+      active="community"
+      unreadCount={unreadCount}
+      unreadMessagesCount={unreadMessagesCount}
+    >
       {content}
     </StudentShell>
   );

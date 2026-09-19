@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getChatRoomMessages } from "@/actions/chat";
+import { getSocialCounters } from "@/actions/messaging";
 import { GroupChatRoom } from "@/components/social/group-chat-room";
 import { StudentShell } from "@/components/student/student-shell";
 
@@ -61,7 +62,10 @@ export default async function ChatRoomPage(props: RoomPageProps) {
     }
   }
 
-  const initialMessages = await getChatRoomMessages(room.id, 80);
+  const [initialMessages, socialCounters] = await Promise.all([
+    getChatRoomMessages(room.id, 80),
+    getSocialCounters(user.id),
+  ]);
 
   return (
     <StudentShell
@@ -72,6 +76,7 @@ export default async function ChatRoomPage(props: RoomPageProps) {
         avatarFrameId: user.avatarFrameId,
       }}
       active="messages"
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="max-w-4xl mx-auto">
         <GroupChatRoom

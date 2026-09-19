@@ -3,6 +3,7 @@ import { ClipboardList, Clock, Send, CheckCircle2, Award, Inbox } from "lucide-r
 import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
 import { getStudentNotifications } from "@/lib/notifications";
+import { getSocialCounters } from "@/actions/messaging";
 import { StudentShell } from "@/components/student/student-shell";
 import { parseTaskPool, parseExternalLinks } from "@/lib/tasks";
 import { TASK_SUBMISSION_TYPE_LABELS, TASK_DISTRIBUTION_LABELS } from "@/lib/constants";
@@ -50,7 +51,10 @@ export default async function MyTasksPage() {
   const submitted = assignments.filter((a) => a.submission && a.submission.status !== "EVALUATED");
   const evaluated = assignments.filter((a) => a.submission?.status === "EVALUATED");
 
-  const notifications = await getStudentNotifications(user);
+  const [notifications, socialCounters] = await Promise.all([
+    getStudentNotifications(user),
+    getSocialCounters(user.id),
+  ]);
   void submitTask;
 
   return (
@@ -64,6 +68,7 @@ export default async function MyTasksPage() {
       active="tasks"
       unreadCount={notifications.unreadCount}
       openTaskCount={open.length}
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="space-y-6">
         {/* رأس الصفحة */}

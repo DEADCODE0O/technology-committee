@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, UserX } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { getConversationMessages } from "@/actions/messaging";
+import { getConversationMessages, getSocialCounters } from "@/actions/messaging";
 import { StudentShell } from "@/components/student/student-shell";
 import { DirectChatRoom } from "@/components/social/direct-chat-room";
 
@@ -17,7 +17,10 @@ export default async function ConversationPage(props: {
     redirect("/login");
   }
 
-  const conversationData = await getConversationMessages(userId);
+  const [conversationData, socialCounters] = await Promise.all([
+    getConversationMessages(userId),
+    getSocialCounters(user.id),
+  ]);
 
   return (
     <StudentShell
@@ -28,6 +31,7 @@ export default async function ConversationPage(props: {
         avatarFrameId: user.avatarFrameId,
       }}
       active="messages"
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="max-w-4xl mx-auto">
         {!conversationData.ok || !conversationData.otherUser ? (

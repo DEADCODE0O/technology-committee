@@ -21,6 +21,8 @@ import { getStudentNotifications } from "@/lib/notifications";
 import { getSessionState, decideRegistration } from "@/lib/activities";
 import { getStudentProgress } from "@/lib/progress";
 import { recordDailyActivity } from "@/lib/streak";
+import { getSocialCounters } from "@/actions/messaging";
+import { getStudentFeed } from "@/actions/student-posts";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +45,18 @@ export default async function StudentDashboardPage() {
     joinReasons: null,
   };
 
-  const [streakData, progress, rank, myRegs, myBadges, myTalents, notifications, talentsSectionVisible] = await Promise.all([
+  const [
+    streakData,
+    progress,
+    rank,
+    myRegs,
+    myBadges,
+    myTalents,
+    notifications,
+    talentsSectionVisible,
+    socialCounters,
+    studentFeed,
+  ] = await Promise.all([
     recordDailyActivity(user.id).catch(() => ({ currentStreak: 1, longestStreak: 1, isNewDay: false, bonusPointsEarned: 0 })),
     getStudentProgress(user.id).catch(() => ({ xp: 0, level: 1, nextLevel: 2, progressToNext: 0, seasonXp: 0, seasonName: null, streakWeeks: 0, attendedCount: 0, tasksCompleted: 0, questsCompleted: 0 })),
     getStudentRank(user.id).catch(() => 1),
@@ -63,6 +76,8 @@ export default async function StudentDashboardPage() {
     db.talent.findMany({ where: { userId: user.id } }).catch(() => []),
     getStudentNotifications(user).catch(() => ({ notifications: [], unreadCount: 0, pinnedBanner: null, pinnedBanners: [], pendingImportant: 0 })),
     getTalentsSectionVisible().catch(() => true),
+    getSocialCounters(user.id).catch(() => ({ unreadMessagesCount: 0, pendingFriendRequestsCount: 0, totalSocialAlerts: 0 })),
+    getStudentFeed({ limit: 3 }).catch(() => []),
   ]);
 
   // ── مهامي المفتوحة (بانتظار التسليم أو أُعيدت للتعديل) ──
@@ -197,6 +212,7 @@ export default async function StudentDashboardPage() {
       pendingCount={pendingRequests.length}
       unreadCount={notifications.unreadCount}
       openTaskCount={openTasks.length}
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="space-y-6">
         {/* ── بنرات الإشعارات المهمة والترحيبية المثبتة ── */}
@@ -218,7 +234,7 @@ export default async function StudentDashboardPage() {
           <div className="relative flex flex-wrap items-center justify-between gap-5">
             <div>
               <p className="text-sm font-bold text-zinc-500">مرحبًا {firstName} 👋</p>
-              <h1 className="mt-1 text-2xl font-extrabold text-zinc-50">دي منصتك — اكتشف · شارك · أنجز</h1>
+              <h1 className="mt-1 text-2xl font-extrabold text-zinc-50">دي منصتك — استكشف الورش · تواصل · شارك في المجتمع</h1>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-extrabold">
                 <span className="flex items-center gap-1.5 rounded-xl bg-gold/[0.1] px-3 py-1.5 text-gold">
                   <Trophy className="h-3.5 w-3.5" /> المستوى {progress.level} · {progress.xp} XP
@@ -240,59 +256,186 @@ export default async function StudentDashboardPage() {
                 )}
               </div>
             </div>
-            <Link href="/leaderboard" className="inline-flex h-11 items-center gap-2 rounded-xl border border-gold/30 bg-gold/[0.06] px-5 text-sm font-extrabold text-gold-light transition-colors hover:bg-gold/[0.12]">
-              رحلتي الكاملة
-              <ArrowLeft className="h-4 w-4" />
+            <Link href="/activities" className="inline-flex h-11 items-center gap-2 rounded-xl border border-gold/40 bg-gold px-5 text-sm font-extrabold text-night transition-transform hover:scale-105 shadow-md">
+              <Compass className="h-4 w-4" />
+              استكشف كل الورش والكورسات
             </Link>
           </div>
         </section>
 
-        {/* ── المنظومة الاجتماعية والدردشة ── */}
+        {/* ── 1. استكشف: الورش والكورسات المفتوحة للتسجيل الآن (في صلب الصفحة الرئيسية) ── */}
+        <section aria-labelledby="discover-section" className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 id="discover-section" className="flex items-center gap-2 text-base font-extrabold text-foreground">
+              <Compass className="h-5 w-5 text-gold animate-spin-slow" />
+              الورش والكورسات المفتوحة للتسجيل
+            </h2>
+            <Link href="/activities" className="text-xs font-bold text-gold hover:underline">
+              عرض كل الورش والمواعيد ←
+            </Link>
+          </div>
+
+          {discoverable.length === 0 ? (
+            <div className="rounded-3xl border border-border bg-card/60 p-6 text-center space-y-2">
+              <p className="text-sm font-bold text-foreground">لا توجد ورش جديدة قيد التسجيل في هذه اللحظة</p>
+              <p className="text-xs text-muted-foreground">تُعلن الورش والكورسات الجديدة تباعًا — يمكنك تصفح سجل الورش السابقة أو مراجعة برامج اللجنة.</p>
+              <div className="pt-2">
+                <Link href="/activities" className="inline-flex items-center gap-2 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-2 text-xs font-bold text-gold hover:bg-gold/20">
+                  دليل الأنشطة والورش الكامل
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {discoverable.map(({ session: s }) => {
+                const seatsLeft = s.seats - s._count.registrations;
+                const closingSoon = s.registrationClosesAt
+                  ? (s.registrationClosesAt.getTime() - now.getTime()) / 3600000 < 24
+                  : false;
+                return (
+                  <Link
+                    key={s.id}
+                    href={`/sessions/${s.id}`}
+                    className="group flex flex-col justify-between rounded-3xl border border-border bg-card/80 p-5 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-xs font-extrabold text-muted-foreground">
+                          <span>{ACTIVITY_TYPE_ICONS[s.activity.type]}</span>
+                          {ACTIVITY_TYPE_LABELS[s.activity.type]}
+                        </span>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black ${
+                          seatsLeft <= 5 ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30" : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                        }`}>
+                          {seatsLeft <= 5 ? "🔥" : "🟢"} {seatsLeft > 0 ? `${seatsLeft} مقاعد متاحة` : "قائمة انتظار"}
+                        </span>
+                      </div>
+
+                      <h3 className="mt-2 text-sm sm:text-base font-black text-foreground group-hover:text-gold transition-colors">
+                        {s.activity.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {s.title} · {fmtShort(s.startsAt)} · {s.location ?? "المكان يُعلن قريبًا"}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
+                      {closingSoon && s.registrationClosesAt ? (
+                        <Countdown to={s.registrationClosesAt.toISOString()} prefix="يقفل بعد" compact tone="success" autoUrgent={true} />
+                      ) : (
+                        <span className="text-[11px] font-bold text-gold">التسجيل متاح الآن</span>
+                      )}
+                      <span className="text-xs font-black text-gold group-hover:translate-x-[-2px] transition-transform">
+                        سجّل الآن ←
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* ── 2. المنظومة الاجتماعية والدردشة والمجتمع التفاعلي ── */}
         <section className="space-y-3" aria-labelledby="social-hub">
           <div className="flex items-center justify-between">
             <h2 id="social-hub" className="flex items-center gap-2 text-base font-extrabold text-foreground">
               <MessageSquare className="h-5 w-5 text-gold" />
               مجتمع وتواصل الطلاب
             </h2>
-            <Link href="/messages?tab=search" className="text-xs font-bold text-gold hover:underline">
-              البحث عن زملاء ←
+            <Link href="/community" className="text-xs font-bold text-gold hover:underline">
+              دخول المجتمع الكامل ←
             </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link
               href="/messages"
-              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+              className="group flex items-center justify-between rounded-3xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30 shadow-inner group-hover:scale-105 transition-transform">
-                <MessageCircle className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs sm:text-sm font-black text-foreground">الرسائل والمحادثات</h3>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30 shadow-inner group-hover:scale-105 transition-transform">
+                  <MessageCircle className="h-6 w-6" />
+                  {socialCounters.unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -end-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 text-white px-1 text-[9px] font-black animate-pulse shadow-sm">
+                      {socialCounters.unreadMessagesCount}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  محادثاتك الخاصة، شاتات الفرق، وقائمة الزملاء
-                </p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-xs sm:text-sm font-black text-foreground">الرسائل والمحادثات</h3>
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                    محادثات الزملاء وشاتات الفرق
+                  </p>
+                </div>
               </div>
+              {socialCounters.pendingFriendRequestsCount > 0 && (
+                <span className="shrink-0 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[10px] font-black">
+                  {socialCounters.pendingFriendRequestsCount} طلب صداقة
+                </span>
+              )}
             </Link>
 
             <Link
               href="/community"
-              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
+              className="group flex items-center justify-between rounded-3xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-inner group-hover:scale-105 transition-transform">
-                <Users className="h-5 w-5" />
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-inner group-hover:scale-105 transition-transform">
+                  <Users className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-black text-foreground">منشورات ومناقشات المجتمع</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                    شارك أفكارك وتفاعل مع إعلانات الطلاب
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-black text-foreground">المجتمع والمنشورات</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  شارك أفكارك وتفاعل مع إعلانات ومنشورات الطلاب
-                </p>
-              </div>
+              <span className="shrink-0 rounded-2xl bg-gold/15 text-gold border border-gold/30 px-3 py-1 text-[11px] font-black group-hover:bg-gold group-hover:text-night transition-colors">
+                أنشئ منشوراً
+              </span>
             </Link>
           </div>
+
+          {/* خلاصة سريعة لأحدث منشورات الطلاب مع التفاعل */}
+          {studentFeed.length > 0 && (
+            <div className="pt-2 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-muted-foreground px-1">
+                <span>أحدث ما نُشر في المجتمع 💬</span>
+                <Link href="/community" className="text-gold hover:underline">
+                  تفاعل مع الجميع ←
+                </Link>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-3">
+                {studentFeed.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`/community#post-${post.id}`}
+                    className="group rounded-2xl border border-border bg-card/50 p-3.5 transition-all hover:border-gold/40 hover:bg-gold/[0.02]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="h-6 w-6 rounded-full bg-gold/10 text-gold flex items-center justify-center text-[10px] font-black">
+                        {post.author.name[0] || "ط"}
+                      </span>
+                      <span className="truncate text-xs font-bold text-foreground">
+                        {post.author.name}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {post.body}
+                    </p>
+                    <div className="mt-2.5 pt-2 border-t border-border flex items-center justify-between text-[10px] text-muted-foreground">
+                      <span>❤️ {post.reactionsSummary.total} تفاعل</span>
+                      <span>💬 {post.comments.length} تعليق</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ── NOW: الجاري الآن ── */}
@@ -390,55 +533,6 @@ export default async function StudentDashboardPage() {
           </section>
         )}
 
-        {/* ── DISCOVER: مفتوح للتسجيل الآن ── */}
-        <section aria-labelledby="discover-section">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 id="discover-section" className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-gold">
-              <Compass className="h-4 w-4" /> اكتشف — التسجيل مفتوح
-            </h2>
-            <Link href="/activities" className="text-xs font-extrabold text-zinc-400 hover:text-gold-light">الكل ←</Link>
-          </div>
-          {discoverable.length === 0 ? (
-            <div className="rounded-2xl border border-white/[0.06] bg-surface px-5 py-6 text-center text-sm text-zinc-500">
-              مفيش تسجيلات مفتوحة حاليًا — تابعنا، الأنشطة الجديدة بتُعلن أولًا بأول
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {discoverable.map(({ session: s }) => {
-                const seatsLeft = s.seats - s._count.registrations;
-                const closingSoon = s.registrationClosesAt
-                  ? (s.registrationClosesAt.getTime() - now.getTime()) / 3600000 < 24
-                  : false;
-                return (
-                  <Link
-                    key={s.id}
-                    href={`/sessions/${s.id}`}
-                    className="group rounded-2xl border border-white/[0.07] bg-surface p-4 transition-all hover:border-gold/30 hover:bg-gold/[0.03]"
-                  >
-                    <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-zinc-500">
-                      <span>{ACTIVITY_TYPE_ICONS[s.activity.type]}</span>
-                      {ACTIVITY_TYPE_LABELS[s.activity.type]}
-                    </p>
-                    <p className="mt-1.5 truncate text-sm font-extrabold text-zinc-100 group-hover:text-gold-light">
-                      {s.activity.title}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-400">{fmtShort(s.startsAt)} · {s.location ?? "المكان قريبًا"}</p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-black ${
-                        seatsLeft <= 5 ? "bg-rose-500/20 text-rose-300 border border-rose-500/40" : "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
-                      }`}>
-                        {seatsLeft <= 5 ? "🔥" : "🟢"} {seatsLeft > 0 ? `${seatsLeft} مقاعد متاحة` : "قائمة انتظار"}
-                      </span>
-                      {closingSoon && s.registrationClosesAt && (
-                        <Countdown to={s.registrationClosesAt.toISOString()} prefix="يقفل بعد" compact tone="success" autoUrgent={true} />
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </section>
 
         {/* ── COMMUNITY: أحدث اللحظات ── */}
         {latestPosts.length > 0 && (

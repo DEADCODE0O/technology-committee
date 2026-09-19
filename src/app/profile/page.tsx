@@ -9,6 +9,8 @@ import { StudentShell } from "@/components/student/student-shell";
 import { ChangePasswordForm } from "@/components/student/change-password-form";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentRank, getAvatarFramesVisible, getCharmHeartsVisible } from "@/lib/platform";
+import { getStudentNotifications } from "@/lib/notifications";
+import { getSocialCounters } from "@/actions/messaging";
 import { getAvatarFrame, TIER_CONFIG } from "@/lib/avatar-frames";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { UserCharmHeart } from "@/components/ui/user-charm-heart";
@@ -51,6 +53,8 @@ export default async function ProfilePage() {
     attendedHistory,
     avatarFramesVisible,
     heartsVisible,
+    notifications,
+    socialCounters,
   ] = await Promise.all([
     db.talent.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
     db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, avatarUrl: true, avatarFrameId: true, provider: true, displayName: true, bio: true } }),
@@ -95,6 +99,8 @@ export default async function ProfilePage() {
     }),
     getAvatarFramesVisible(),
     getCharmHeartsVisible(),
+    getStudentNotifications(user),
+    getSocialCounters(user.id),
   ]);
   const hasPassword = Boolean(userRow?.passwordHash);
   const joinReasons = parseJoinReasons(profile.joinReasons);
@@ -113,6 +119,8 @@ export default async function ProfilePage() {
         level: progress.level,
       }}
       active="profile"
+      unreadCount={notifications.unreadCount}
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="space-y-6">
         {/* ── بطاقة الحساب الملكية والإطار النشط ── */}

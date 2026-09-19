@@ -569,3 +569,44 @@ export async function getUnifiedConversations(): Promise<UnifiedConversation[]> 
 export async function getConversationsList() {
   return await getUnifiedConversations();
 }
+
+export type SocialCounters = {
+  unreadMessagesCount: number;
+  pendingFriendRequestsCount: number;
+  totalSocialAlerts: number;
+};
+
+/**
+ * جلب عدادات الرسائل وطلبات الصداقة بسرعة فائقة عبر الفهارس
+ */
+export async function getSocialCounters(explicitUserId?: string): Promise<SocialCounters> {
+  try {
+    let userId = explicitUserId;
+    if (!userId) {
+      const user = await getCurrentUser();
+      userId = user?.id;
+    }
+    if (!userId) {
+      return { unreadMessagesCount: 0, pendingFriendRequestsCount: 0, totalSocialAlerts: 0 };
+    }
+
+    const [unreadMessagesCount, pendingFriendRequestsCount] = await Promise.all([
+      db.directMessage.count({
+        where: { receiverId: userId, readAt: null, deletedByReceiver: false },
+      }).catch(() => 0),
+      db.friendship.count({
+        where: { receiverId: userId, status: "PENDING" },
+      }).catch(() => 0),
+    ]);
+
+    return {
+      unreadMessagesCount,
+      pendingFriendRequestsCount,
+      totalSocialAlerts: unreadMessagesCount + pendingFriendRequestsCount,
+    };
+  } catch (err) {
+    console.warn("[getSocialCounters] error:", err);
+    return { unreadMessagesCount: 0, pendingFriendRequestsCount: 0, totalSocialAlerts: 0 };
+  }
+}
+

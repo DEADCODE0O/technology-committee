@@ -6,6 +6,7 @@ import { StudentShell } from "@/components/student/student-shell";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentNotifications } from "@/lib/notifications";
+import { getSocialCounters } from "@/actions/messaging";
 import { Countdown } from "@/components/platform/countdown";
 import { ACTIVITY_TYPES, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_PLURAL, ACTIVITY_LEVEL_LABELS, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
 import { getSessionState, decideRegistration } from "@/lib/activities";
@@ -174,10 +175,12 @@ export default async function ActivitiesPage({
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+  let unreadMessagesCount = 0;
   if (isStudent && user) {
-    const [progress, notifs] = await Promise.all([
+    const [progress, notifs, socialCounters] = await Promise.all([
       getStudentProgress(user.id),
       getStudentNotifications(user),
+      getSocialCounters(user.id),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -187,6 +190,7 @@ export default async function ActivitiesPage({
       level: progress.level,
     };
     unreadCount = notifs.unreadCount;
+    unreadMessagesCount = socialCounters.totalSocialAlerts;
   }
 
   const activitiesContent = (
@@ -280,6 +284,7 @@ export default async function ActivitiesPage({
         user={shellUser}
         active="activities"
         unreadCount={unreadCount}
+        unreadMessagesCount={unreadMessagesCount}
       >
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50">

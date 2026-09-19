@@ -2,27 +2,27 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, Bell, Trophy, MessageCircle, Globe } from "lucide-react";
+import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, Bell, Trophy, MessageCircle, Globe, Settings } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // ═══════════════════════════════════════════════════════════════
 //  غلاف منطقة الطالب — «دي منصتك» وليست موقع تسجيل ورش
-//  • الموبايل: شريط سفلي بـ 4 أقسام مبسطة واحترافية
-//    (الرئيسية · الرسائل · المجتمع · مهامي)
+//  • الموبايل: شريط سفلي بـ 5 أقسام رئيسية وعصرية
+//    (الرئيسية · استكشف الورش · الرسائل والتفاعل · مهامي · الإعدادات)
 //  • حسابي: متاح عبر النقر على الصورة الشخصية في الشريط العلوي
-//  • الأصدقاء: مدمجون في صفحة الرسائل كتبويب
-//  • الشات: مرتبط بالأنشطة والفرق بدلاً من صفحة مستقلة
+//  • الرسائل: مدعومة بشارات أرقام حمراء نابضة للتنبيه الفوري
 //  • الشاشات الكبيرة: شريط علوي غني وكامل
 // ═══════════════════════════════════════════════════════════════
 
 const NAV = [
   { key: "dashboard", label: "الرئيسية", href: "/panel", icon: LayoutDashboard, bottom: true },
+  { key: "activities", label: "استكشف", href: "/activities", icon: Compass, bottom: true },
   { key: "messages", label: "الرسائل", href: "/messages", icon: MessageCircle, bottom: true },
-  { key: "community", label: "المجتمع", href: "/community", icon: Globe, bottom: true },
+  { key: "community", label: "المجتمع", href: "/community", icon: Globe, bottom: false },
   { key: "tasks", label: "مهامي", href: "/tasks", icon: ClipboardList, bottom: true },
-  { key: "activities", label: "اكتشف", href: "/activities", icon: Compass, bottom: false },
+  { key: "settings", label: "الإعدادات", href: "/settings", icon: Settings, bottom: true },
   { key: "profile", label: "حسابي", href: "/profile", icon: Users, bottom: false },
   { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: false },
 ];
@@ -89,7 +89,7 @@ export function StudentShell({
                   </span>
                 )}
                 {n.key === "messages" && unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-extrabold text-night">
+                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-extrabold text-white animate-pulse">
                     {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
                   </span>
                 )}
@@ -158,7 +158,7 @@ export function StudentShell({
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-2xl lg:hidden shadow-[0_-4px_25px_-5px_rgba(24,24,27,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="grid grid-cols-4 items-center px-1">
+        <ul className="grid grid-cols-5 items-center px-1">
           {NAV.filter((n) => n.bottom).map((n) => {
             const isActive = active === n.key;
             return (
@@ -184,7 +184,7 @@ export function StudentShell({
                       </span>
                     )}
                     {n.key === "messages" && unreadMessagesCount > 0 && (
-                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black text-night ring-1 ring-night">
+                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-white px-1 text-[8px] font-black shadow-sm ring-1 ring-background animate-pulse">
                         {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
                       </span>
                     )}

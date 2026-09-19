@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { levelFromPoints } from "@/lib/constants";
-import { getUnifiedConversations } from "@/actions/messaging";
+import { getUnifiedConversations, getSocialCounters } from "@/actions/messaging";
+import { getStudentNotifications } from "@/lib/notifications";
+import { getStudentProgress } from "@/lib/progress";
 import { StudentShell } from "@/components/student/student-shell";
 import { MessagingHub } from "@/components/social/messaging-hub";
 
@@ -28,7 +30,7 @@ export default async function MessagesInboxPage(props: MessagesPageProps) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const requestedTab = searchParams.tab || "conversations";
 
-  const [conversations, rawPendingRequests] = await Promise.all([
+  const [conversations, rawPendingRequests, socialCounters, notifications, progress] = await Promise.all([
     getUnifiedConversations(),
     db.friendship.findMany({
       where: {
@@ -57,6 +59,9 @@ export default async function MessagesInboxPage(props: MessagesPageProps) {
       },
       orderBy: { createdAt: "desc" },
     }),
+    getSocialCounters(user.id),
+    getStudentNotifications(user),
+    getStudentProgress(user.id).catch(() => ({ level: 1 })),
   ]);
 
   const pendingRequests = rawPendingRequests.map((req) => {
@@ -83,8 +88,11 @@ export default async function MessagesInboxPage(props: MessagesPageProps) {
         email: user.email,
         avatarUrl: user.avatarUrl,
         avatarFrameId: user.avatarFrameId,
+        level: progress.level,
       }}
       active="messages"
+      unreadCount={notifications.unreadCount}
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <MessagingHub
         conversations={conversations}

@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { StudentShell } from "@/components/student/student-shell";
 import { NotificationsList, type CenterNotification } from "@/components/platform/notifications-list";
 import { getStudentNotifications } from "@/lib/notifications";
+import { getSocialCounters } from "@/actions/messaging";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ export default async function NotificationsPage() {
   if (user.role !== "STUDENT") redirect("/admin");
   if (!user.profile) redirect("/profile/complete");
 
-  const { notifications, unreadCount, pendingImportant } = await getStudentNotifications(user);
-  // مركز الإشعارات يوثّق الزيارة — لكن نعرضه كما جلبناه (التعليم يتم بالتفاعل)
-  void pendingImportant;
+  const [{ notifications, unreadCount }, socialCounters] = await Promise.all([
+    getStudentNotifications(user),
+    getSocialCounters(user.id),
+  ]);
 
   const items: CenterNotification[] = notifications.map((n) => ({
     id: n.id,
@@ -51,6 +53,7 @@ export default async function NotificationsPage() {
       active="notifications"
       pendingCount={pendingCount}
       unreadCount={unreadCount}
+      unreadMessagesCount={socialCounters.totalSocialAlerts}
     >
       <div className="mx-auto max-w-3xl">
         <header className="mb-6">
