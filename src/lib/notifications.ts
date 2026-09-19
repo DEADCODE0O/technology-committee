@@ -56,17 +56,26 @@ export async function getStudentNotifications(user: {
   id: string;
   profile: { grade: string; section: string; gender: string } | null;
 }): Promise<StudentNotificationsResult> {
-  const [all, reads, attendedRows] = await Promise.all([
-    db.notification.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 200, // سقف وافٍ لمنصة جامعية
-    }),
-    db.notificationRead.findMany({ where: { userId: user.id } }),
-    db.attendance.findMany({ where: { present: true }, select: { registration: { select: { userId: true } } } }),
-  ]);
+  const emptyResult: StudentNotificationsResult = {
+    notifications: [],
+    unreadCount: 0,
+    pinnedBanner: null,
+    pinnedBanners: [],
+    pendingImportant: 0,
+  };
 
-  const attendedSet = new Set(attendedRows.map((a) => a.registration.userId).filter(Boolean) as string[]);
-  const now = new Date();
+  try {
+    const [all, reads, attendedRows] = await Promise.all([
+      db.notification.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 200, // سقف وافٍ لمنصة جامعية
+      }),
+      db.notificationRead.findMany({ where: { userId: user.id } }),
+      db.attendance.findMany({ where: { present: true }, select: { registration: { select: { userId: true } } } }),
+    ]);
+
+    const attendedSet = new Set(attendedRows.map((a) => a.registration?.userId).filter(Boolean) as string[]);
+    const now = new Date();
 
   const visible: StudentNotification[] = [];
   for (const n of all) {
@@ -111,7 +120,11 @@ export async function getStudentNotifications(user: {
   ).slice(0, 3);
   const bannerCandidate = pinnedBanners[0] ?? null;
 
-  return { notifications: visible, unreadCount, pinnedBanner: bannerCandidate, pinnedBanners, pendingImportant };
+    return { notifications: visible, unreadCount, pinnedBanner: bannerCandidate, pinnedBanners, pendingImportant };
+  } catch (err) {
+    console.warn("[getStudentNotifications] error:", err);
+    return emptyResult;
+  }
 }
 
 // تعليم إشعار كمقروء (عند فتحه أو الضغط على CTA)

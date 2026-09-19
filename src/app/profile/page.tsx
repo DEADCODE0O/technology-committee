@@ -15,6 +15,8 @@ import { UserCharmHeart } from "@/components/ui/user-charm-heart";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { getAccountFlair } from "@/lib/account-style";
 import { FrameWardrobeModal } from "@/components/profile/frame-wardrobe-modal";
+import { ProfileAvatarInteractive } from "@/components/profile/profile-avatar-interactive";
+import { DisplayNameEditor } from "@/components/profile/display-name-editor";
 import { AddTalentModal } from "@/components/student/add-talent-modal";
 import { DeleteTalentButton } from "@/components/student/delete-talent-button";
 import {
@@ -51,7 +53,7 @@ export default async function ProfilePage() {
     heartsVisible,
   ] = await Promise.all([
     db.talent.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
-    db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, avatarUrl: true, avatarFrameId: true, provider: true } }),
+    db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, avatarUrl: true, avatarFrameId: true, provider: true, displayName: true, bio: true } }),
     getStudentProgress(user.id),
     getStudentRank(user.id),
     db.studentBadge.findMany({ where: { userId: user.id }, include: { badge: true }, orderBy: { awardedAt: "desc" } }),
@@ -118,19 +120,22 @@ export default async function ProfilePage() {
           <div className="gold-glow-bg pointer-events-none absolute inset-x-0 -top-24 h-48 opacity-50" aria-hidden="true" />
           <div className="relative flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-start">
-              <AvatarWithFrame
-                avatarUrl={user.avatarUrl}
-                name={profile.fullName}
-                frameId={userRow?.avatarFrameId}
+              <ProfileAvatarInteractive
+                user={{
+                  fullName: profile.fullName,
+                  avatarUrl: user.avatarUrl,
+                  accountAvatarUrl: user.accountAvatarUrl,
+                  avatarFrameId: userRow?.avatarFrameId,
+                  level: progress.level,
+                  points: progress.xp,
+                  provider: userRow?.provider || user.provider || "EMAIL",
+                }}
                 framesVisible={avatarFramesVisible}
-                size="2xl"
-                level={progress.level}
-                showLevel
               />
               <div>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                   <h1 className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <LeveledName name={profile.fullName} level={progress.level} size="lg" showLevelChip={false} truncate={false} />
+                    <LeveledName name={userRow?.displayName || profile.fullName || "طالب"} level={progress.level} size="lg" showLevelChip={false} truncate={false} />
                     <UserCharmHeart
                       level={progress.level}
                       points={progress.xp}
@@ -176,6 +181,13 @@ export default async function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* ── إعدادات الهوية والاسم المعروض (الاسم المستعار للطلاب) ── */}
+        <DisplayNameEditor
+          initialDisplayName={userRow?.displayName || null}
+          initialBio={userRow?.bio || null}
+          realFullName={profile.fullName}
+        />
 
         {/* ── رحلتي: التقدم الكامل ── */}
         <section className="relative overflow-hidden rounded-3xl border border-gold/20 bg-surface p-6 sm:p-7" aria-labelledby="sec-journey">

@@ -33,11 +33,11 @@ function resolveDatabaseUrl(): string | undefined {
   //   3) cwd = جذر مساحة العمل (جالس فوق مجلد project)
   const cwd = process.cwd()
   const candidates = [
-    path.resolve(cwd, rel), // المسار النسبي كما هو من مجلد التشغيل
-    path.resolve(cwd, 'db', 'custom.db'), // نسخة db داخل standalone
-    path.resolve(cwd, '..', rel), // مسار نسبي من مجلد أعلى
-    path.resolve(cwd, 'project', rel), // من جذر المساحة
-    path.resolve(cwd, 'prisma', '..', rel), // مرافق لموقع السكيمما في dev
+    path.resolve(/*turbopackIgnore: true*/ cwd, rel), // المسار النسبي كما هو من مجلد التشغيل
+    path.resolve(/*turbopackIgnore: true*/ cwd, 'db', 'custom.db'), // نسخة db داخل standalone
+    path.resolve(/*turbopackIgnore: true*/ cwd, '..', rel), // مسار نسبي من مجلد أعلى
+    path.resolve(/*turbopackIgnore: true*/ cwd, 'project', rel), // من جذر المساحة
+    path.resolve(/*turbopackIgnore: true*/ cwd, 'prisma', '..', rel), // مرافق لموقع السكيمما في dev
   ]
 
   // أول ملف موجود يفوز

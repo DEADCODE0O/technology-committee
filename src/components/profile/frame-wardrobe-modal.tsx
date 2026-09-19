@@ -43,14 +43,27 @@ interface AvatarWardrobeModalProps {
   };
   triggerClassName?: string;
   framesVisible?: boolean;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 export function FrameWardrobeModal({
   user,
   triggerClassName,
   framesVisible = true,
+  externalOpen,
+  onExternalOpenChange,
 }: AvatarWardrobeModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setIsOpen = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === "function" ? val(isOpen) : val;
+    if (onExternalOpenChange) {
+      onExternalOpenChange(nextVal);
+    } else {
+      setInternalOpen(nextVal);
+    }
+  };
   const [activeTab, setActiveTab] = useState<"AVATAR" | "FRAMES">("AVATAR");
   const [isPending, startTransition] = useTransition();
 

@@ -5,12 +5,25 @@
 //  بدل الصفحة الإنجليزية الافتراضية
 // ═══════════════════════════════════════════════════════════════
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AlertTriangle, RotateCcw, Home } from "lucide-react";
+import { AlertTriangle, RotateCcw, Home, Bug, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ErrorPage({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    console.error("App Error caught by ErrorBoundary:", error);
+  }, [error]);
+
   return (
     <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background px-4 py-10">
       <div className="noise-overlay" aria-hidden="true" />
@@ -26,6 +39,28 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
           اعتذرًا — ظهر خلل مؤقت أثناء تحميل الصفحة. جرّب التحديث مرة أخرى،
           ولو استمر الخطأ تواصل مع إدارة اللجنة.
         </p>
+
+        {/* تفاصيل الخطأ الفنية إن وُجدت */}
+        {(error?.message || error?.digest) && (
+          <div className="mt-4 text-start">
+            <button
+              type="button"
+              onClick={() => setShowDetails((v) => !v)}
+              className="mx-auto flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+            >
+              <Bug className="h-3.5 w-3.5 text-amber-500" />
+              <span>تفاصيل الخطأ الفنية</span>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetails ? "rotate-180" : ""}`} />
+            </button>
+            {showDetails && (
+              <div className="mt-2.5 rounded-xl border border-white/10 bg-black/50 p-3 text-xs font-mono text-zinc-300 break-all space-y-1 text-left" dir="ltr">
+                {error.message && <p className="text-red-400 font-bold">{error.message}</p>}
+                {error.digest && <p className="text-zinc-500 text-[11px]">Digest: {error.digest}</p>}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col gap-2.5">
           <Button
             onClick={reset}

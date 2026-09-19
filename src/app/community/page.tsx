@@ -1,27 +1,23 @@
 import Link from "next/link";
-import { Users, Pin, Lock } from "lucide-react";
+import { Users, Lock } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCurrentUser, requireStudent } from "@/lib/auth";
 import { getStudentNotifications } from "@/lib/notifications";
 import { StudentShell } from "@/components/student/student-shell";
-import { PostEngagement } from "@/components/community/post-engagement";
-import { MediaFrame, PostImage } from "@/components/community/media-frame";
 import { parseExternalLinks } from "@/lib/tasks";
 import { planMedia } from "@/lib/media";
 import { parseTarget, findTargetedStudentIds } from "@/lib/targeting";
-import { COMMUNITY_POST_TYPE_ICONS, COMMUNITY_POST_TYPE_LABELS, ROLE_LABELS, levelFromPoints } from "@/lib/constants";
-import { safeExternalUrl } from "@/lib/links";
-import { isAdminRole } from "@/lib/permissions";
+import { levelFromPoints } from "@/lib/constants";
 import { getStudentProgress } from "@/lib/progress";
 import { getCharmHeartsVisible } from "@/lib/platform";
-import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { LeveledName } from "@/components/ui/leveled-name";
+import { getStudentFeed } from "@/actions/student-posts";
+import { CommunityFeedView } from "@/components/community/community-feed-view";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "مجتمع اللجنة التكنولوجية",
-  description: "آخر الأخبار والإنجازات واللقطات المميزة من أنشطة اللجنة التكنولوجية",
+  description: "آخر الأخبار والإنجازات والمنشورات التفاعلية لطلاب اللجنة التكنولوجية",
 };
 
 function timeAgo(d: Date): string {
@@ -37,7 +33,6 @@ function timeAgo(d: Date): string {
 }
 
 export default async function CommunityPage() {
-  // الطالب أو الزائر — المجتمع مفتوح للعرض، التفاعل للطلاب
   const user = await getCurrentUser();
   const isStudent = !!user && user.role === "STUDENT";
 
@@ -49,6 +44,7 @@ export default async function CommunityPage() {
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+
   if (isStudent) {
     const student = await requireStudent();
     const progress = await getStudentProgress(student.id);
@@ -59,87 +55,69 @@ export default async function CommunityPage() {
       avatarFrameId: student.avatarFrameId,
       level: progress.level,
     };
-    unreadCount = (await getStudentNotifications(student)).unreadCount;
+    const notifs = await getStudentNotifications(student);
+    unreadCount = notifs.unreadCount;
   }
 
-  // جلب شارات الطالب الحالي (أعلى 3)
-  let myBadges: { id: string; name: string; icon: string }[] = [];
-  if (isStudent && user) {
-    const studentUser = await db.user.findUnique({
-      where: { id: user.id },
-      select: {
-        badges: {
-          take: 3,
-          orderBy: { awardedAt: "desc" },
-          include: {
-            badge: {
-              select: { id: true, name: true, icon: true },
-            },
-          },
-        },
-      },
-    });
-    myBadges = studentUser?.badges.map((b) => ({
-      id: b.badge.id,
-      name: b.badge.name,
-      icon: b.badge.icon,
-    })) ?? [];
-  }
+  // أوسمة الطالب الحالي
+  const myBadges =
+    isStudent && user
+      ? (
+          await db.studentBadge.findMany({
+            where: { userId: user.id },
+            include: { badge: true },
+          })
+        ).map((b) => ({
+          id: b.badge.id,
+          name: b.badge.name,
+          icon: b.badge.icon,
+        }))
+      : [];
 
-async function getCommunityPosts() {
-  try {
-    return await db.communityPost.findMany({
+  const [posts, studentPosts, heartsVisible] = await Promise.all([
+    db.communityPost.findMany({
       where: { status: "PUBLISHED" },
+      orderBy: [
+        { pinned: "desc" },
+        { createdAt: "desc" },
+      ],
       include: {
         createdBy: {
           select: {
+            id: true,
+            email: true,
             role: true,
             avatarUrl: true,
             avatarFrameId: true,
+            displayName: true,
             profile: { select: { fullName: true } },
             pointEvents: { select: { points: true } },
           },
         },
-        reactions: { select: { userId: true } },
+        reactions: true,
         comments: {
           where: { status: "APPROVED" },
           orderBy: { createdAt: "asc" },
           include: {
             user: {
-              include: {
+              select: {
+                id: true,
+                avatarUrl: true,
+                avatarFrameId: true,
                 profile: { select: { fullName: true } },
                 pointEvents: { select: { points: true } },
-                badges: {
-                  take: 3,
-                  orderBy: { awardedAt: "desc" },
-                  include: {
-                    badge: {
-                      select: {
-                        id: true,
-                        name: true,
-                        icon: true,
-                      },
-                    },
-                  },
-                },
+                badges: { include: { badge: true } },
               },
             },
           },
         },
       },
-      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
-      take: 60,
-    });
-  } catch (err) {
-    console.error("CommunityPage posts fetch error:", err);
-    return [];
-  }
-}
+    }),
+    getStudentFeed(),
+    getCharmHeartsVisible(),
+  ]);
 
-  const posts = await getCommunityPosts();
-  const heartsVisible = await getCharmHeartsVisible();
-
-  // فلترة الاستهداف: الزائر يرى العام فقط · الطالب يرى ما يخصه
+  // فلترة الاستهداف للمنشورات الرسمية
   let visible = posts;
   if (isStudent && user) {
     const filtered: typeof posts = [];
@@ -171,160 +149,91 @@ async function getCommunityPosts() {
     myPendingByPost.set(c.postId, list);
   }
 
+  const formattedCommitteePosts = visible.map((p) => {
+    const authorPoints = p.createdBy?.pointEvents?.reduce((acc, e) => acc + e.points, 0) ?? 0;
+    const authorLevel = levelFromPoints(authorPoints);
+
+    const commentsForStudent = p.comments.map((c) => {
+      const commentUserPoints = c.user.pointEvents.reduce((acc, e) => acc + e.points, 0);
+      return {
+        id: c.id,
+        author: c.user.profile?.fullName ?? "طالب",
+        body: c.body,
+        createdAt: c.createdAt.toISOString(),
+        mine: c.userId === user?.id,
+        pending: false,
+        parentId: c.parentId,
+        avatarUrl: c.user.avatarUrl,
+        avatarFrameId: c.user.avatarFrameId,
+        level: levelFromPoints(commentUserPoints),
+        badges: c.user.badges.map((b) => ({
+          id: b.badge.id,
+          name: b.badge.name,
+          icon: b.badge.icon,
+        })),
+      };
+    });
+
+    const myPending = myPendingByPost.get(p.id) ?? [];
+    const allComments = [
+      ...commentsForStudent,
+      ...myPending.map((c) => ({
+        id: c.id,
+        author: "أنت",
+        body: c.body,
+        createdAt: c.createdAt.toISOString(),
+        mine: true,
+        pending: true,
+        parentId: c.parentId,
+        avatarUrl: user?.avatarUrl,
+        avatarFrameId: user?.avatarFrameId,
+        level: shellUser.level,
+        badges: myBadges,
+      })),
+    ];
+
+    return {
+      id: p.id,
+      type: p.type,
+      title: p.title,
+      body: p.body,
+      imageUrl: p.imageUrl,
+      media: p.mediaUrl ? planMedia(p.mediaUrl) : null,
+      links: parseExternalLinks(p.links),
+      pinned: p.pinned,
+      lockedComments: p.lockedComments,
+      autoApproveComments: p.autoApproveComments,
+      likesCount: p.reactions.length,
+      liked: isStudent && user ? p.reactions.some((r) => r.userId === user.id) : false,
+      formattedDate: timeAgo(p.createdAt),
+      createdBy: p.createdBy,
+      creatorLevel: authorLevel,
+      commentsForStudent: allComments,
+    };
+  });
+
   const content = (
-    <div className="space-y-6">
-        <div>
-          <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-zinc-50">
-            <Users className="h-6 w-6 text-gold" />
-            مجتمع اللجنة التكنولوجية
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            أخبار وإعلانات ولقطات وإنجازات الأنشطة — مساحة للتواصل والتفاعل
-          </p>
-        </div>
-
-        {visible.length === 0 ? (
-          <div className="rounded-3xl border border-white/[0.06] bg-surface p-12 text-center">
-            <Users className="mx-auto h-12 w-12 text-zinc-600" />
-            <p className="mt-3 text-sm font-extrabold text-zinc-300">لا توجد منشورات حالياً</p>
-            <p className="mt-1 text-xs text-zinc-500">ترقّب التحديثات والإعلانات القادمة هنا</p>
-          </div>
-        ) : null}
-
-        {visible.map((p) => {
-          const liked = isStudent && user ? p.reactions.some((r) => r.userId === user.id) : false;
-          const links = parseExternalLinks(p.links);
-          const media = p.mediaUrl ? planMedia(p.mediaUrl) : null;
-          const commentsForStudent = p.comments.map((c) => {
-            const commentUserPoints = c.user.pointEvents.reduce((acc, e) => acc + e.points, 0);
-            return {
-              id: c.id,
-              author: c.user.profile?.fullName ?? "طالب",
-              body: c.body,
-              createdAt: c.createdAt.toISOString(),
-              mine: c.userId === user?.id,
-              pending: false,
-              parentId: c.parentId,
-              avatarUrl: c.user.avatarUrl,
-              avatarFrameId: c.user.avatarFrameId,
-              level: levelFromPoints(commentUserPoints),
-              badges: c.user.badges.map((b) => ({
-                id: b.badge.id,
-                name: b.badge.name,
-                icon: b.badge.icon,
-              })),
-            };
-          });
-          // تعليقاتي قيد المراجعة على هذا المنشور
-          const myPending = myPendingByPost.get(p.id) ?? [];
-          const allComments = [
-            ...commentsForStudent,
-            ...myPending.map((c) => ({
-              id: c.id,
-              author: "أنت",
-              body: c.body,
-              createdAt: c.createdAt.toISOString(),
-              mine: true,
-              pending: true,
-              parentId: c.parentId,
-              avatarUrl: user?.avatarUrl,
-              avatarFrameId: user?.avatarFrameId,
-              level: shellUser.level,
-              badges: myBadges,
-            })),
-          ];
-
-          const authorPoints = p.createdBy.pointEvents.reduce((acc, e) => acc + e.points, 0);
-          const authorLevel = levelFromPoints(authorPoints);
-          const authorName = p.createdBy.profile?.fullName ?? "إدارة اللجنة التكنولوجية";
-          const isManagementAuthor = !p.createdBy.profile?.fullName;
-
-        return (
-          <article key={p.id} className="rounded-3xl border border-white/[0.07] bg-surface p-5 sm:p-6">
-            <header className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <AvatarWithFrame
-                  name={authorName}
-                  avatarUrl={p.createdBy.avatarUrl}
-                  frameId={p.createdBy.avatarFrameId}
-                  size="sm"
-                />
-                <div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {isManagementAuthor ? (
-                      <span className="text-xs font-extrabold text-zinc-900 dark:text-zinc-100">{authorName}</span>
-                    ) : (
-                      <LeveledName name={authorName} level={authorLevel} size="xs" showLevelChip={false} />
-                    )}
-                    <span className="rounded-md bg-gold/[0.1] dark:bg-gold/[0.12] border border-gold/30 px-1.5 py-0.2 text-[9px] font-extrabold text-gold-deep dark:text-gold-light">
-                      {ROLE_LABELS[p.createdBy.role] ?? "إدارة"}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-zinc-600 dark:text-zinc-500 block mt-0.5">
-                    {timeAgo(p.createdAt)} · {COMMUNITY_POST_TYPE_LABELS[p.type]}
-                  </span>
-                </div>
-              </div>
-              {p.pinned && (
-                <span className="flex items-center gap-1 rounded-lg bg-gold/[0.1] px-2 py-1 text-[10px] font-extrabold text-gold">
-                  <Pin className="h-3 w-3" /> مثبت
-                </span>
-              )}
-            </header>
-
-            <h2 className="mt-3 text-lg font-extrabold leading-8 text-zinc-100">{p.title}</h2>
-            <p className="mt-2 whitespace-pre-line text-[15px] leading-8 text-zinc-300">{p.body}</p>
-
-            {p.imageUrl && <div className="mt-4"><PostImage url={p.imageUrl} alt={p.title} /></div>}
-            {media && <div className="mt-4"><MediaFrame plan={media} title={p.title} /></div>}
-
-            {links.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {links.map((l, i) => (
-                  <a
-                    key={i}
-                    href={safeExternalUrl(l.url)}
-                    target={l.newTab === false ? undefined : "_blank"}
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-gold/25 bg-gold/[0.06] px-3.5 py-2 text-xs font-extrabold text-gold-light transition-colors hover:bg-gold/[0.12]"
-                  >
-                    {l.label}
-                  </a>
-                ))}
-              </div>
-            )}
-
-            <PostEngagement
-              postId={p.id}
-              initialLiked={liked}
-              likeCount={p.reactions.length}
-              commentCount={p.comments.length}
-              locked={p.lockedComments}
-              autoApproveComments={p.autoApproveComments}
-              canComment={isStudent}
-              comments={allComments}
-              currentUserLevel={shellUser.level}
-              currentUserAvatarUrl={shellUser.avatarUrl}
-              currentUserFrameId={shellUser.avatarFrameId}
-              currentUserBadges={myBadges}
-              heartsVisible={heartsVisible}
-            />
-          </article>
-        );
-      })}
-
-      {!isStudent && visible.length > 0 && (
-        <p className="flex items-center justify-center gap-2 pt-2 text-xs font-bold text-zinc-500">
-          <Lock className="h-3.5 w-3.5" />
-          <Link href="/login" className="text-gold/80 hover:underline">سجّل دخولك</Link>
-          للتفاعل والتعليق
-        </p>
-      )}
-    </div>
+    <CommunityFeedView
+      studentPosts={studentPosts}
+      committeePosts={formattedCommitteePosts}
+      currentUserId={user?.id}
+      currentUserRole={user?.role}
+      isStudent={isStudent}
+      heartsVisible={heartsVisible}
+    />
   );
 
   if (!isStudent) {
-    return content;
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {content}
+        <p className="flex items-center justify-center gap-2 pt-6 text-xs font-bold text-zinc-500">
+          <Lock className="h-3.5 w-3.5" />
+          <Link href="/login" className="text-gold hover:underline">سجّل دخولك</Link>
+          للتفاعل والتعليق والمشاركة في المجتمع
+        </p>
+      </div>
+    );
   }
 
   return (

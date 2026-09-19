@@ -207,8 +207,8 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
           return;
         }
         toast.success("أهلاً بيك في اللجنة! 🎉");
-        router.push(returnTo && returnTo.startsWith("/") ? returnTo : "/panel");
-        router.refresh();
+        const target = returnTo && returnTo.startsWith("/") ? returnTo : "/panel";
+        window.location.href = target;
       } else {
         toast.error(res.error || "تعذر إنشاء الحساب");
       }

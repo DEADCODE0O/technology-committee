@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       // على Vercel هذا الإعداد غير ضروري لكنه آمن ولا يؤثر إطلاقًا.
       allowedOrigins: [
         "*.space-z.ai",
-        "**.space-z.ai",
+        "*.vercel.app",
         "localhost:3000",
         "localhost:81",
         "127.0.0.1:3000",

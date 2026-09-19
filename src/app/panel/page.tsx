@@ -30,12 +30,23 @@ function fmtShort(d: Date): string {
 
 export default async function StudentDashboardPage() {
   const user = await requireStudent();
-  const profile = user.profile!;
+  const profile = user.profile ?? {
+    id: "temp",
+    fullName: user.displayName || user.email.split("@")[0] || "طالب",
+    grade: "FIRST",
+    section: "IS",
+    gender: "MALE",
+    phone: "",
+    phoneVerified: false,
+    studentCode: null,
+    discoverySource: null,
+    joinReasons: null,
+  };
 
   const [streakData, progress, rank, myRegs, myBadges, myTalents, notifications, talentsSectionVisible] = await Promise.all([
-    recordDailyActivity(user.id),
-    getStudentProgress(user.id),
-    getStudentRank(user.id),
+    recordDailyActivity(user.id).catch(() => ({ currentStreak: 1, longestStreak: 1, isNewDay: false, bonusPointsEarned: 0 })),
+    getStudentProgress(user.id).catch(() => ({ xp: 0, level: 1, nextLevel: 2, progressToNext: 0, seasonXp: 0, seasonName: null, streakWeeks: 0, attendedCount: 0, tasksCompleted: 0, questsCompleted: 0 })),
+    getStudentRank(user.id).catch(() => 1),
     db.registration.findMany({
       where: { userId: user.id, status: { in: ["REGISTERED", "WAITLISTED"] } },
       include: {
@@ -43,19 +54,19 @@ export default async function StudentDashboardPage() {
         attendance: true,
       },
       orderBy: { session: { startsAt: "asc" } },
-    }),
+    }).catch(() => []),
     db.studentBadge.findMany({
       where: { userId: user.id },
       include: { badge: true },
       orderBy: { awardedAt: "desc" },
-    }),
-    db.talent.findMany({ where: { userId: user.id } }),
-    getStudentNotifications(user),
-    getTalentsSectionVisible(),
+    }).catch(() => []),
+    db.talent.findMany({ where: { userId: user.id } }).catch(() => []),
+    getStudentNotifications(user).catch(() => ({ notifications: [], unreadCount: 0, pinnedBanner: null, pinnedBanners: [], pendingImportant: 0 })),
+    getTalentsSectionVisible().catch(() => true),
   ]);
 
   // ── مهامي المفتوحة (بانتظار التسليم أو أُعيدت للتعديل) ──
-  const membership = await db.teamMember.findFirst({ where: { userId: user.id } });
+  const membership = await db.teamMember.findFirst({ where: { userId: user.id } }).catch(() => null);
   const myAssignments = await db.taskAssignment.findMany({
     where: {
       OR: [{ userId: user.id }, ...(membership ? [{ teamId: membership.teamId }] : [])],
@@ -67,7 +78,7 @@ export default async function StudentDashboardPage() {
     },
     orderBy: { task: { dueAt: "asc" } },
     take: 5,
-  });
+  }).catch(() => []);
   const openTasks = myAssignments.filter((a) => !a.submission || a.submission.status === "RETURNED");
 
   // ── أحدث منشورات المجتمع (العامة فقط كتيزر) ──
@@ -76,20 +87,20 @@ export default async function StudentDashboardPage() {
     orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
     take: 3,
     select: { id: true, type: true, title: true, createdAt: true },
-  });
+  }).catch(() => []);
 
   // طلبات البيانات المفتوحة الموجهة لهذا الطالب + حالة إجابته
   const openRequests = await db.dataRequest.findMany({
     where: { status: "OPEN" },
     orderBy: { createdAt: "desc" },
-  });
+  }).catch(() => []);
   const requestIds = openRequests.map((r) => r.id);
   const [myResponses, myStudentData] = await Promise.all([
     db.dataResponse.findMany({
       where: { userId: user.id, requestId: { in: requestIds } },
       select: { requestId: true },
-    }),
-    db.studentData.findMany({ where: { userId: user.id }, select: { key: true, value: true } }),
+    }).catch(() => []),
+    db.studentData.findMany({ where: { userId: user.id }, select: { key: true, value: true } }).catch(() => []),
   ]);
   const myResponseMap = new Map(myResponses.map((r) => [r.requestId, true]));
   const savedKeys = new Set(myStudentData.map((d) => d.key));
@@ -108,7 +119,7 @@ export default async function StudentDashboardPage() {
     await Promise.all(
       openRequests.map(async (r) => ({
         request: r,
-        isTargeted: (await findTargetedStudentIds(parseTarget(r.target))).includes(user.id),
+        isTargeted: (await findTargetedStudentIds(parseTarget(r.target)).catch((): string[] => [])).includes(user.id),
       }))
     )
   ).filter((x) => x.isTargeted);
@@ -147,7 +158,7 @@ export default async function StudentDashboardPage() {
     },
     orderBy: { registrationClosesAt: "asc" },
     take: 12,
-  });
+  }).catch(() => []);
   const discoverable = discoverSessions
     .filter((s) => !myRegs.some((r) => r.sessionId === s.id))
     .map((s) => {
@@ -171,14 +182,15 @@ export default async function StudentDashboardPage() {
     .filter((x) => x.open)
     .slice(0, 4);
 
-  const firstName = profile.fullName.split(" ")[0];
+  const firstName = (profile.fullName || "يا بطل").trim().split(" ")[0] || "طالب";
 
   return (
     <StudentShell
       user={{
-        name: profile.fullName,
+        name: user.displayName || profile.fullName,
         email: user.email,
         avatarUrl: user.avatarUrl,
+        avatarFrameId: user.avatarFrameId,
         level: progress.level,
       }}
       active="dashboard"
@@ -240,58 +252,43 @@ export default async function StudentDashboardPage() {
           <div className="flex items-center justify-between">
             <h2 id="social-hub" className="flex items-center gap-2 text-base font-extrabold text-foreground">
               <MessageSquare className="h-5 w-5 text-gold" />
-              تواصل ودردش مع أصدقائك
+              مجتمع وتواصل الطلاب
             </h2>
-            <Link href="/friends" className="text-xs font-bold text-gold hover:underline">
+            <Link href="/messages?tab=search" className="text-xs font-bold text-gold hover:underline">
               البحث عن زملاء ←
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Link
-              href="/chat"
-              className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30 shadow-inner group-hover:scale-105 transition-transform">
-                <MessageSquare className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs sm:text-sm font-black text-foreground">الشات العام</h3>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                </div>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  نقاشات فورية وأسئلة برمجية
-                </p>
-              </div>
-            </Link>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link
               href="/messages"
               className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-400 border border-blue-500/30 shadow-inner group-hover:scale-105 transition-transform">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30 shadow-inner group-hover:scale-105 transition-transform">
                 <MessageCircle className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-black text-foreground">الرسائل الخاصة</h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs sm:text-sm font-black text-foreground">الرسائل والمحادثات</h3>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
                 <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  محادثاتك المباشرة مع أصدقائك
+                  محادثاتك الخاصة، شاتات الفرق، وقائمة الزملاء
                 </p>
               </div>
             </Link>
 
             <Link
-              href="/friends"
+              href="/community"
               className="group flex items-center gap-3.5 rounded-2xl border border-border bg-card/70 p-4 transition-all hover:border-gold/50 hover:bg-gold/[0.04] shadow-sm hover:scale-[1.01]"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-500/15 text-purple-400 border border-purple-500/30 shadow-inner group-hover:scale-105 transition-transform">
                 <Users className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="text-xs sm:text-sm font-black text-foreground">قائمة الأصدقاء</h3>
+                <h3 className="text-xs sm:text-sm font-black text-foreground">المجتمع والمنشورات</h3>
                 <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
-                  طلبات الصداقة والبحث عن زملاء
+                  شارك أفكارك وتفاعل مع إعلانات ومنشورات الطلاب
                 </p>
               </div>
             </Link>

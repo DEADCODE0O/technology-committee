@@ -367,3 +367,43 @@ export async function setAvatarUrlAction(
   }
 }
 
+/**
+ * تحديث الاسم المعروض (الاسم المستعار للطلاب) والنبذة الشخصية
+ */
+export async function updateDisplayNameAndBio(data: {
+  displayName?: string;
+  bio?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "يجب تسجيل الدخول أولاً" };
+
+    const updatePayload: { displayName?: string | null; bio?: string | null } = {};
+
+    if (typeof data.displayName === "string") {
+      const clean = data.displayName.trim();
+      if (clean.length > 0 && clean.length < 2) {
+        return { ok: false, error: "الاسم المعروض يجب أن يتكون من حرفين على الأقل" };
+      }
+      updatePayload.displayName = clean || null;
+    }
+
+    if (typeof data.bio === "string") {
+      updatePayload.bio = data.bio.trim().slice(0, 160) || null;
+    }
+
+    await db.user.update({
+      where: { id: user.id },
+      data: updatePayload,
+    });
+
+    revalidatePath("/profile");
+    revalidatePath("/panel");
+    revalidatePath("/community");
+    revalidatePath("/messages");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر تحديث البيانات" };
+  }
+}
+

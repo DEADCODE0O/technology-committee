@@ -80,6 +80,7 @@ model User {
   reportsMade          Report[]              @relation("ReportCreator")
   studentPosts         StudentPost[]
   studentReactions     StudentPostReaction[]
+  studentPostComments  StudentPostComment[]
 }
 
 // ─── ملف الطالب ──────────────────────────────────────────────
@@ -195,6 +196,7 @@ model Activity {
   sessions   Session[]
   formFields FormField[]
   tasks      Task[]
+  chatRooms  ChatRoom[]
 
   @@index([type, publish])
   @@index([programId])
@@ -297,7 +299,7 @@ model Registration {
   sessionId     String
   session       Session  @relation(fields: [sessionId], references: [id])
   userId        String? // null للتسجيل اليدوي والضيوف
-  user          User?    @relation(fields: [userId], references: [id])
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   // نسخة ثابتة من بيانات الطالب وقت التسجيل (للتقارير والـExcel)
   fullName      String
   phone         String?
@@ -337,7 +339,7 @@ model Attendance {
   lateMinutes    Int?
   method         String? // MANUAL | QR | GATE
   markedById     String?
-  markedBy       User?        @relation("AttendanceMarker", fields: [markedById], references: [id])
+  markedBy       User?        @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
   markedAt       DateTime?
   createdAt      DateTime     @default(now())
 
@@ -366,8 +368,8 @@ model PointEvent {
   session     Session? @relation(fields: [sessionId], references: [id])
   seasonId    String? // الموسم الجاري وقت المنح — null = تراكمي قديم
   season      Season?  @relation(fields: [seasonId], references: [id])
-  createdById String
-  createdBy   User     @relation("PointEventActor", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?    @relation("PointEventActor", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   @@index([userId, createdAt])
@@ -423,8 +425,8 @@ model Task {
   pointsReward   Int       @default(0)
   status         String    @default("DRAFT") // DRAFT | PUBLISHED | CLOSED
   publishedAt    DateTime?
-  createdById    String
-  createdBy      User      @relation("TaskCreator", fields: [createdById], references: [id])
+  createdById    String?
+  createdBy      User?     @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -472,7 +474,7 @@ model TaskSubmission {
   pointsAwarded Int            @default(0)
   status        String         @default("SUBMITTED") // SUBMITTED | EVALUATED | RETURNED
   evaluatedById String?
-  evaluatedBy   User?          @relation("TaskSubmissionEvaluator", fields: [evaluatedById], references: [id])
+  evaluatedBy   User?          @relation("TaskSubmissionEvaluator", fields: [evaluatedById], references: [id], onDelete: SetNull)
   evaluatedAt   DateTime?
 
   @@index([status])
@@ -493,6 +495,7 @@ model Team {
   pointEvents  TeamPointEvent[]
   achievements TeamAchievement[]
   assignments  TaskAssignment[]
+  chatRooms    ChatRoom[]
 }
 
 model TeamMember {
@@ -513,8 +516,8 @@ model TeamPointEvent {
   team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   points      Int
   reason      String
-  createdById String
-  createdBy   User     @relation("TeamPointEventActor", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?    @relation("TeamPointEventActor", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   @@index([teamId, createdAt])
@@ -588,7 +591,7 @@ model StudentReward {
   reward      Reward    @relation(fields: [rewardId], references: [id], onDelete: Cascade)
   note        String?
   awardedById String?
-  awardedBy   User?     @relation("StudentRewardAwarder", fields: [awardedById], references: [id])
+  awardedBy   User?     @relation("StudentRewardAwarder", fields: [awardedById], references: [id], onDelete: SetNull)
   awardedAt   DateTime  @default(now())
   revokedAt   DateTime? // سحب المكافأة — يبقى السجل
 
@@ -611,8 +614,8 @@ model CommunityPost {
   pinned              Boolean  @default(false)
   lockedComments      Boolean  @default(false)
   autoApproveComments Boolean  @default(false) // السماح بالتعليق المباشر بدون موافقة مسبقة
-  createdById         String
-  createdBy           User     @relation("CommunityPostCreator", fields: [createdById], references: [id])
+  createdById         String?
+  createdBy           User?     @relation("CommunityPostCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -667,8 +670,8 @@ model MediaAsset {
   thumbnail   String?
   durationSec Int?
   visibility  String   @default("PUBLIC") // PUBLIC | STUDENTS | LINK
-  createdById String
-  createdBy   User     @relation("MediaAssetCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?     @relation("MediaAssetCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
   @@index([provider])
@@ -736,8 +739,8 @@ model Notification {
   linkType    String? // WHATSAPP | TELEGRAM | DRIVE | FORM | GITHUB | YOUTUBE | LINK
   // استهداف — JSON مثل DataRequest.target + runId للمشاركين في تنفيذ
   target      String
-  createdById String
-  createdBy   User      @relation("NotificationCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?     @relation("NotificationCreator", fields: [createdById], references: [id], onDelete: SetNull)
   expiresAt   DateTime? // اختياري — يختفي من الطالب بعده
   createdAt   DateTime  @default(now())
 
@@ -751,8 +754,8 @@ model NotificationRead {
   notificationId String
   readAt         DateTime     @default(now())
   dismissedAt    DateTime? // ضغط «تم» على البنر — يختفي البنر ويبقى بالمركز
-  user           User         @relation(fields: [userId], references: [id])
-  notification   Notification @relation(fields: [notificationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
   @@id([userId, notificationId])
   @@index([userId])
@@ -766,8 +769,8 @@ model DriveAsset {
   url         String // رابط مشاركة درايف أو أي رابط
   kind        String   @default("FILE") // FILE | IMAGE | VIDEO | FOLDER | DOC | SHEET | LINK
   note        String?
-  createdById String
-  createdBy   User     @relation("DriveAssetCreator", fields: [createdById], references: [id])
+  createdById String?
+  createdBy   User?     @relation("DriveAssetCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -816,8 +819,8 @@ model DataRequest {
   target               String
   status               String    @default("OPEN") // OPEN | CLOSED
   deadline             DateTime? // اختياري
-  createdById          String
-  createdBy            User      @relation("DataRequestCreator", fields: [createdById], references: [id])
+  createdById          String?
+  createdBy            User?      @relation("DataRequestCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -906,8 +909,11 @@ model DirectMessage {
 model ChatRoom {
   id          String        @id @default(cuid())
   name        String
-  type        String        @default("GENERAL") // GENERAL | ACTIVITY | COURSE | Q_AND_A
+  type        String        @default("GENERAL") // GENERAL | ACTIVITY | COURSE | Q_AND_A | TEAM
   activityId  String?       // اختياري لربط الشات بنشاط أو ورشة معينة
+  activity    Activity?     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  teamId      String?       // اختياري لربط الشات بفريق معين
+  team        Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
   description String?
   icon        String        @default("💬")
   createdAt   DateTime      @default(now())
@@ -915,17 +921,23 @@ model ChatRoom {
   messages    ChatMessage[]
 
   @@index([type])
+  @@index([activityId])
+  @@index([teamId])
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   roomId    String
-  room      ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  room      ChatRoom      @relation(fields: [roomId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  body      String   // حد أقصى 500 حرف
-  status    String   @default("VISIBLE") // VISIBLE | HIDDEN | FILTERED
-  createdAt DateTime @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String        // حد أقصى 500 حرف
+  replyToId String?
+  replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   ChatMessage[] @relation("MessageReplies")
+  editedAt  DateTime?
+  status    String        @default("VISIBLE") // VISIBLE | HIDDEN | FILTERED | DELETED
+  createdAt DateTime      @default(now())
 
   @@index([roomId, createdAt])
   @@index([userId])
@@ -941,33 +953,55 @@ model DailyStreak {
   updatedAt      DateTime @updatedAt
 }
 
-// ─── منشورات الطلاب (Feed بإشراف) ───────────────────────────
+// ─── منشورات الطلاب (Feed اجتماعي) ──────────────────────────
 model StudentPost {
-  id        String                @id @default(cuid())
-  userId    String
-  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  body      String                // حد أقصى 2000 حرف
-  imageUrl  String?               // صورة اختيارية
-  status    String                @default("PENDING") // PENDING | APPROVED | HIDDEN
-  category  String                @default("GENERAL") // GENERAL | QUESTION | ACHIEVEMENT | RESOURCE
-  likes     Int                   @default(0) // كاش سريع لعدد الإعجابات
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
+  id             String                @id @default(cuid())
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body           String                // حد أقصى 2000 حرف
+  imageUrl       String?               // صورة اختيارية
+  status         String                @default("APPROVED") // APPROVED | PENDING | HIDDEN
+  category       String                @default("GENERAL") // GENERAL | QUESTION | ACHIEVEMENT | RESOURCE
+  lockedComments Boolean               @default(false)
+  pinned         Boolean               @default(false)
+  likes          Int                   @default(0) // كاش سريع لعدد الإعجابات
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
 
-  reactions StudentPostReaction[]
+  reactions      StudentPostReaction[]
+  comments       StudentPostComment[]
 
   @@index([status, createdAt])
   @@index([userId])
+  @@index([pinned, createdAt])
 }
 
 model StudentPostReaction {
   postId    String
   userId    String
+  type      String      @default("LIKE") // LIKE | LOVE | HAHA | WOW | SAD | ANGRY
   post      StudentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime    @default(now())
 
   @@id([postId, userId])
+}
+
+model StudentPostComment {
+  id        String               @id @default(cuid())
+  postId    String
+  post      StudentPost          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    StudentPostComment?  @relation("StudentCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   StudentPostComment[] @relation("StudentCommentReplies")
+  body      String               // حد أقصى 500 حرف
+  createdAt DateTime             @default(now())
+
+  @@index([postId, createdAt])
+  @@index([userId])
+  @@index([parentId])
 }
 
 // ─── نظام البلاغات (Report System) ───────────────────────────

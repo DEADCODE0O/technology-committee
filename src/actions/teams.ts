@@ -57,6 +57,16 @@ export async function saveTeam(input: {
       return { ok: true, id: updated.id };
     }
     const created = await db.team.create({ data });
+    // إنشاء غرفة شات تلقائية للفريق
+    await db.chatRoom.create({
+      data: {
+        name: `شات فريق ${created.name}`,
+        type: "TEAM",
+        teamId: created.id,
+        icon: created.icon || "🛡️",
+        description: `المحادثة والتنسيق الداخلي لأعضاء فريق ${created.name}`,
+      },
+    });
     await logAudit({
       actor: admin,
       action: "TEAM_CREATED",

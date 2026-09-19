@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2, Users, Zap, Award, Crown, UserMinus } from "lucide-react";
+import { Loader2, Plus, Trash2, Users, Zap, Award, Crown, UserMinus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { saveTeam, deleteTeam, setTeamMember, removeTeamMember, addTeamPoints, addTeamAchievement } from "@/actions/teams";
+import { SmartTeamDistributeModal } from "./smart-team-distribute-modal";
 
 // ═══════════════════════════════════════════════════════════════
 //  مدير الفرق — إنشاء · أعضاء (قائد واحد) · نقاط · إنجازات
@@ -54,6 +55,9 @@ export function TeamManager({
   const [achTeam, setAchTeam] = useState("");
   const [achTitle, setAchTitle] = useState("");
 
+  // توزيع ذكي
+  const [distributeModalOpen, setDistributeModalOpen] = useState(false);
+
   function run(fn: () => Promise<{ ok: boolean; error?: string }>, success?: string) {
     setMsg(null);
     startTransition(async () => {
@@ -76,11 +80,25 @@ export function TeamManager({
           <p className="mt-1 text-sm text-zinc-400">{teams.length} فريقًا · ترتيب الفرق يظهر في صفحة المتصدرين</p>
         </div>
         {canManage && (
-          <Button onClick={() => setCreating((c) => !c)} className="h-11 rounded-xl bg-gold font-extrabold text-night hover:bg-gold-light">
-            <Plus className="h-4 w-4" /> فريق جديد
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setDistributeModalOpen(true)}
+              className="h-11 rounded-xl bg-purple-600 font-extrabold text-white hover:bg-purple-500 shadow-md"
+            >
+              <Sparkles className="h-4 w-4" /> التوزيع الذكي للطلاب
+            </Button>
+            <Button onClick={() => setCreating((c) => !c)} className="h-11 rounded-xl bg-gold font-extrabold text-night hover:bg-gold-light">
+              <Plus className="h-4 w-4" /> فريق جديد
+            </Button>
+          </div>
         )}
       </div>
+
+      <SmartTeamDistributeModal
+        isOpen={distributeModalOpen}
+        onClose={() => setDistributeModalOpen(false)}
+        onSuccess={() => router.refresh()}
+      />
 
       {msg && <p className="rounded-xl border border-gold/25 bg-gold/[0.06] px-4 py-3 text-sm font-bold text-gold-light">{msg}</p>}
 

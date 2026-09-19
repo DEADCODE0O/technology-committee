@@ -296,7 +296,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                       <p className="text-xs font-bold text-zinc-200">{e.reason}</p>
                       <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-zinc-600">
                         <ScrollText className="h-3 w-3" />
-                        {formatDateAr(e.createdAt)} · بواسطة {e.createdBy.email === student.email ? "نظام الحضور" : e.createdBy.email}
+                        {formatDateAr(e.createdAt)} · بواسطة {e.createdBy?.email === student.email ? "نظام الحضور" : (e.createdBy?.email ?? "النظام")}
                         {e.session && ` · ${e.session.activity.title}`}
                       </p>
                     </div>

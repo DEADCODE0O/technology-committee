@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { resolveSupabaseAppUser } from "@/lib/auth";
+import { resolveSupabaseAppUser, createSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isAdminRole } from "@/lib/permissions";
 
@@ -55,6 +55,9 @@ export async function GET(req: NextRequest) {
       await supabase.auth.signOut().catch(() => {});
       return fail("google_suspended");
     }
+
+    // إنشاء جلسة محلية متطابقة للضمان
+    await createSession(appUser.id);
 
     // 3) التوجيه — مستخدم Google جديد بلا ملف؟ إكمال البيانات
     const profile = await db.studentProfile.findUnique({ where: { userId: appUser.id } });

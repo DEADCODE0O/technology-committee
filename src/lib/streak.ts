@@ -44,92 +44,128 @@ export type StreakResult = {
  * تسجيل الزيارة اليومية وتحديث الاستمرارية
  */
 export async function recordDailyActivity(userId: string): Promise<StreakResult> {
-  const today = getTodayDateString();
-  const yesterday = getYesterdayDateString();
+  const fallback: StreakResult = {
+    currentStreak: 1,
+    longestStreak: 1,
+    isNewDay: false,
+    bonusPointsEarned: 0,
+  };
 
-  // تحديث وقت آخر ظهور دائماً
-  await db.user.update({
-    where: { id: userId },
-    data: { lastActiveAt: new Date() },
-  });
+  try {
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
 
-  const existing = await db.dailyStreak.findUnique({
-    where: { userId },
-  });
+    // تحديث وقت آخر ظهور دائماً
+    await db.user.update({
+      where: { id: userId },
+      data: { lastActiveAt: new Date() },
+    }).catch(() => {});
 
-  if (!existing) {
-    const created = await db.dailyStreak.create({
+    const existing = await db.dailyStreak.findUnique({
+      where: { userId },
+    });
+
+    if (!existing) {
+      const created = await db.dailyStreak.create({
+        data: {
+          userId,
+          currentStreak: 1,
+          longestStreak: 1,
+          lastActiveDate: today,
+        },
+      });
+      return {
+        currentStreak: created.currentStreak,
+        longestStreak: created.longestStreak,
+        isNewDay: true,
+        bonusPointsEarned: 2,
+      };
+    }
+
+    // إذا سجل بالفعل اليوم
+    if (existing.lastActiveDate === today) {
+      return {
+        currentStreak: existing.currentStreak,
+        longestStreak: existing.longestStreak,
+        isNewDay: false,
+        bonusPointsEarned: 0,
+      };
+    }
+
+    let nextStreak = 1;
+    if (existing.lastActiveDate === yesterday) {
+      // استمرار السلسلة
+      nextStreak = existing.currentStreak + 1;
+    } else {
+      // انقطاع السلسلة والبدء من جديد
+      nextStreak = 1;
+    }
+
+    const nextLongest = Math.max(existing.longestStreak, nextStreak);
+
+    const updated = await db.dailyStreak.update({
+      where: { userId },
       data: {
-        userId,
-        currentStreak: 1,
-        longestStreak: 1,
+        currentStreak: nextStreak,
+        longestStreak: nextLongest,
         lastActiveDate: today,
       },
     });
+
+    // مكافأة الحفاظ على السلسلة: +2 XP أساسي، ومكافأة مضاعفة كل 7 أيام متتالية (+10 XP)
+    let bonus = 2;
+    if (nextStreak > 0 && nextStreak % 7 === 0) {
+      bonus += 10;
+    }
+
     return {
-      currentStreak: created.currentStreak,
-      longestStreak: created.longestStreak,
+      currentStreak: updated.currentStreak,
+      longestStreak: updated.longestStreak,
       isNewDay: true,
-      bonusPointsEarned: 2,
+      bonusPointsEarned: bonus,
     };
+  } catch (err) {
+    console.warn("[recordDailyActivity] non-fatal error:", err);
+    return fallback;
   }
-
-  // إذا سجل بالفعل اليوم
-  if (existing.lastActiveDate === today) {
-    return {
-      currentStreak: existing.currentStreak,
-      longestStreak: existing.longestStreak,
-      isNewDay: false,
-      bonusPointsEarned: 0,
-    };
-  }
-
-  let nextStreak = 1;
-  if (existing.lastActiveDate === yesterday) {
-    // استمرار السلسلة
-    nextStreak = existing.currentStreak + 1;
-  } else {
-    // انقطاع السلسلة والبدء من جديد
-    nextStreak = 1;
-  }
-
-  const nextLongest = Math.max(existing.longestStreak, nextStreak);
-
-  const updated = await db.dailyStreak.update({
-    where: { userId },
-    data: {
-      currentStreak: nextStreak,
-      longestStreak: nextLongest,
-      lastActiveDate: today,
-    },
-  });
-
-  // مكافأة الحفاظ على السلسلة: +2 XP أساسي، ومكافأة مضاعفة كل 7 أيام متتالية (+10 XP)
-  let bonus = 2;
-  if (nextStreak > 0 && nextStreak % 7 === 0) {
-    bonus += 10;
-  }
-
-  return {
-    currentStreak: updated.currentStreak,
-    longestStreak: updated.longestStreak,
-    isNewDay: true,
-    bonusPointsEarned: bonus,
-  };
 }
 
 /**
  * جلب معلومات الـ Streak الخاصة بالطالب
  */
 export async function getStudentStreak(userId: string) {
-  const today = getTodayDateString();
-  const yesterday = getYesterdayDateString();
+  try {
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
 
-  const streak = await db.dailyStreak.findUnique({
-    where: { userId },
-  });
+    const streak = await db.dailyStreak.findUnique({
+      where: { userId },
+    });
 
-  if (!streak) {
+    if (!streak) {
+      return {
+        currentStreak: 0,
+        longestStreak: 0,
+        isActiveToday: false,
+        isAtRisk: false,
+      };
+    }
+
+    const isActiveToday = streak.lastActiveDate === today;
+    // معرض لخطر فقدان السلسلة إذا كان آخر نشاط أمس ولم يدخل اليوم بعد
+    const isAtRisk = streak.lastActiveDate === yesterday;
+
+    // إذا فاته يوم كامل أو أكثر، فإن السلسلة الحالية ستصبح 0 في العرض
+    const displayStreak = isActiveToday || isAtRisk ? streak.currentStreak : 0;
+
+    return {
+      currentStreak: displayStreak,
+      longestStreak: streak.longestStreak,
+      isActiveToday,
+      isAtRisk,
+    };
+  } catch (err) {
+    console.warn("[getStudentStreak] non-fatal error:", err);
     return {
       currentStreak: 0,
       longestStreak: 0,
@@ -137,19 +173,5 @@ export async function getStudentStreak(userId: string) {
       isAtRisk: false,
     };
   }
-
-  const isActiveToday = streak.lastActiveDate === today;
-  // معرض لخطر فقدان السلسلة إذا كان آخر نشاط أمس ولم يدخل اليوم بعد
-  const isAtRisk = streak.lastActiveDate === yesterday;
-
-  // إذا فاته يوم كامل أو أكثر، فإن السلسلة الحالية ستصبح 0 في العرض
-  const displayStreak = isActiveToday || isAtRisk ? streak.currentStreak : 0;
-
-  return {
-    currentStreak: displayStreak,
-    longestStreak: streak.longestStreak,
-    isActiveToday,
-    isAtRisk,
-  };
 }
 

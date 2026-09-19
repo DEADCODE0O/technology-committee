@@ -854,60 +854,133 @@ export async function deleteStudentPermanently(
     if (!userId) return { ok: false, error: "معرّف الطالب مطلوب" };
     if (admin.id === userId) return { ok: false, error: "لا يمكنك حذف حسابك الحالي" };
 
-    const targetUser = await db.user.findUnique({
-      where: { id: userId },
+    // البحث عن المستخدم بمرونة (عبر الـ ID أو البريد الإلكتروني)
+    let targetUser = await db.user.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { email: userId.includes("@") ? userId.trim().toLowerCase() : undefined },
+          { googleId: userId },
+        ].filter(Boolean) as any,
+      },
       include: { profile: true },
     });
+
+    // إذا لم يُعثر عليه في قاعدة بيانات التطبيق، نتحقق من سيرفر Supabase Auth
+    if (!targetUser && isSupabaseConfigured()) {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        const { data: supaUser } = await supaAdmin.auth.admin.getUserById(userId).catch(() => ({ data: null }));
+        const emailToFind = supaUser?.user?.email;
+        if (emailToFind) {
+          const userByEmail = await db.user.findUnique({
+            where: { email: emailToFind.toLowerCase() },
+            include: { profile: true },
+          });
+          if (userByEmail) {
+            targetUser = userByEmail;
+          } else {
+            // موجود فقط في Supabase Auth وليس له صف في Prisma — نحذفه فوراً لتنظيف السيرفر
+            await supaAdmin.auth.admin.deleteUser(userId);
+            return { ok: true };
+          }
+        }
+      }
+    }
+
     if (!targetUser) return { ok: false, error: "الحساب غير موجود بالفعل" };
     if (targetUser.role !== "STUDENT") {
       return { ok: false, error: "يمكن فقط حذف حسابات الطلاب عبر هذه الخاصية" };
     }
 
+    const dbUserId = targetUser.id;
     const studentName = targetUser.profile?.fullName || targetUser.email;
 
-    // 1. حذف المستخدم من Supabase Auth
+    // 1. حذف المستخدم من Supabase Auth (بالمعرّف وبالبريد للتأكد التام)
     if (isSupabaseConfigured()) {
       const supaAdmin = getSupabaseAdmin();
       if (supaAdmin) {
-        const { error: supaErr } = await supaAdmin.auth.admin.deleteUser(userId);
+        const { error: supaErr } = await supaAdmin.auth.admin.deleteUser(dbUserId);
         if (supaErr) {
-          console.warn("deleteStudentPermanently: Supabase admin deleteUser warning:", supaErr.message);
+          // إذا كان معرّف Supabase مختلفاً عن معرّف قاعدة البيانات، نبحث بالبريد ونحذفه
+          const { data: usersList } = await supaAdmin.auth.admin.listUsers();
+          const supaMatch = usersList?.users?.find(
+            (u) => u.email?.toLowerCase() === targetUser!.email.toLowerCase()
+          );
+          if (supaMatch && supaMatch.id !== dbUserId) {
+            await supaAdmin.auth.admin.deleteUser(supaMatch.id);
+          }
         }
       }
     }
 
-    // 2. حذف جميع بيانات ومتعلقات الطالب في قاعدة البيانات لضمان عدم وجود أخطاء قيود
+    // 2. تنظيف جميع العلاقات والسجلات الـ 31 المرتبطة بالطالب داخل معاملة ذرية لضمان سلامة القيود
     await db.$transaction(async (tx) => {
-      await tx.attendance.deleteMany({ where: { registration: { userId } } });
-      await tx.registration.deleteMany({ where: { userId } });
-      await tx.pointEvent.deleteMany({ where: { userId } });
-      await tx.studentBadge.deleteMany({ where: { userId } });
-      await tx.studentData.deleteMany({ where: { userId } });
-      await tx.dataResponse.deleteMany({ where: { userId } });
-      await tx.notificationRead.deleteMany({ where: { userId } });
-      await tx.taskSubmission.deleteMany({ where: { assignment: { userId } } });
-      await tx.taskAssignment.deleteMany({ where: { userId } });
-      await tx.questProgress.deleteMany({ where: { userId } });
-      await tx.teamMember.deleteMany({ where: { userId } });
-      await tx.comment.deleteMany({ where: { userId } });
-      await tx.postReaction.deleteMany({ where: { userId } });
-      await tx.studentReward.deleteMany({ where: { userId } });
-      await tx.talent.deleteMany({ where: { userId } });
-      await tx.studentProfile.deleteMany({ where: { userId } });
-      await tx.user.delete({ where: { id: userId } });
+      // الحضور والتسجيلات
+      await tx.attendance.deleteMany({ where: { registration: { userId: dbUserId } } });
+      await tx.attendance.updateMany({ where: { markedById: dbUserId }, data: { markedById: null } });
+      await tx.registration.deleteMany({ where: { userId: dbUserId } });
+
+      // النقاط والشارات والمكافآت
+      await tx.pointEvent.deleteMany({ where: { OR: [{ userId: dbUserId }, { createdById: dbUserId }] } });
+      await tx.studentBadge.deleteMany({ where: { userId: dbUserId } });
+      await tx.studentReward.deleteMany({ where: { OR: [{ userId: dbUserId }, { awardedById: dbUserId }] } });
+
+      // طلبات البيانات والردود
+      await tx.studentData.deleteMany({ where: { userId: dbUserId } });
+      await tx.dataResponse.deleteMany({ where: { userId: dbUserId } });
+      await tx.dataRequest.deleteMany({ where: { createdById: dbUserId } });
+
+      // الإشعارات وقراءاتها (الحل الجذري لخطأ Notification_createdById_fkey)
+      await tx.notificationRead.deleteMany({ where: { userId: dbUserId } });
+      await tx.notification.deleteMany({ where: { createdById: dbUserId } });
+
+      // المهام والتقييمات
+      await tx.taskSubmission.deleteMany({ where: { assignment: { userId: dbUserId } } });
+      await tx.taskSubmission.updateMany({ where: { evaluatedById: dbUserId }, data: { evaluatedById: null } });
+      await tx.taskAssignment.deleteMany({ where: { userId: dbUserId } });
+      await tx.task.deleteMany({ where: { createdById: dbUserId } });
+
+      // الفرق والمغامرات
+      await tx.teamPointEvent.deleteMany({ where: { createdById: dbUserId } });
+      await tx.teamMember.deleteMany({ where: { userId: dbUserId } });
+      await tx.questProgress.deleteMany({ where: { userId: dbUserId } });
+
+      // المجتمع والتفاعلات
+      await tx.comment.deleteMany({ where: { userId: dbUserId } });
+      await tx.postReaction.deleteMany({ where: { userId: dbUserId } });
+      await tx.communityPost.deleteMany({ where: { createdById: dbUserId } });
+
+      // المنظومة الاجتماعية الكاملة (الصداقات، الرسائل، الشات، المنشورات، البلاغات)
+      await tx.friendship.deleteMany({ where: { OR: [{ senderId: dbUserId }, { receiverId: dbUserId }] } });
+      await tx.directMessage.deleteMany({ where: { OR: [{ senderId: dbUserId }, { receiverId: dbUserId }] } });
+      await tx.chatMessage.deleteMany({ where: { userId: dbUserId } });
+      await tx.dailyStreak.deleteMany({ where: { userId: dbUserId } });
+      await tx.studentPostReaction.deleteMany({ where: { userId: dbUserId } });
+      await tx.studentPost.deleteMany({ where: { userId: dbUserId } });
+      await tx.report.deleteMany({ where: { OR: [{ reporterId: dbUserId }, { entityId: dbUserId }] } });
+
+      // الأصول والمواهب والملف الشخصي
+      await tx.mediaAsset.deleteMany({ where: { createdById: dbUserId } });
+      await tx.driveAsset.deleteMany({ where: { createdById: dbUserId } });
+      await tx.talent.deleteMany({ where: { userId: dbUserId } });
+      await tx.studentProfile.deleteMany({ where: { userId: dbUserId } });
+
+      // وأخيراً: حذف المستخدم
+      await tx.user.delete({ where: { id: dbUserId } });
     });
 
     await logAudit({
       actor: admin,
       action: "STUDENT_DELETED_PERMANENTLY",
       entity: "STUDENT",
-      entityId: userId,
+      entityId: dbUserId,
       summary: `حذف حساب الطالب نهائياً من المنصة وسيرفر Supabase: «${studentName}» (${targetUser.email})`,
       details: { email: targetUser.email, name: studentName },
     });
 
     revalidatePath("/admin/students");
-    revalidatePath(`/admin/students/${userId}`);
+    revalidatePath(`/admin/students/${dbUserId}`);
     return { ok: true };
   } catch (err) {
     console.error("deleteStudentPermanently error:", err);

@@ -6,6 +6,7 @@ import { getCurrentUser, requireStudentAction } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { maskBannedWords } from "@/lib/content-filter";
 import { levelFromPoints } from "@/lib/constants";
+import { ensureGeneralChatRoom } from "./chat";
 
 /**
  * إرسال رسالة خاصة (بين الأصدقاء المعتمدين فقط)
@@ -71,9 +72,115 @@ export async function sendDirectMessage(
 }
 
 /**
+ * حذف رسالة خاصة من جانب المستخدم فقط
+ */
+export async function deleteDirectMessage(messageId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    const message = await db.directMessage.findUnique({ where: { id: messageId } });
+    if (!message) return { ok: false, error: "الرسالة غير موجودة" };
+
+    if (message.senderId === user.id) {
+      await db.directMessage.update({
+        where: { id: messageId },
+        data: { deletedBySender: true },
+      });
+    } else if (message.receiverId === user.id) {
+      await db.directMessage.update({
+        where: { id: messageId },
+        data: { deletedByReceiver: true },
+      });
+    } else {
+      return { ok: false, error: "غير مصرح لك بحذف هذه الرسالة" };
+    }
+
+    revalidatePath("/messages");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر حذف الرسالة" };
+  }
+}
+
+/**
+ * مسح سجل المحادثة الخاصة بالكامل من جانب المستخدم فقط
+ */
+export async function clearDirectConversation(otherUserId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    await Promise.all([
+      db.directMessage.updateMany({
+        where: { senderId: user.id, receiverId: otherUserId },
+        data: { deletedBySender: true },
+      }),
+      db.directMessage.updateMany({
+        where: { senderId: otherUserId, receiverId: user.id },
+        data: { deletedByReceiver: true },
+      }),
+    ]);
+
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${otherUserId}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر مسح المحادثة" };
+  }
+}
+
+/**
+ * حظر مستخدم (صديق)
+ */
+export async function blockUser(otherUserId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    await db.friendship.updateMany({
+      where: {
+        OR: [
+          { senderId: user.id, receiverId: otherUserId },
+          { senderId: otherUserId, receiverId: user.id },
+        ],
+      },
+      data: { status: "BLOCKED" },
+    });
+
+    revalidatePath("/messages");
+    revalidatePath(`/messages/${otherUserId}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر حظر المستخدم" };
+  }
+}
+
+/**
+ * إبلاغ عن محتوى (رسالة، شات، منشور، تعليق)
+ */
+export async function reportEntity(input: {
+  entityType: "MESSAGE" | "CHAT_MESSAGE" | "POST" | "COMMENT" | "STUDENT_POST" | "PROFILE";
+  entityId: string;
+  reason: "INAPPROPRIATE" | "SPAM" | "HARASSMENT" | "OTHER";
+  details?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    await db.report.create({
+      data: {
+        reporterId: user.id,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        reason: input.reason,
+        details: input.details?.slice(0, 250) || null,
+      },
+    });
+
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر إرسال البلاغ" };
+  }
+}
+
+/**
  * جلب رسائل المحادثة بين الطالب الحالي وطالب آخر
  */
-export async function getConversationMessages(otherUserId: string, take = 50) {
+export async function getConversationMessages(otherUserId: string, take = 60) {
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, messages: [], error: "انتهت الجلسة" };
@@ -107,7 +214,6 @@ export async function getConversationMessages(otherUserId: string, take = 50) {
     // فحص هل هما أصدقاء
     const friendship = await db.friendship.findFirst({
       where: {
-        status: "ACCEPTED",
         OR: [
           { senderId: user.id, receiverId: otherUserId },
           { senderId: otherUserId, receiverId: user.id },
@@ -115,7 +221,7 @@ export async function getConversationMessages(otherUserId: string, take = 50) {
       },
     });
 
-    // جلب الرسائل
+    // جلب الرسائل غير المحذوفة من جانب هذا المستخدم
     const messages = await db.directMessage.findMany({
       where: {
         OR: [
@@ -143,7 +249,7 @@ export async function getConversationMessages(otherUserId: string, take = 50) {
 
     return {
       ok: true,
-      friendshipStatus: friendship ? "ACCEPTED" : "NONE",
+      friendshipStatus: friendship?.status || "NONE",
       otherUser: {
         id: otherUser.id,
         username: otherUser.username,
@@ -172,15 +278,40 @@ export async function getConversationMessages(otherUserId: string, take = 50) {
   }
 }
 
+export interface UnifiedConversation {
+  id: string;
+  type: "DIRECT" | "TEAM" | "ACTIVITY";
+  title: string;
+  subtitle?: string;
+  avatarUrl?: string | null;
+  avatarFrameId?: string | null;
+  level?: number;
+  icon?: string;
+  color?: string;
+  href: string;
+  lastMessage: {
+    body: string;
+    createdAt: string;
+    mine?: boolean;
+    read?: boolean;
+  } | null;
+  unreadCount: number;
+}
+
 /**
- * جلب قائمة المحادثات النشطة مع آخر رسالة لكل محادثة
+ * جلب قائمة المحادثات الموحدة:
+ * 1. محادثات الأصدقاء الخاصة
+ * 2. شاتات الفرق المنتمي إليها الطالب
+ * 3. شاتات الأنشطة والورش المسجل بها الطالب
  */
-export async function getConversationsList() {
+export async function getUnifiedConversations(): Promise<UnifiedConversation[]> {
   try {
     const user = await getCurrentUser();
     if (!user) return [];
 
-    // جلب كل الأصدقاء المقبولين
+    const items: UnifiedConversation[] = [];
+
+    // ── 1. محادثات الأصدقاء ──
     const friendships = await db.friendship.findMany({
       where: {
         status: "ACCEPTED",
@@ -194,8 +325,7 @@ export async function getConversationsList() {
             displayName: true,
             avatarUrl: true,
             avatarFrameId: true,
-            lastActiveAt: true,
-            profile: { select: { fullName: true, gender: true } },
+            profile: { select: { fullName: true } },
             pointEvents: { select: { points: true } },
           },
         },
@@ -206,8 +336,7 @@ export async function getConversationsList() {
             displayName: true,
             avatarUrl: true,
             avatarFrameId: true,
-            lastActiveAt: true,
-            profile: { select: { fullName: true, gender: true } },
+            profile: { select: { fullName: true } },
             pointEvents: { select: { points: true } },
           },
         },
@@ -216,9 +345,8 @@ export async function getConversationsList() {
 
     const friendUsers = friendships.map((f) => (f.senderId === user.id ? f.receiver : f.sender));
 
-    const conversations = await Promise.all(
+    await Promise.all(
       friendUsers.map(async (friend) => {
-        // آخر رسالة
         const lastMsg = await db.directMessage.findFirst({
           where: {
             OR: [
@@ -229,7 +357,6 @@ export async function getConversationsList() {
           orderBy: { createdAt: "desc" },
         });
 
-        // عدد غير المقروءة الواردة
         const unreadCount = await db.directMessage.count({
           where: {
             senderId: friend.id,
@@ -241,17 +368,15 @@ export async function getConversationsList() {
 
         const points = friend.pointEvents.reduce((acc, e) => acc + e.points, 0);
 
-        return {
-          friend: {
-            id: friend.id,
-            username: friend.username,
-            name: friend.displayName || friend.profile?.fullName || "طالب",
-            gender: friend.profile?.gender || "MALE",
-            avatarUrl: friend.avatarUrl,
-            avatarFrameId: friend.avatarFrameId,
-            level: levelFromPoints(points),
-            lastActiveAt: friend.lastActiveAt,
-          },
+        items.push({
+          id: friend.id,
+          type: "DIRECT",
+          title: friend.displayName || friend.profile?.fullName || "طالب",
+          subtitle: friend.username ? `@${friend.username}` : undefined,
+          avatarUrl: friend.avatarUrl,
+          avatarFrameId: friend.avatarFrameId,
+          level: levelFromPoints(points),
+          href: `/messages/${friend.id}`,
           lastMessage: lastMsg
             ? {
                 body: lastMsg.body,
@@ -261,19 +386,186 @@ export async function getConversationsList() {
               }
             : null,
           unreadCount,
-        };
+        });
       })
     );
 
+    // ── 2. شاتات الفرق ──
+    const teamMemberships = await db.teamMember.findMany({
+      where: { userId: user.id },
+      include: {
+        team: {
+          include: {
+            chatRooms: {
+              include: {
+                messages: {
+                  where: { status: "VISIBLE" },
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                  include: {
+                    user: {
+                      select: {
+                        displayName: true,
+                        profile: { select: { fullName: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    for (const tm of teamMemberships) {
+      const team = tm.team;
+      let room = team.chatRooms[0];
+      if (!room) {
+        room = await db.chatRoom.create({
+          data: {
+            name: `شات فريق ${team.name}`,
+            type: "TEAM",
+            teamId: team.id,
+            icon: team.icon || "🛡️",
+            description: `المحادثة الخاصة لأعضاء فريق ${team.name}`,
+          },
+          include: {
+            messages: {
+              where: { status: "VISIBLE" },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              include: {
+                user: {
+                  select: {
+                    displayName: true,
+                    profile: { select: { fullName: true } },
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      const lastMsg = room.messages?.[0];
+      items.push({
+        id: room.id,
+        type: "TEAM",
+        title: team.name,
+        subtitle: "شات الفريق",
+        icon: team.icon || "🛡️",
+        color: team.color || "#c9a45c",
+        href: `/messages/room/${room.id}`,
+        lastMessage: lastMsg
+          ? {
+              body: `${lastMsg.user.displayName || lastMsg.user.profile?.fullName || "عضو"}: ${lastMsg.body}`,
+              createdAt: lastMsg.createdAt.toISOString(),
+            }
+          : null,
+        unreadCount: 0,
+      });
+    }
+
+    // ── 3. شاتات الأنشطة والورش ──
+    const registrations = await db.registration.findMany({
+      where: { userId: user.id, status: "REGISTERED" },
+      include: {
+        session: {
+          include: {
+            activity: {
+              include: {
+                chatRooms: {
+                  include: {
+                    messages: {
+                      where: { status: "VISIBLE" },
+                      orderBy: { createdAt: "desc" },
+                      take: 1,
+                      include: {
+                        user: {
+                          select: {
+                            displayName: true,
+                            profile: { select: { fullName: true } },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const seenActivityIds = new Set<string>();
+    for (const reg of registrations) {
+      const act = reg.session.activity;
+      if (seenActivityIds.has(act.id)) continue;
+      seenActivityIds.add(act.id);
+
+      let room = act.chatRooms[0];
+      if (!room) {
+        room = await db.chatRoom.create({
+          data: {
+            name: `شات ${act.title}`,
+            type: "ACTIVITY",
+            activityId: act.id,
+            icon: "💬",
+            description: `المحادثة الرسمية للمشاركين في: ${act.title}`,
+          },
+          include: {
+            messages: {
+              where: { status: "VISIBLE" },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              include: {
+                user: {
+                  select: {
+                    displayName: true,
+                    profile: { select: { fullName: true } },
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      const lastMsg = room.messages?.[0];
+      items.push({
+        id: room.id,
+        type: "ACTIVITY",
+        title: act.title,
+        subtitle: "شات النشاط",
+        icon: "💬",
+        href: `/messages/room/${room.id}`,
+        lastMessage: lastMsg
+          ? {
+              body: `${lastMsg.user.displayName || lastMsg.user.profile?.fullName || "طالب"}: ${lastMsg.body}`,
+              createdAt: lastMsg.createdAt.toISOString(),
+            }
+          : null,
+        unreadCount: 0,
+      });
+    }
+
     // ترتيب المحادثات حسب تاريخ آخر رسالة
-    return conversations.sort((a, b) => {
+    return items.sort((a, b) => {
       const timeA = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
       const timeB = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
       return timeB - timeA;
     });
   } catch (err) {
-    console.error("getConversationsList error:", err);
+    console.error("getUnifiedConversations error:", err);
     return [];
   }
 }
 
+/**
+ * متوافق مع الاستخدامات السابقة
+ */
+export async function getConversationsList() {
+  return await getUnifiedConversations();
+}

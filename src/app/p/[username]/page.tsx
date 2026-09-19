@@ -346,7 +346,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           avatarUrl: currentUser.avatarUrl,
           avatarFrameId: currentUser.avatarFrameId,
         }}
-        active="friends"
+        active="messages"
       >
         {profileContent}
       </StudentShell>

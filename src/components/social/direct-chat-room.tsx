@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Send,
@@ -12,9 +13,28 @@ import {
   ShieldAlert,
   Sparkles,
   ExternalLink,
+  MoreVertical,
+  Trash2,
+  Ban,
+  Flag,
+  AlertTriangle,
 } from "lucide-react";
-import { sendDirectMessage, getConversationMessages } from "@/actions/messaging";
+import {
+  sendDirectMessage,
+  getConversationMessages,
+  deleteDirectMessage,
+  clearDirectConversation,
+  blockUser,
+  reportEntity,
+} from "@/actions/messaging";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MessageItem {
   id: string;
@@ -50,9 +70,15 @@ export function DirectChatRoom({
   initialMessages,
   currentUserId,
 }: DirectChatRoomProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<MessageItem[]>(initialMessages);
   const [text, setText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState<{ type: "MESSAGE" | "PROFILE"; id: string } | null>(null);
+  const [reportReason, setReportReason] = useState<"INAPPROPRIATE" | "SPAM" | "HARASSMENT" | "OTHER">("INAPPROPRIATE");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -71,7 +97,6 @@ export function DirectChatRoom({
         const res = await getConversationMessages(otherUser.id, 60);
         if (isMounted && res.ok && res.messages) {
           setMessages((prev) => {
-            // تحديث فقط إذا كان هناك رسائل جديدة أو تغيرت حالة القراءة
             if (
               res.messages.length !== prev.length ||
               (res.messages.length > 0 && res.messages[res.messages.length - 1].id !== prev[prev.length - 1]?.id)
@@ -82,7 +107,7 @@ export function DirectChatRoom({
           });
         }
       } catch {
-        // تجاهل أخطاء الشبكة المؤقتة في الـ polling
+        // Silent catch for polling
       }
     }, 4000);
 
@@ -100,7 +125,6 @@ export function DirectChatRoom({
     setIsSending(true);
     setText("");
 
-    // إضافة تفاؤلية للواجهة (Optimistic update)
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: MessageItem = {
       id: tempId,
@@ -125,8 +149,69 @@ export function DirectChatRoom({
     } else {
       toast.error(res.error || "فشل إرسال الرسالة");
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      setText(clean); // إعادة النص للحقل
+      setText(clean);
     }
+  };
+
+  const handleDeleteMessage = (msgId: string) => {
+    if (!confirm("هل تريد حذف هذه الرسالة من عندك فقط؟")) return;
+    startTransition(async () => {
+      const res = await deleteDirectMessage(msgId);
+      if (res.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== msgId));
+        toast.success("تم حذف الرسالة من عندك");
+      } else {
+        toast.error(res.error || "تعذر حذف الرسالة");
+      }
+    });
+  };
+
+  const handleClearChat = () => {
+    if (!confirm("هل أنت متأكد من مسح المحادثة بالكامل من عندك؟ لن تتأثر رسائل الطرف الآخر.")) return;
+    startTransition(async () => {
+      const res = await clearDirectConversation(otherUser.id);
+      if (res.ok) {
+        setMessages([]);
+        toast.success("تم مسح المحادثة من عندك بنجاح");
+      } else {
+        toast.error(res.error || "تعذر مسح المحادثة");
+      }
+    });
+  };
+
+  const handleBlockUser = () => {
+    if (!confirm(`هل أنت متأكد من حظر «${otherUser.displayName}»؟ لن يتمكن من مراسلتك مجدداً.`)) return;
+    startTransition(async () => {
+      const res = await blockUser(otherUser.id);
+      if (res.ok) {
+        toast.success(`تم حظر «${otherUser.displayName}»`);
+        router.push("/messages");
+      } else {
+        toast.error(res.error || "تعذر حظر المستخدم");
+      }
+    });
+  };
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportTarget) return;
+
+    startTransition(async () => {
+      const res = await reportEntity({
+        entityType: reportTarget.type === "MESSAGE" ? "MESSAGE" : "PROFILE",
+        entityId: reportTarget.id,
+        reason: reportReason,
+        details: reportDetails,
+      });
+
+      if (res.ok) {
+        toast.success("تم إرسال بلاغك للإدارة للمراجعة وحماية المجتمع");
+        setReportModalOpen(false);
+        setReportDetails("");
+      } else {
+        toast.error(res.error || "تعذر إرسال البلاغ");
+      }
+    });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -139,8 +224,8 @@ export function DirectChatRoom({
   return (
     <div className="flex flex-col h-[82vh] rounded-3xl border border-border bg-card overflow-hidden shadow-xl">
       {/* رأس المحادثة */}
-      <div className="flex items-center justify-between border-b border-border p-4 bg-muted/40">
-        <div className="flex items-center gap-3.5">
+      <div className="flex items-center justify-between border-b border-border p-3.5 sm:p-4 bg-muted/40">
+        <div className="flex items-center gap-3">
           <Link
             href="/messages"
             className="rounded-xl p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -178,13 +263,58 @@ export function DirectChatRoom({
           </div>
         </div>
 
-        <Link
-          href={otherUser.username ? `/p/${otherUser.username}` : `/p/${otherUser.id}`}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          الملف الشخصي
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link
+            href={otherUser.username ? `/p/${otherUser.username}` : `/p/${otherUser.id}`}
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            الملف
+          </Link>
+
+          {/* قائمة خيارات المحادثة (حظر، مسح، إبلاغ) */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="rounded-xl p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="خيارات المحادثة"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-2xl p-1.5">
+              <DropdownMenuItem
+                onClick={handleClearChat}
+                className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-muted-foreground hover:text-foreground"
+              >
+                <Trash2 className="h-4 w-4 text-amber-500" />
+                مسح المحادثة من عندي
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => {
+                  setReportTarget({ type: "PROFILE", id: otherUser.id });
+                  setReportModalOpen(true);
+                }}
+                className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-muted-foreground hover:text-foreground"
+              >
+                <Flag className="h-4 w-4 text-orange-500" />
+                إبلاغ عن المستخدم
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={handleBlockUser}
+                className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-red-500 hover:text-red-400"
+              >
+                <Ban className="h-4 w-4" />
+                حظر المستخدم
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* منطقة الرسائل */}
@@ -209,8 +339,32 @@ export function DirectChatRoom({
             return (
               <div
                 key={msg.id}
-                className={`flex ${msg.mine ? "justify-start" : "justify-end"}`}
+                className={`flex group items-center gap-1.5 ${msg.mine ? "justify-start" : "justify-end"}`}
               >
+                {/* زر حذف أو إبلاغ عند التمرير */}
+                {msg.mine ? (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMessage(msg.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-500 transition-opacity"
+                    title="حذف من عندي"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReportTarget({ type: "MESSAGE", id: msg.id });
+                      setReportModalOpen(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-orange-500 transition-opacity"
+                    title="إبلاغ عن الرسالة"
+                  >
+                    <Flag className="h-3.5 w-3.5" />
+                  </button>
+                )}
+
                 <div
                   className={`max-w-[82%] sm:max-w-[70%] rounded-2xl p-3.5 shadow-sm text-xs leading-5 whitespace-pre-wrap break-words ${
                     msg.mine
@@ -270,7 +424,72 @@ export function DirectChatRoom({
           </button>
         </div>
       </form>
+
+      {/* ── مودال الإبلاغ ── */}
+      {reportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-orange-500 font-extrabold text-sm">
+              <AlertTriangle className="h-5 w-5" />
+              <span>إبلاغ عن محتوى أو سلوك مخالف</span>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              تلتزم اللجنة التكنولوجية بتوفير بيئة طلابية آمنة ومحترمة. سيتم فحص بلاغك بسرية تامة من قِبل إدارة اللجنة.
+            </p>
+
+            <form onSubmit={handleSubmitReport} className="space-y-3.5">
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-1.5">
+                  سبب الإبلاغ:
+                </label>
+                <select
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value as any)}
+                  className="w-full rounded-xl border border-border bg-muted/40 p-2.5 text-xs text-foreground focus:outline-none focus:border-gold"
+                >
+                  <option value="INAPPROPRIATE">محتوى غير لائق أو كلام مسيء</option>
+                  <option value="HARASSMENT">مضايقة أو تنمر</option>
+                  <option value="SPAM">رسائل مزعجة أو إعلانات (Spam)</option>
+                  <option value="OTHER">سبب آخر</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-foreground block mb-1.5">
+                  تفاصيل إضافية (اختياري):
+                </label>
+                <textarea
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="وضح سبب البلاغ بإيجاز لمساعدة المشرفين..."
+                  maxLength={250}
+                  rows={3}
+                  className="w-full rounded-xl border border-border bg-muted/40 p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(false)}
+                  className="rounded-xl border border-border px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-red-500 shadow"
+                >
+                  {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Flag className="h-3.5 w-3.5" />}
+                  إرسال البلاغ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

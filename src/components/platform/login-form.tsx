@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { Loader2, LogIn, Eye, EyeOff } from "lucide-react";
-import { loginAction, type LoginState } from "@/actions/auth";
+import { loginAction } from "@/actions/auth";
 import { GoogleButton } from "@/components/platform/google-button";
 import { FacebookButton } from "@/components/platform/facebook-button";
 import { Input } from "@/components/ui/input";
@@ -22,20 +22,41 @@ export function LoginForm({
   googleEnabled?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [state, formAction, pending] = useActionState<LoginState, FormData>(loginAction, {
-    error: initialError,
-  });
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | undefined>(initialError);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (state?.redirectTo) {
-      window.location.href = state.redirectTo;
+    if (initialError) {
+      setError(initialError);
     }
-  }, [state?.redirectTo]);
+  }, [initialError]);
 
-  const isSubmitting = pending || Boolean(state?.redirectTo);
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(undefined);
+    const formData = new FormData(e.currentTarget);
+
+    startTransition(async () => {
+      try {
+        const res = await loginAction({}, formData);
+        if (res?.error) {
+          setError(res.error);
+        } else if (res?.redirectTo) {
+          setIsRedirecting(true);
+          window.location.href = res.redirectTo;
+        }
+      } catch (err: any) {
+        console.error("Login submission error:", err);
+        setError("حدث خطأ أثناء تسجيل الدخول — تأكد من بياناتك وحاول مرة أخرى");
+      }
+    });
+  };
+
+  const isSubmitting = pending || isRedirecting;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
 
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
@@ -110,9 +131,9 @@ export function LoginForm({
         </p>
       )}
 
-      {state?.error && (
+      {error && (
         <p className="rounded-xl border border-red-500/25 bg-red-500/[0.08] px-4 py-3 text-center text-sm font-bold text-red-600 dark:text-red-300">
-          {state.error}
+          {error}
         </p>
       )}
 
@@ -122,7 +143,7 @@ export function LoginForm({
         className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
       >
         {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
-        {state?.redirectTo
+        {isRedirecting
           ? "تم بنجاح! جاري التوجيه..."
           : isSubmitting
           ? "جاري تسجيل الدخول..."

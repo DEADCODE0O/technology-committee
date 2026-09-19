@@ -2,28 +2,28 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, User, Bell, Trophy, MessageSquare, MessageCircle } from "lucide-react";
+import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, Bell, Trophy, MessageCircle, Globe } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // ═══════════════════════════════════════════════════════════════
 //  غلاف منطقة الطالب — «دي منصتك» وليست موقع تسجيل ورش
-//  • الموبايل: شريط سفلي بـ 6 أقسام سريعة وتفاعلية
-//    (الرئيسية · الشات · الرسائل · الأصدقاء · مهامي · حسابي)
-//  • الإشعارات والرسائل: أيقونات علوية للوصول السريع
+//  • الموبايل: شريط سفلي بـ 4 أقسام مبسطة واحترافية
+//    (الرئيسية · الرسائل · المجتمع · مهامي)
+//  • حسابي: متاح عبر النقر على الصورة الشخصية في الشريط العلوي
+//  • الأصدقاء: مدمجون في صفحة الرسائل كتبويب
+//  • الشات: مرتبط بالأنشطة والفرق بدلاً من صفحة مستقلة
 //  • الشاشات الكبيرة: شريط علوي غني وكامل
 // ═══════════════════════════════════════════════════════════════
 
 const NAV = [
   { key: "dashboard", label: "الرئيسية", href: "/panel", icon: LayoutDashboard, bottom: true },
-  { key: "chat", label: "الشات", href: "/chat", icon: MessageSquare, bottom: true },
   { key: "messages", label: "الرسائل", href: "/messages", icon: MessageCircle, bottom: true },
-  { key: "friends", label: "الأصدقاء", href: "/friends", icon: Users, bottom: true },
+  { key: "community", label: "المجتمع", href: "/community", icon: Globe, bottom: true },
   { key: "tasks", label: "مهامي", href: "/tasks", icon: ClipboardList, bottom: true },
-  { key: "profile", label: "حسابي", href: "/profile", icon: User, bottom: true },
   { key: "activities", label: "اكتشف", href: "/activities", icon: Compass, bottom: false },
-  { key: "community", label: "المجتمع", href: "/community", icon: Users, bottom: false },
+  { key: "profile", label: "حسابي", href: "/profile", icon: Users, bottom: false },
   { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: false },
 ];
 
@@ -34,6 +34,7 @@ export function StudentShell({
   pendingCount = 0,
   unreadCount = 0,
   openTaskCount = 0,
+  unreadMessagesCount = 0,
 }: {
   user: {
     name: string;
@@ -50,6 +51,8 @@ export function StudentShell({
   unreadCount?: number;
   /** مهام مفتوحة بانتظار التسليم */
   openTaskCount?: number;
+  /** رسائل خاصة غير مقروءة */
+  unreadMessagesCount?: number;
 }) {
   return (
     <div className="relative flex min-h-svh flex-col bg-background">
@@ -85,6 +88,11 @@ export function StudentShell({
                     {openTaskCount > 9 ? "9+" : openTaskCount}
                   </span>
                 )}
+                {n.key === "messages" && unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-extrabold text-night">
+                    {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                  </span>
+                )}
               </Link>
             ))}
 
@@ -100,16 +108,6 @@ export function StudentShell({
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
-            </Link>
-
-            {/* الرسائل الخاصة: أيقونة وصول مباشر */}
-            <Link
-              href="/messages"
-              aria-label="الرسائل والمحادثات"
-              title="الرسائل والمحادثات"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card/40 text-muted-foreground transition-colors hover:border-gold/30 hover:text-gold"
-            >
-              <MessageCircle className="h-4 w-4" />
             </Link>
 
             {/* محول المظهر (وضع النهار / الليل) */}
@@ -160,7 +158,7 @@ export function StudentShell({
         className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-2xl lg:hidden shadow-[0_-4px_25px_-5px_rgba(24,24,27,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="grid grid-cols-6 items-center px-1">
+        <ul className="grid grid-cols-4 items-center px-1">
           {NAV.filter((n) => n.bottom).map((n) => {
             const isActive = active === n.key;
             return (
@@ -179,19 +177,15 @@ export function StudentShell({
                         : "hover:bg-muted/50"
                     }`}
                   >
-                    {n.key === "profile" && user.name ? (
-                      <AvatarWithFrame
-                        avatarUrl={user.avatarUrl}
-                        name={user.name}
-                        frameId={user.avatarFrameId}
-                        size="xs"
-                      />
-                    ) : (
-                      <n.icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? "scale-110 text-gold-deep dark:text-gold-light" : ""}`} />
-                    )}
+                    <n.icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? "scale-110 text-gold-deep dark:text-gold-light" : ""}`} />
                     {n.key === "tasks" && openTaskCount > 0 && (
                       <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[8px] font-black text-night ring-1 ring-night">
                         {openTaskCount > 9 ? "9+" : openTaskCount}
+                      </span>
+                    )}
+                    {n.key === "messages" && unreadMessagesCount > 0 && (
+                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black text-night ring-1 ring-night">
+                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
                       </span>
                     )}
                     {n.key === "dashboard" && pendingCount > 0 && (
@@ -200,7 +194,7 @@ export function StudentShell({
                       </span>
                     )}
                   </span>
-                  <span className="truncate max-w-[56px] text-center leading-tight tracking-tight">
+                  <span className="truncate max-w-[72px] text-center leading-tight tracking-tight">
                     {n.label}
                   </span>
                   {isActive && (

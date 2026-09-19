@@ -195,150 +195,94 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
     }
 
     // ── التأكد من عدم تكرار البريد ──
-    const existing = await db.user.findUnique({ where: { email }, include: { profile: true } });
-    if (existing) {
-      if (isSupabaseConfigured()) {
-        const supaAdmin = getSupabaseAdmin();
-        if (supaAdmin) {
-          const { data: supaUser } = await supaAdmin.auth.admin.getUserById(existing.id);
-          // إذا كان الطالب لم يفعّل بريده بعد بكود الـ OTP، نحدّث بياناته وكلمة السر ونعيد إرسال الرمز وننقله لشاشة التفعيل
-          if (supaUser?.user && !supaUser.user.email_confirmed_at && !supaUser.user.confirmed_at) {
-            await supaAdmin.auth.admin.updateUserById(existing.id, { password: data.password });
-            await db.studentProfile.upsert({
-              where: { userId: existing.id },
-              create: {
-                userId: existing.id,
-                fullName,
-                grade: data.grade,
-                section: data.section,
-                gender: data.gender,
-                phone,
-                phoneVerified: true,
-                studentCode: studentCode ?? null,
-                discoverySource: discoverySource ?? null,
-                joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
-              },
-              update: {
-                fullName,
-                grade: data.grade,
-                section: data.section,
-                gender: data.gender,
-                phone,
-                studentCode: studentCode ?? null,
-                discoverySource: discoverySource ?? null,
-                joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
-              },
-            });
-            const supabase = await createSupabaseServerClient();
-            if (supabase) await supabase.auth.resend({ type: "signup", email }).catch(() => {});
-            return { ok: true, needsEmailConfirm: true, email };
-          }
-        }
-      }
-
-      // إذا كان الحساب مسجل مسبقاً وبلا ملف طالب مكتمل:
-      if (!existing.profile) {
-        if (existing.provider === "GOOGLE") {
-          return {
-            ok: false,
-            error: "هذا الحساب مسجّل مسبقًا عبر Google ولم تكتمل بياناته بعد — سجّل دخولك عبر Google وسيتم نقلك لإكمال بياناتك مباشرة.",
-          };
-        }
-        // مستخدم مسجل بالبريد لكن لم يكتمل ملفه
-        if (isSupabaseConfigured()) {
-          const supaAdmin = getSupabaseAdmin();
-          if (supaAdmin) {
-            await supaAdmin.auth.admin.updateUserById(existing.id, { password: data.password });
-          }
-        }
-        await db.studentProfile.create({
-          data: {
-            userId: existing.id,
-            fullName,
-            grade: data.grade,
-            section: data.section,
-            gender: data.gender,
-            phone,
-            phoneVerified: true,
-            studentCode: studentCode ?? null,
-            discoverySource: discoverySource ?? null,
-            joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
-          },
-        });
-        return { ok: true, needsEmailConfirm: false };
-      }
-
+    let existing = await db.user.findUnique({ where: { email }, include: { profile: true } });
+    if (existing?.profile) {
       if (existing.provider === "GOOGLE") {
         return {
           ok: false,
-          error: "هذا البريد مسجل بالفعل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google» أعلاه",
+          error: "هذا البريد مسجل بالفعل عبر Google — يرجى استخدام زر «تسجيل الدخول بحساب Google»",
         };
       }
-      return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول بكلمة السر أو استعادة كلمة السر" };
+      return { ok: false, error: "هذا البريد الإلكتروني مسجل بالفعل — يمكنك تسجيل الدخول مباشرة بكلمة السر الخاصة بك" };
     }
 
     // ══ وضع Supabase: الهوية في Supabase Auth + الصف بنفس UUID ══
     if (isSupabaseConfigured()) {
-      const supabase = await createSupabaseServerClient();
-      if (!supabase) return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
-
+      const supaAdmin = getSupabaseAdmin();
       let finalUserId: string | null = null;
-      let fallbackCode: string | undefined;
 
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password: data.password });
+      if (supaAdmin) {
+        // فحص ما إذا كان المستخدم موجود مسبقاً في Supabase Auth
+        const { data: usersList } = await supaAdmin.auth.admin.listUsers();
+        const matchedSupa = usersList?.users?.find((u) => u.email?.toLowerCase() === email);
 
-      if (!signUpError && signUpData?.user) {
-        finalUserId = signUpData.user.id;
-      } else {
-        const msg = signUpError?.message ?? "";
-        if (/password/i.test(msg) && /least/i.test(msg)) {
-          return { ok: false, error: "كلمة السر ضعيفة حسب سياسة الحسابات — استخدم أحرفًا وأرقامًا متنوعة" };
-        }
-        if (/not allowed/i.test(msg)) {
-          return { ok: false, error: "التسجيل معطل حاليًا من إعدادات Supabase — تواصل مع الإدارة" };
-        }
-
-        // في حال حدوث تجاوز لحد إرسال البريد أو خطأ المزود، نعتمد على admin.generateLink كحل فوري معتمد
-        const supaAdmin = getSupabaseAdmin();
-        if (supaAdmin) {
-          const gen = await supaAdmin.auth.admin.generateLink({
-            type: "signup",
+        if (matchedSupa) {
+          finalUserId = matchedSupa.id;
+          await supaAdmin.auth.admin.updateUserById(finalUserId, {
+            password: data.password,
+            email_confirm: true,
+          });
+        } else {
+          // إنشاء المستخدم وتأكيد بريده فوراً بدون قيود رسائل
+          const { data: createdUser, error: createErr } = await supaAdmin.auth.admin.createUser({
             email,
             password: data.password,
-          } as any);
+            email_confirm: true,
+          });
 
-          if (!gen.error && gen.data?.user) {
-            finalUserId = gen.data.user.id;
-            fallbackCode = gen.data.properties?.email_otp;
-          } else if (gen.error && (/already/i.test(gen.error.message) || (gen.error as any).code === "email_exists")) {
-            const { data: usersList } = await supaAdmin.auth.admin.listUsers();
-            const match = usersList?.users?.find((u) => u.email?.toLowerCase() === email);
-            if (match && !match.email_confirmed_at && !match.confirmed_at) {
-              const resendGen = await supaAdmin.auth.admin.generateLink({
-                type: "signup",
-                email,
-                password: data.password,
-              } as any);
-              return { ok: true, needsEmailConfirm: true, email };
-            }
-            return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
+          if (createdUser?.user) {
+            finalUserId = createdUser.user.id;
           } else {
-            console.error("generateLink error fallback:", gen.error);
+            console.error("[registerStudent] supaAdmin.createUser error:", createErr);
+            if (/already/i.test(createErr?.message || "")) {
+              const { data: retryList } = await supaAdmin.auth.admin.listUsers();
+              const retryUser = retryList?.users?.find((u) => u.email?.toLowerCase() === email);
+              if (retryUser) {
+                finalUserId = retryUser.id;
+                await supaAdmin.auth.admin.updateUserById(finalUserId, {
+                  password: data.password,
+                  email_confirm: true,
+                });
+              }
+            }
           }
-        }
-
-        if (!finalUserId) {
-          if (/already registered/i.test(msg)) {
-            return { ok: false, error: "هذا البريد مسجل بالفعل — جرّب تسجيل الدخول أو استعادة كلمة السر" };
-          }
-          console.error("supabase signUp and fallback failed:", signUpError);
-          return { ok: false, error: "تعذر إنشاء الحساب حاليًا — حاول مرة أخرى بعد قليل" };
         }
       }
 
-      const studentUserId: string = finalUserId!;
+      // إذا تعذر استخدام supaAdmin كحالة نادرة جداً
+      if (!finalUserId) {
+        const supabase = await createSupabaseServerClient();
+        if (!supabase) return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: data.password,
+        });
+        if (signUpData?.user) {
+          finalUserId = signUpData.user.id;
+        } else {
+          console.error("[registerStudent] fallback signUp failed:", signUpError);
+          return { ok: false, error: "تعذر إنشاء الحساب حالياً — حاول مرة أخرى بعد قليل" };
+        }
+      }
 
-      // صف التطبيق بنفس UUID الرسمي — كلمة السر لا تُخزن محليًا أبدًا
+      if (!finalUserId) {
+        return { ok: false, error: "تعذر إنشاء الحساب — حاول مرة أخرى" };
+      }
+
+      const studentUserId: string = finalUserId;
+
+      // التأكد من عدم وجود تضارب معرفات قديم
+      if (existing && existing.id !== studentUserId) {
+        const hasRegs = await db.registration.count({ where: { userId: existing.id } });
+        if (hasRegs === 0) {
+          await db.studentProfile.deleteMany({ where: { userId: existing.id } });
+          await db.talent.deleteMany({ where: { userId: existing.id } });
+          await db.dailyStreak.deleteMany({ where: { userId: existing.id } });
+          await db.user.delete({ where: { id: existing.id } }).catch(() => {});
+          existing = null;
+        }
+      }
+
       let user = await db.user.findUnique({ where: { id: studentUserId } });
       if (!user) {
         user = await db.user.create({
@@ -348,6 +292,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
             passwordHash: null,
             provider: "EMAIL",
             role: ROLES.STUDENT,
+            status: "ACTIVE",
             profile: {
               create: {
                 fullName,
@@ -375,7 +320,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
                 }
               : {}),
           },
-          include: { profile: true, talents: true },
+          include: { profile: true },
         });
       } else {
         await db.studentProfile.upsert({
@@ -398,7 +343,6 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
             section: data.section,
             gender: data.gender,
             phone,
-            phoneVerified: true,
             studentCode: studentCode ?? null,
             discoverySource: discoverySource ?? null,
             joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
@@ -413,17 +357,27 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
         summary: `انضمام طالب جديد: ${fullName}`,
       });
 
-      // إرجاع النتيجة للتوجيه لصفحة تأكيد الـ OTP
-      return { ok: true, needsEmailConfirm: true, email };
+      // تسجيل دخول فوري وتثبيت الجلسة
+      const supabase = await createSupabaseServerClient();
+      if (supabase) {
+        await supabase.auth.signInWithPassword({ email, password: data.password }).catch((e: unknown) => {
+          console.warn("[registerStudent] signInWithPassword error:", e);
+        });
+      }
+      await createSession(user.id);
+      revalidatePath("/", "layout");
+
+      return { ok: true, needsEmailConfirm: false };
     }
 
-    // ══ وضع التطوير المحلي: bcrypt + جلسة JWT ══
+    // ══ وضع التطوير المحلي: bcrypt + جلسة JWT مباشرة ══
     const passwordHash = await hashPassword(data.password);
     const user = await db.user.create({
       data: {
         email,
         passwordHash,
         role: ROLES.STUDENT,
+        status: "ACTIVE",
         profile: {
           create: {
             fullName,
@@ -461,9 +415,9 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       summary: `انضمام طالب جديد: ${fullName}`,
     });
 
-    // ══ وضع التطوير المحلي: إرسال المستخدم لصفحة الـ OTP لمحاكاة التدفق بالكامل ══
-    console.log(`\n========================================\n[DEV MODE OTP] Email: ${email} | Verification Code: 123456\n========================================\n`);
-    return { ok: true, needsEmailConfirm: true, email };
+    await createSession(user.id);
+    revalidatePath("/", "layout");
+    return { ok: true, needsEmailConfirm: false };
   } catch (err) {
     console.error("registerStudent error:", err);
     return { ok: false, error: "حدث خطأ غير متوقع — حاول مرة أخرى" };
@@ -614,7 +568,26 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
     }
 
-    const user = await db.user.findUnique({ where: { email }, include: { profile: true } });
+    let user = await db.user.findUnique({ where: { email }, include: { profile: true } });
+    if (!user && isSupabaseConfigured()) {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        const { data: list } = await supaAdmin.auth.admin.listUsers();
+        const supaUser = list?.users?.find((u) => u.email?.toLowerCase() === email);
+        if (supaUser) {
+          user = await db.user.create({
+            data: {
+              id: supaUser.id,
+              email,
+              role: ROLES.STUDENT,
+              status: "ACTIVE",
+              provider: "EMAIL",
+            },
+            include: { profile: true },
+          });
+        }
+      }
+    }
     if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
     if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
 
@@ -635,19 +608,29 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       const supabase = await createSupabaseServerClient();
       if (!supabase) return { error: "حدث خطأ غير متوقع أثناء الدخول — حاول مرة أخرى" };
 
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError || !signInData.user) {
+      // إذا كان الحساب غير مفعل البريد، نقوم بتفعيله تلقائيًا عبر المشرف وإعادة المحاولة
+      if (signInError && /email not confirmed/i.test(signInError.message || "")) {
+        const supaAdmin = getSupabaseAdmin();
+        if (supaAdmin) {
+          const { data: list } = await supaAdmin.auth.admin.listUsers();
+          const match = list?.users?.find((u) => u.email?.toLowerCase() === email);
+          if (match) {
+            await supaAdmin.auth.admin.updateUserById(match.id, { email_confirm: true });
+            const retry = await supabase.auth.signInWithPassword({ email, password });
+            signInData = retry.data;
+            signInError = retry.error;
+          }
+        }
+      }
+
+      if (signInError || !signInData?.user) {
         const msg = signInError?.message ?? "";
         console.warn(`[loginAction] signInWithPassword error for ${email}:`, msg);
-        if (/email not confirmed/i.test(msg)) {
-          return {
-            redirectTo: `/register/verify?email=${encodeURIComponent(email)}&notice=need_verification`,
-          };
-        }
         if (/rate limit/i.test(msg)) {
           return { error: "تم استهلاك حد المحاولات المؤقت من مزود الحسابات — يرجى الانتظار دقيقة أو الدخول بحساب Google" };
         }
@@ -662,16 +645,19 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
         return { error: "كلمة السر غير صحيحة — تأكد من كتابتها بشكل سليم أو استخدم «نسيت كلمة السر»" };
       }
 
-      // منع تجاوز رمز التحقق (OTP): إذا لم يتم توثيق البريد بعد، لا يُسمح له بالدخول ويُحول لصفحة الرمز
+      // التأكد من توثيق البريد
       if (!signInData.user.email_confirmed_at && !signInData.user.confirmed_at) {
-        await supabase.auth.signOut().catch(() => {});
-        return {
-          redirectTo: `/register/verify?email=${encodeURIComponent(email)}&notice=need_verification`,
-        };
+        const supaAdmin = getSupabaseAdmin();
+        if (supaAdmin) {
+          await supaAdmin.auth.admin.updateUserById(signInData.user.id, { email_confirm: true }).catch(() => {});
+        }
       }
 
       // نجاح — تصفير عداد البريد حتى لا يتأثر مستخدم شرعي
       resetRateLimit(`login:email:${email}`);
+
+      // تأكيد الجلسة المحلية أيضاً كضمان إضافي للثقة
+      await createSession(user.id);
 
       // إذا كان طالباً وملفه لم يكتمل بعد، نوجّهه فوراً لصفحة إكمال البيانات
       if (user.role === ROLES.STUDENT && !user.profile) {
@@ -935,8 +921,9 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
     }
 
     await db.$transaction(async (tx) => {
-      await tx.studentProfile.create({
-        data: {
+      await tx.studentProfile.upsert({
+        where: { userId: user.id },
+        create: {
           userId: user.id,
           fullName,
           grade: data.grade,
@@ -944,6 +931,16 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
           gender: data.gender,
           phone,
           phoneVerified: true,
+          studentCode: studentCode ?? null,
+          discoverySource: discoverySource ?? null,
+          joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,
+        },
+        update: {
+          fullName,
+          grade: data.grade,
+          section: data.section,
+          gender: data.gender,
+          phone,
           studentCode: studentCode ?? null,
           discoverySource: discoverySource ?? null,
           joinReasons: joinReasons.length ? JSON.stringify(joinReasons) : null,

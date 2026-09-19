@@ -31,6 +31,16 @@ export type StudentGate = {
   mandatoryRequests: MandatoryDataRequest[];
 };
 
+function safeParseFields(raw: string | null | undefined): MandatoryDataRequest["fields"] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function getStudentGate(user: SessionUser): Promise<StudentGate> {
   const empty: StudentGate = {
     blocked: false,
@@ -40,65 +50,70 @@ export async function getStudentGate(user: SessionUser): Promise<StudentGate> {
     mandatoryRequests: [],
   };
 
-  // الطلاب بدون ملف (مستخدمو Google الجدد) يعالجون عبر صفحة إكمال البيانات
-  if (!user.profile) return empty;
+  try {
+    // الطلاب بدون ملف (مستخدمو Google الجدد) يعالجون عبر صفحة إكمال البيانات
+    if (!user.profile) return empty;
 
-  // 1) كود الطالب — مطلوب لفرقته وغير مسجل؟
-  const [codeConfig, openRequests] = await Promise.all([
-    getStudentCodeConfig(),
-    db.dataRequest.findMany({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }),
-  ]);
-  const needsStudentCode =
-    codeConfig.requiredGrades.includes(user.profile.grade) && !user.profile.studentCode;
-
-  // 2) الطلبات الإلزامية الموجهة له (ضمن الموعد إن وُجد) وغير المجابة
-  const now = new Date();
-  const candidates = openRequests.filter(
-    (r) =>
-      r.mandatory &&
-      (!r.deadline || new Date(r.deadline) >= now)
-  );
-  const mandatoryRequests: MandatoryDataRequest[] = [];
-  if (candidates.length > 0) {
-    const [answeredSet, savedRows] = await Promise.all([
-      db.dataResponse.findMany({
-        where: { userId: user.id, requestId: { in: candidates.map((c) => c.id) } },
-        select: { requestId: true },
-      }),
-      // بيانات محفوظة من أي طلب سابق — تُحسب إجابة دائمًا:
-      // مجرد ما يدخل الطالب المعلومة لا يُسأل عنها مرة أخرى
-      db.studentData.findMany({ where: { userId: user.id }, select: { key: true } }),
+    // 1) كود الطالب — مطلوب لفرقته وغير مسجل؟
+    const [codeConfig, openRequests] = await Promise.all([
+      getStudentCodeConfig(),
+      db.dataRequest.findMany({ where: { status: "OPEN" }, orderBy: { createdAt: "asc" } }),
     ]);
-    const answered = new Set(answeredSet.map((a) => a.requestId));
-    const savedKeys = new Set(savedRows.map((d) => d.key));
-    for (const r of candidates) {
-      if (answered.has(r.id)) continue;
-      // مفتاح كل سؤال محفوظ عند الطالب من أي طلب سابق = مكتمل — لا يُسأل مجددًا
-      try {
-        const fields = JSON.parse(r.fields) as Array<{ key?: string; label: string }>;
-        const covered = fields.length === 0 || fields.every((f) => savedKeys.has(f.key || makeDataKey(f.label)));
-        if (covered) continue;
-      } catch {
-        // تعطّل تحليل الحقول — نتعامل معه كطلب غير مجاب
-      }
-      const ids = await findTargetedStudentIds(parseTarget(r.target));
-      if (ids.includes(user.id)) {
-        mandatoryRequests.push({
-          id: r.id,
-          title: r.title,
-          description: r.description,
-          deadline: r.deadline,
-          fields: JSON.parse(r.fields) as MandatoryDataRequest["fields"],
-        });
+    const needsStudentCode =
+      codeConfig.requiredGrades.includes(user.profile.grade) && !user.profile.studentCode;
+
+    // 2) الطلبات الإلزامية الموجهة له (ضمن الموعد إن وُجد) وغير المجابة
+    const now = new Date();
+    const candidates = openRequests.filter(
+      (r) =>
+        r.mandatory &&
+        (!r.deadline || new Date(r.deadline) >= now)
+    );
+    const mandatoryRequests: MandatoryDataRequest[] = [];
+    if (candidates.length > 0) {
+      const [answeredSet, savedRows] = await Promise.all([
+        db.dataResponse.findMany({
+          where: { userId: user.id, requestId: { in: candidates.map((c) => c.id) } },
+          select: { requestId: true },
+        }),
+        // بيانات محفوظة من أي طلب سابق — تُحسب إجابة دائمًا:
+        // مجرد ما يدخل الطالب المعلومة لا يُسأل عنها مرة أخرى
+        db.studentData.findMany({ where: { userId: user.id }, select: { key: true } }),
+      ]);
+      const answered = new Set(answeredSet.map((a) => a.requestId));
+      const savedKeys = new Set(savedRows.map((d) => d.key));
+      for (const r of candidates) {
+        if (answered.has(r.id)) continue;
+        // مفتاح كل سؤال محفوظ عند الطالب من أي طلب سابق = مكتمل — لا يُسأل مجددًا
+        try {
+          const fields = safeParseFields(r.fields);
+          const covered = fields.length === 0 || fields.every((f) => savedKeys.has(f.id || makeDataKey(f.label)));
+          if (covered) continue;
+        } catch {
+          // تعطّل تحليل الحقول — نتعامل معه كطلب غير مجاب
+        }
+        const ids = await findTargetedStudentIds(parseTarget(r.target));
+        if (ids.includes(user.id)) {
+          mandatoryRequests.push({
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            deadline: r.deadline,
+            fields: safeParseFields(r.fields),
+          });
+        }
       }
     }
-  }
 
-  return {
-    blocked: needsStudentCode || mandatoryRequests.length > 0,
-    needsStudentCode,
-    codeHint: codeConfig.hint,
-    codePattern: codeConfig.pattern,
-    mandatoryRequests,
-  };
+    return {
+      blocked: needsStudentCode || mandatoryRequests.length > 0,
+      needsStudentCode,
+      codeHint: codeConfig.hint,
+      codePattern: codeConfig.pattern,
+      mandatoryRequests,
+    };
+  } catch (gateErr) {
+    console.warn("[getStudentGate] error:", gateErr);
+    return empty;
+  }
 }
