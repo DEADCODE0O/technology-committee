@@ -121,40 +121,40 @@ export function GuestRegisterForm({
   };
 
   return (
-    <div className="rounded-3xl border border-white/[0.1] bg-surface p-5 sm:p-6">
+    <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-gold/25 bg-gold/[0.08] text-gold">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-gold/25 bg-gold/15 text-gold">
           <UserRound className="h-4.5 w-4.5" />
         </span>
         <div>
-          <h3 className="text-base font-extrabold text-zinc-100">التسجيل كضيف</h3>
-          <p className="text-[11px] text-zinc-500">بدون حساب — بياناتك تظهر للإدارة في قائمة المشاركين</p>
+          <h3 className="text-base font-extrabold text-foreground">التسجيل كضيف</h3>
+          <p className="text-[11px] text-muted-foreground">بدون حساب — بياناتك تظهر للإدارة في قائمة المشاركين</p>
         </div>
       </div>
 
       <div className="mt-4 space-y-3.5">
         <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-zinc-200">الاسم الكامل <span className="text-gold">*</span></Label>
+          <Label className="text-sm font-bold text-foreground">الاسم الكامل <span className="text-gold">*</span></Label>
           <Input value={values.fullName} onChange={(e) => set("fullName", e.target.value)} placeholder="مثال: محمود عادل حسن" className="h-11 rounded-xl" />
-          {errors.fullName && <p className="text-xs text-red-400">{errors.fullName}</p>}
+          {errors.fullName && <p className="text-xs text-red-500">{errors.fullName}</p>}
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-sm font-bold text-zinc-200">رقم الهاتف <span className="text-gold">*</span></Label>
+            <Label className="text-sm font-bold text-foreground">رقم الهاتف <span className="text-gold">*</span></Label>
             <Input dir="ltr" type="tel" value={values.phone} onChange={(e) => set("phone", e.target.value)} placeholder="01xxxxxxxxx" className="h-11 rounded-xl text-start" />
-            {errors.phone && <p className="text-xs text-red-400">{errors.phone}</p>}
+            {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-bold text-zinc-200">البريد <span className="text-xs text-zinc-500">(اختياري)</span></Label>
+            <Label className="text-sm font-bold text-foreground">البريد <span className="text-xs text-muted-foreground">(اختياري)</span></Label>
             <Input dir="ltr" type="email" value={values.email} onChange={(e) => set("email", e.target.value)} placeholder="example@mail.com" className="h-11 rounded-xl text-start" />
-            {errors.email && <p className="text-xs text-red-400">{errors.email}</p>}
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-sm font-bold text-zinc-200">الفرقة <span className="text-gold">*</span></Label>
+            <Label className="text-sm font-bold text-foreground">الفرقة <span className="text-gold">*</span></Label>
             <Select dir="rtl" value={values.grade} onValueChange={(v) => set("grade", v)}>
               <SelectTrigger className="h-11 w-full rounded-xl"><SelectValue placeholder="اختر..." /></SelectTrigger>
               <SelectContent>
@@ -163,7 +163,7 @@ export function GuestRegisterForm({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-bold text-zinc-200">الجنس <span className="text-gold">*</span></Label>
+            <Label className="text-sm font-bold text-foreground">الجنس <span className="text-gold">*</span></Label>
             <Select dir="rtl" value={values.gender} onValueChange={(v) => set("gender", v)}>
               <SelectTrigger className="h-11 w-full rounded-xl"><SelectValue placeholder="اختر..." /></SelectTrigger>
               <SelectContent>
@@ -174,25 +174,25 @@ export function GuestRegisterForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-sm font-bold text-zinc-200">الشعبة <span className="text-gold">*</span></Label>
+          <Label className="text-sm font-bold text-foreground">الشعبة <span className="text-gold">*</span></Label>
           <Select dir="rtl" value={values.section} onValueChange={(v) => set("section", v)}>
             <SelectTrigger className="h-11 w-full rounded-xl"><SelectValue placeholder="اختر شعبتك..." /></SelectTrigger>
             <SelectContent>
               {SECTIONS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
-          {errors.section && <p className="text-xs text-red-400">{errors.section}</p>}
-          {errors.grade && <p className="text-xs text-red-400">{errors.grade}</p>}
-          {errors.gender && <p className="text-xs text-red-400">{errors.gender}</p>}
+          {errors.section && <p className="text-xs text-red-500">{errors.section}</p>}
+          {errors.grade && <p className="text-xs text-red-500">{errors.grade}</p>}
+          {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
         </div>
 
         {/* أسئلة النشاط الديناميكية */}
         {fields.length > 0 && (
-          <div className="space-y-4 border-t border-white/[0.06] pt-4">
-            <p className="text-xs font-bold text-gold/80">أسئلة خاصة بالنشاط:</p>
+          <div className="space-y-4 border-t border-border pt-4">
+            <p className="text-xs font-bold text-gold-deep dark:text-gold-light">أسئلة خاصة بالنشاط:</p>
             {fields.map((f) => (
               <div key={f.id} className="space-y-1.5">
-                <Label className="text-sm font-bold text-zinc-200">
+                <Label className="text-sm font-bold text-foreground">
                   {f.label} {f.required && <span className="text-gold">*</span>}
                 </Label>
                 {(f.type === "TEXT" || f.type === "NUMBER") && (
@@ -203,7 +203,7 @@ export function GuestRegisterForm({
                     rows={3}
                     value={(answers[f.id] as string) ?? ""}
                     onChange={(e) => setAnswer(f.id, e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600"
+                    className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground"
                   />
                 )}
                 {(f.type === "PHONE" || f.type === "EMAIL") && (
@@ -213,9 +213,9 @@ export function GuestRegisterForm({
                   <Input dir="ltr" type={f.type === "DATE" ? "date" : "time"} value={(answers[f.id] as string) ?? ""} onChange={(e) => setAnswer(f.id, e.target.value)} className="text-start" />
                 )}
                 {f.type === "FILE" && (
-                  <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                  <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
                     <div className="space-y-1">
-                      <p className="text-[11px] font-bold text-zinc-400">اختر ملفًا (PDF/صورة حتى 8MB):</p>
+                      <p className="text-[11px] font-bold text-muted-foreground">اختر ملفًا (PDF/صورة حتى 8MB):</p>
                       <Input
                         type="file"
                         accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -224,19 +224,19 @@ export function GuestRegisterForm({
                         className="h-10 rounded-lg file:me-2.5 file:rounded file:border-0 file:bg-gold/[0.12] file:px-2.5 file:py-1 file:text-xs file:font-bold file:text-gold-light"
                       />
                     </div>
-                    <div className="flex items-center gap-2 pt-1 border-t border-white/[0.05]">
-                      <span className="text-[11px] text-gold/80 font-bold shrink-0">أو رابط درايف:</span>
+                    <div className="flex items-center gap-2 pt-1 border-t border-border">
+                      <span className="text-[11px] text-muted-foreground font-bold shrink-0">أو رابط درايف:</span>
                       <Input
                         dir="ltr"
                         placeholder="https://drive.google.com/..."
                         value={typeof answers[f.id] === "string" && (answers[f.id] as string).startsWith("http") ? (answers[f.id] as string) : ""}
                         onChange={(e) => setAnswer(f.id, e.target.value)}
-                        className="h-8 text-xs bg-night/60"
+                        className="h-8 text-xs bg-background"
                       />
                     </div>
                     {fileBusy === f.id && <p className="text-[11px] text-gold">جاري رفع الملف...</p>}
                     {typeof answers[f.id] === "string" && answers[f.id] && (
-                      <a href={answers[f.id] as string} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:underline">
+                      <a href={answers[f.id] as string} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
                         ✓ تم تسجيل الملف/الرابط (اضغط للمعاينة)
                       </a>
                     )}
@@ -263,7 +263,7 @@ export function GuestRegisterForm({
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
           {pending ? "جاري التسجيل..." : isFull ? "انضم لقائمة الانتظار" : `احجز مقعدك كضيف${seatsLeft > 0 ? ` (${seatsLeft} متبقٍ)` : ""}`}
         </Button>
-        <p className="text-center text-[11px] leading-5 text-zinc-600">
+        <p className="text-center text-[11px] leading-5 text-muted-foreground">
           الضيوف يظهرون في قائمة المشاركين والحضور — النقاط والشارات خاصة بالأعضاء
         </p>
       </div>

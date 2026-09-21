@@ -218,31 +218,31 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
             )}
             <div className={`rounded-2xl border p-4 transition-colors ${
               state === "COMPLETED"
-                ? "border-white/[0.06] bg-surface"
+                ? "border-border bg-card"
                 : seatsLeft <= 5 && seatsLeft > 0
-                ? "border-rose-500/40 bg-rose-950/20 shadow-[0_0_15px_rgba(244,63,94,0.15)]"
-                : "border-white/[0.06] bg-surface"
+                ? "border-rose-500/40 bg-rose-50/60 dark:bg-rose-950/20 shadow-sm"
+                : "border-border bg-card"
             }`}>
               <div className="flex items-center gap-3">
                 <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  seatsLeft <= 5 && state !== "COMPLETED" ? "bg-rose-500/20 text-rose-400" : "bg-gold/[0.08] text-gold"
+                  seatsLeft <= 5 && state !== "COMPLETED" ? "bg-rose-500/20 text-rose-600 dark:text-rose-400" : "bg-gold/15 text-gold"
                 }`}>
                   <Users className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-zinc-500">المقاعد المتاحة</p>
-                  <p className="mt-0.5 text-sm font-black text-zinc-100">
+                  <p className="text-xs font-bold text-muted-foreground">المقاعد المتاحة</p>
+                  <p className="mt-0.5 text-sm font-black text-foreground">
                     {state === "COMPLETED" ? (
                       `${registeredCount} مسجلاً`
                     ) : (
                       <>
                         <span>{registeredCount} / {session.seats} مقعد</span>
                         {seatsLeft <= 5 && seatsLeft > 0 ? (
-                          <span className="ms-2 text-xs font-black text-rose-400 animate-pulse">(باقي {seatsLeft} فقط!)</span>
+                          <span className="ms-2 text-xs font-black text-rose-600 dark:text-rose-400 animate-pulse">(باقي {seatsLeft} فقط!)</span>
                         ) : seatsLeft === 0 ? (
-                          <span className="ms-2 text-xs font-black text-rose-400">(مكتمل)</span>
+                          <span className="ms-2 text-xs font-black text-rose-600 dark:text-rose-400">(مكتمل)</span>
                         ) : (
-                          <span className="ms-2 text-xs font-bold text-emerald-400">({seatsLeft} متبقٍ)</span>
+                          <span className="ms-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">({seatsLeft} متبقٍ)</span>
                         )}
                       </>
                     )}
@@ -346,35 +346,35 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         {/* ── العمود الجانبي: التسجيل ── */}
         <aside className="min-w-0 lg:sticky lg:top-28 lg:self-start">
           {state === "COMPLETED" ? (
-            <div className="rounded-3xl border border-white/[0.07] bg-surface p-6 text-center">
+            <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
               <Archive className="mx-auto h-10 w-10 text-gold/60" />
-              <p className="mt-3 text-lg font-extrabold text-zinc-100">انتهت هذه الجلسة</p>
-              <p className="mt-2 text-sm leading-7 text-zinc-400">
+              <p className="mt-3 text-lg font-extrabold text-foreground">انتهت هذه الجلسة</p>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">
                 {isCourse ? "محاضرات أخرى من نفس الكورس قد تُفتح قريبًا — تابع صفحة الكورس." : "موعد جديد من نفس النشاط قد يُفتح قريبًا — تابع صفحة الأنشطة."}
               </p>
-              <Link href={`/activities/${activity.id}`} className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.08] px-5 text-sm font-bold text-gold-light">
+              <Link href={`/activities/${activity.id}`} className="mt-4 inline-flex h-11 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.08] px-5 text-sm font-bold text-gold-deep dark:text-gold-light">
                 {isCourse ? "كل المحاضرات" : "صفحة النشاط"}
               </Link>
             </div>
           ) : myAttended ? (
-            <div className="rounded-3xl border border-emerald-400/25 bg-emerald-500/[0.06] p-6 text-center">
-              <CircleCheck className="mx-auto h-10 w-10 text-emerald-400" />
-              <p className="mt-3 text-lg font-extrabold text-zinc-100">حضورك مسجل ✓</p>
-              <p className="mt-2 text-sm leading-7 text-zinc-400">تم تسجيل حضورك في هذه الجلسة — استمر!</p>
+            <div className="rounded-3xl border border-emerald-400/25 bg-emerald-500/[0.06] p-6 text-center shadow-sm">
+              <CircleCheck className="mx-auto h-10 w-10 text-emerald-500" />
+              <p className="mt-3 text-lg font-extrabold text-emerald-800 dark:text-emerald-400">حضورك مسجل ✓</p>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">تم تسجيل حضورك في هذه الجلسة — استمر!</p>
             </div>
           ) : decision.reason === "NOT_YET_OPEN" ? (
-            <div className="rounded-3xl border border-white/[0.07] bg-surface p-6 text-center">
+            <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
               <Hourglass className="mx-auto h-10 w-10 text-gold/80" />
-              <p className="mt-3 text-lg font-extrabold text-zinc-100">التسجيل لم يُفتح بعد</p>
+              <p className="mt-3 text-lg font-extrabold text-foreground">التسجيل لم يُفتح بعد</p>
               {session.registrationOpensAt && (
-                <Countdown to={session.registrationOpensAt.toISOString()} prefix="يُفتح بعد" tone="gold" className="mt-2 block text-sm font-extrabold text-gold-light" />
+                <Countdown to={session.registrationOpensAt.toISOString()} prefix="يُفتح بعد" tone="gold" className="mt-2 block text-sm font-extrabold text-gold-deep dark:text-gold-light" />
               )}
             </div>
           ) : !decision.open && !canBypass ? (
-            <div className="rounded-3xl border border-white/[0.07] bg-surface p-6 text-center">
-              <Ban className="mx-auto h-10 w-10 text-zinc-500" />
-              <p className="mt-3 text-lg font-extrabold text-zinc-100">التسجيل {decision.reason === "FULL" ? "ممتلئ" : "مغلق"}</p>
-              <p className="mt-2 text-sm leading-7 text-zinc-400">
+            <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
+              <Ban className="mx-auto h-10 w-10 text-muted-foreground" />
+              <p className="mt-3 text-lg font-extrabold text-foreground">التسجيل {decision.reason === "FULL" ? "ممتلئ" : "مغلق"}</p>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">
                 {decision.reason === "FULL"
                   ? "المقاعد اكتملت — سجّل بياناتك لتضعك المنصة في قائمة الانتظار، أول إلغاء يرقّيك تلقائيًا."
                   : decision.message}
@@ -383,13 +383,13 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           ) : !user ? (
             <div className="space-y-5">
               {!session.allowGuests ? (
-                <div className="rounded-3xl border border-gold/20 bg-surface p-6 text-center">
+                <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
                   <LogIn className="mx-auto h-10 w-10 text-gold" />
-                  <p className="mt-3 text-lg font-extrabold text-zinc-100">عشان تحجز مقعدك</p>
-                  <p className="mt-2 text-sm leading-7 text-zinc-400">هذه الجلسة للأعضاء — لديك حساب؟ سجّل دخولك. جديد عندنا؟ حسابك يستغرق دقيقة.</p>
+                  <p className="mt-3 text-lg font-extrabold text-foreground">عشان تحجز مقعدك</p>
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">هذه الجلسة للأعضاء — لديك حساب؟ سجّل دخولك. جديد عندنا؟ حسابك يستغرق دقيقة.</p>
                   <div className="mt-5 flex flex-col gap-2.5">
                     <Link href={`/login?returnTo=/sessions/${session.id}`}
-                      className="flex h-12 items-center justify-center rounded-xl border border-gold/40 bg-gold/[0.08] text-sm font-bold text-gold-light transition-colors hover:bg-gold/[0.15]">
+                      className="flex h-12 items-center justify-center rounded-xl border border-gold/40 bg-gold/[0.08] text-sm font-bold text-gold-deep dark:text-gold-light transition-colors hover:bg-gold/[0.15]">
                       تسجيل الدخول
                     </Link>
                     <Link href={`/register?returnTo=/sessions/${session.id}`}
@@ -408,16 +408,16 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                 />
               )}
               {session.allowGuests && (
-                <div className="rounded-3xl border border-gold/20 bg-surface p-5 text-center">
-                  <p className="text-sm font-bold text-zinc-200">عضو عندنا أو عايز حساب؟</p>
-                  <p className="mt-1 text-[11px] leading-5 text-zinc-500">الأعضاء يجمعون نقاطًا وشارات ومستويات في كل نشاط</p>
+                <div className="rounded-3xl border border-border bg-card p-5 text-center shadow-sm">
+                  <p className="text-sm font-bold text-foreground">عضو عندنا أو عايز حساب؟</p>
+                  <p className="mt-1 text-[11px] leading-5 text-muted-foreground">الأعضاء يجمعون نقاطًا وشارات ومستويات في كل نشاط</p>
                   <div className="mt-3 flex flex-col gap-2">
                     <Link href={`/login?returnTo=/sessions/${session.id}`}
-                      className="flex h-10 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.06] text-xs font-bold text-gold-light transition-colors hover:bg-gold/[0.12]">
+                      className="flex h-10 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.06] text-xs font-bold text-gold-deep dark:text-gold-light transition-colors hover:bg-gold/[0.12]">
                       تسجيل الدخول
                     </Link>
                     <Link href={`/register?returnTo=/sessions/${session.id}`}
-                      className="flex h-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-xs font-bold text-zinc-300 transition-colors hover:border-gold/30">
+                      className="flex h-10 items-center justify-center rounded-xl border border-border bg-muted/30 text-xs font-bold text-foreground transition-colors hover:border-gold/30">
                       إنشاء حساب جديد
                     </Link>
                   </div>
@@ -427,7 +427,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
           ) : user.profile ? (
             <>
               {canBypass && !decision.open && (
-                <div className="mb-3 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3 text-xs leading-6 text-gold-light">
+                <div className="mb-3 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3 text-xs leading-6 text-gold-deep dark:text-gold-light">
                   أنت داخل بحساب إداري — يمكنك التسجيل متجاوزًا قيود الطلاب (هذه الجلسة تسمح بالتجاوز الإداري).
                 </div>
               )}
@@ -449,9 +449,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
               />
             </>
           ) : (
-            <div className="rounded-3xl border border-gold/20 bg-surface p-6 text-center">
-              <p className="text-lg font-extrabold text-zinc-100">أكمل بيانات حسابك أولًا</p>
-              <p className="mt-2 text-sm leading-7 text-zinc-400">لا يمكن التسجيل قبل وجود الاسم العربي والفرقة والشعبة والجنس والهاتف في ملفك.</p>
+            <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
+              <p className="text-lg font-extrabold text-foreground">أكمل بيانات حسابك أولًا</p>
+              <p className="mt-2 text-sm leading-7 text-muted-foreground">لا يمكن التسجيل قبل وجود الاسم العربي والفرقة والشعبة والجنس والهاتف في ملفك.</p>
               <Link href="/profile/complete" className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-b from-gold-light to-gold px-6 text-sm font-extrabold text-night">
                 إكمال البيانات
               </Link>
@@ -533,13 +533,13 @@ function InfoCard({
   icon, label, value, className,
 }: { icon: React.ReactNode; label: string; value: string; className?: string }) {
   return (
-    <div className={`flex items-center gap-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-surface px-4 py-3.5 shadow-[0_2px_10px_-5px_rgba(32,29,25,0.08)] dark:shadow-none ${className ?? ""}`}>
+    <div className={`flex items-center gap-3.5 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm ${className ?? ""}`}>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 dark:border-gold/20 bg-gold/[0.08] dark:bg-gold/[0.07] text-gold">
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] font-bold text-zinc-600 dark:text-zinc-500">{label}</p>
-        <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-200">{value}</p>
+        <p className="text-[11px] font-bold text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-bold text-foreground">{value}</p>
       </div>
     </div>
   );

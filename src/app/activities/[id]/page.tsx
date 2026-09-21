@@ -175,26 +175,26 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
           )}
 
           {/* الوصف */}
-          <section className="mt-6 rounded-3xl border border-white/[0.06] bg-surface p-5 sm:p-6">
-            <h2 className="mb-3 text-base font-extrabold text-gold-light">عن {typeWord === "كورس" ? "الكورس" : typeWord === "فعالية" ? "الفعالية" : "الورشة"}</h2>
-            <p className="whitespace-pre-line text-sm leading-8 text-zinc-300">{activity.description}</p>
+          <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+            <h2 className="mb-3 text-base font-extrabold text-gold-deep dark:text-gold-light">عن {typeWord === "كورس" ? "الكورس" : typeWord === "فعالية" ? "الفعالية" : "الورشة"}</h2>
+            <p className="whitespace-pre-line text-sm leading-8 text-foreground/90 dark:text-zinc-200">{activity.description}</p>
             {activity.presenter && (
-              <p className="mt-4 border-t border-white/[0.06] pt-4 text-sm font-bold text-zinc-200">
-                المقدم: <span className="text-gold-light">{activity.presenter}</span>
+              <p className="mt-4 border-t border-border pt-4 text-sm font-bold text-foreground">
+                المقدم: <span className="text-gold-deep dark:text-gold-light">{activity.presenter}</span>
               </p>
             )}
           </section>
 
           {/* الجلسات — كل محاضرة تعامل معاملة الورشة */}
           <section className="mt-6">
-            <h2 className="mb-3 text-base font-extrabold text-gold-light">
+            <h2 className="mb-3 text-base font-extrabold text-foreground">
               {activity.type === "COURSE" ? `المحاضرات (${sessions.length})` : sessions.length > 1 ? `المواعيد (${sessions.length})` : "موعد الإقامة"}
             </h2>
 
             {sessions.length === 0 && (
-              <div className="rounded-3xl border border-white/[0.07] bg-surface p-8 text-center">
-                <p className="text-sm font-bold text-zinc-300">{activity.teaser ?? "لم يُعلن الموعد بعد"}</p>
-                <p className="mt-1 text-xs text-zinc-500">تابعنا — أول ما يُفتح التسجيل هتلاقيه هنا</p>
+              <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+                <p className="text-sm font-bold text-foreground">{activity.teaser ?? "لم يُعلن الموعد بعد"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">تابعنا — أول ما يُفتح التسجيل هتلاقيه هنا</p>
               </div>
             )}
 
@@ -205,20 +205,20 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
             ].map(({ list, title }) =>
               list.length > 0 ? (
                 <div key={title} className="mb-5">
-                  <h3 className="mb-2.5 text-sm font-extrabold text-zinc-800 dark:text-zinc-300">{title}</h3>
+                  <h3 className="mb-2.5 text-sm font-extrabold text-foreground">{title}</h3>
                   <div className="space-y-2.5">
                     {list.map((s) => (
                       <Link key={s.id} href={`/sessions/${s.id}`}
-                        className="group flex flex-wrap items-center gap-3 rounded-2xl border border-black/[0.07] dark:border-white/[0.07] bg-surface p-4 shadow-[0_2px_10px_-4px_rgba(32,29,25,0.08)] dark:shadow-none transition-all hover:border-emerald-400/60 dark:hover:border-gold/30 hover:shadow-[0_10px_28px_-10px_rgba(5,120,85,0.22)] dark:hover:shadow-none">
+                        className="group flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-emerald-400/60 dark:hover:border-gold/30 hover:shadow-[0_10px_28px_-10px_rgba(5,120,85,0.22)] dark:hover:shadow-none">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-extrabold text-zinc-900 dark:text-zinc-100">
+                          <p className="text-sm font-extrabold text-foreground">
                             {activity.type === "COURSE" ? `${s.order}. ${s.label}` : s.label}
                           </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-600 dark:text-zinc-500">
-                            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {fmtDate(s.startsAt)}</span>
-                            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {fmtTime(s.startsAt)}</span>
-                            {s.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {s.location}</span>}
-                            <span className="inline-flex items-center gap-1"><Users className="h-3 w-3" /> {s.registered} / {s.seats}</span>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3 text-gold" /> {fmtDate(s.startsAt)}</span>
+                            <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3 text-gold" /> {fmtTime(s.startsAt)}</span>
+                            {s.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3 text-gold" /> {s.location}</span>}
+                            <span className="inline-flex items-center gap-1"><Users className="h-3 w-3 text-gold" /> {s.registered} / {s.seats}</span>
                           </div>
                           {s.state !== "COMPLETED" && (
                             <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -238,14 +238,14 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
                                   مكتمل — قائمة انتظار
                                 </span>
                               ) : (
-                                <span className="rounded-full bg-black/[0.05] dark:bg-white/[0.06] px-2.5 py-1 text-[10px] font-extrabold text-zinc-600 dark:text-zinc-400">{s.decision.message}</span>
+                                <span className="rounded-full bg-muted border border-border px-2.5 py-1 text-[10px] font-extrabold text-muted-foreground">{s.decision.message}</span>
                               )}
                             </div>
                           )}
                         </div>
                         <span className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                           s.state === "COMPLETED"
-                            ? "border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] text-zinc-500 dark:text-zinc-400"
+                            ? "border border-border bg-muted/40 text-muted-foreground"
                             : s.decision.open
                             ? "bg-gradient-to-b from-emerald-400 to-emerald-600 text-white shadow-[0_6px_20px_-4px_rgba(5,150,105,0.55)] group-hover:shadow-[0_9px_28px_-5px_rgba(5,150,105,0.7)] group-hover:from-emerald-300 group-hover:to-emerald-500"
                             : s.decision.reason === "FULL"
@@ -265,29 +265,29 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
 
         {/* ── الجانبي ── */}
         <aside className="min-w-0 space-y-4 lg:sticky lg:top-28 lg:self-start">
-          <div className="rounded-3xl border border-white/[0.07] bg-surface p-5">
-            <p className="text-xs font-bold text-zinc-500">النوع</p>
-            <p className="mt-1 text-sm font-extrabold text-zinc-100">{ACTIVITY_TYPE_ICONS[activity.type]} {typeWord}</p>
+          <div className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+            <p className="text-xs font-bold text-muted-foreground">النوع</p>
+            <p className="mt-1 text-sm font-extrabold text-foreground">{ACTIVITY_TYPE_ICONS[activity.type]} {typeWord}</p>
             {activity.program && (
               <>
-                <p className="mt-3 text-xs font-bold text-zinc-500">البرنامج</p>
-                <Link href={`/activities?program=${activity.program.id}`} className="mt-1 block text-sm font-extrabold text-gold-light hover:underline">
+                <p className="mt-3 text-xs font-bold text-muted-foreground">البرنامج</p>
+                <Link href={`/activities?program=${activity.program.id}`} className="mt-1 block text-sm font-extrabold text-gold-deep dark:text-gold-light hover:underline">
                   {activity.program.icon} {activity.program.name}
                 </Link>
               </>
             )}
             {activity.level && (
               <>
-                <p className="mt-3 text-xs font-bold text-zinc-500">المستوى</p>
-                <p className="mt-1 text-sm font-extrabold text-zinc-100">{ACTIVITY_LEVEL_LABELS[activity.level]}</p>
+                <p className="mt-3 text-xs font-bold text-muted-foreground">المستوى</p>
+                <p className="mt-1 text-sm font-extrabold text-foreground">{ACTIVITY_LEVEL_LABELS[activity.level]}</p>
               </>
             )}
-            <p className="mt-3 text-xs font-bold text-zinc-500">{activity.type === "COURSE" ? "المحاضرات" : "المواعيد"}</p>
-            <p className="mt-1 text-sm font-extrabold text-zinc-100">{sessions.length}</p>
+            <p className="mt-3 text-xs font-bold text-muted-foreground">{activity.type === "COURSE" ? "المحاضرات" : "المواعيد"}</p>
+            <p className="mt-1 text-sm font-extrabold text-foreground">{sessions.length}</p>
             {sessions.length > 0 && (
               <>
-                <p className="mt-3 text-xs font-bold text-zinc-500">إجمالي التسجيلات</p>
-                <p className="mt-1 text-sm font-extrabold text-zinc-100">{totalRegistered} / {totalSeats} مقعد</p>
+                <p className="mt-3 text-xs font-bold text-muted-foreground">إجمالي التسجيلات</p>
+                <p className="mt-1 text-sm font-extrabold text-foreground">{totalRegistered} / {totalSeats} مقعد</p>
               </>
             )}
           </div>

@@ -177,12 +177,12 @@ export function SessionRegisterForm({
   };
 
   return (
-    <div className="rounded-3xl border border-black/[0.06] dark:border-white/[0.06] bg-surface p-5 sm:p-6 shadow-[0_6px_20px_-12px_rgba(32,29,25,0.15)] dark:shadow-none">
-      <h3 className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100">التسجيل في هذه الجلسة</h3>
+    <div className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+      <h3 className="text-lg font-extrabold text-foreground">التسجيل في هذه الجلسة</h3>
 
       {/* بياناتك — تُجلب تلقائيًا */}
-      <div className="mt-4 rounded-2xl border border-black/[0.05] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] p-4">
-        <p className="mb-3 text-xs font-bold text-gold-deep dark:text-gold/80">بياناتك — جاهزة تلقائيًا من حسابك:</p>
+      <div className="mt-4 rounded-2xl border border-border bg-muted/40 p-4">
+        <p className="mb-3 text-xs font-bold text-gold-deep dark:text-gold-light">بياناتك — جاهزة تلقائيًا من حسابك:</p>
         <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <InfoRow label="الاسم" value={profile.fullName} />
           <InfoRow label="الهاتف" value={profile.phone} />
@@ -194,10 +194,10 @@ export function SessionRegisterForm({
       {/* أسئلة الورشة الديناميكية */}
       {fields.length > 0 && (
         <div className="mt-5 space-y-5">
-          <p className="text-xs font-bold text-gold/80">أسئلة خاصة بالتسجيل:</p>
+          <p className="text-xs font-bold text-gold-deep dark:text-gold-light">أسئلة خاصة بالتسجيل:</p>
           {fields.map((f) => (
             <div key={f.id} className="space-y-2">
-              <Label className="text-sm font-bold text-zinc-200">
+              <Label className="text-sm font-bold text-foreground">
                 {f.label} {f.required && <span className="text-gold">*</span>}
               </Label>
 
@@ -221,9 +221,9 @@ export function SessionRegisterForm({
                 <Input type="time" value={(answers[f.id] as string) ?? ""} onChange={(e) => setAnswer(f.id, e.target.value)} />
               )}
               {f.type === "FILE" && (
-                <div className="space-y-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+                <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
                   <div className="space-y-1">
-                    <p className="text-[11px] font-bold text-zinc-400">اختر ملفًا (PDF/صورة حتى 8MB):</p>
+                    <p className="text-[11px] font-bold text-muted-foreground">اختر ملفًا (PDF/صورة حتى 8MB):</p>
                     <Input
                       type="file"
                       accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -232,19 +232,19 @@ export function SessionRegisterForm({
                       className="h-10 rounded-lg file:me-2.5 file:rounded file:border-0 file:bg-gold/[0.12] file:px-2.5 file:py-1 file:text-xs file:font-bold file:text-gold-light"
                     />
                   </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-white/[0.05]">
-                    <span className="text-[11px] text-gold/80 font-bold shrink-0">أو رابط درايف:</span>
+                  <div className="flex items-center gap-2 pt-1 border-t border-border">
+                    <span className="text-[11px] text-muted-foreground font-bold shrink-0">أو رابط درايف:</span>
                     <Input
                       dir="ltr"
                       placeholder="https://drive.google.com/..."
                       value={typeof answers[f.id] === "string" && (answers[f.id] as string).startsWith("http") ? (answers[f.id] as string) : ""}
                       onChange={(e) => setAnswer(f.id, e.target.value)}
-                      className="h-8 text-xs bg-night/60"
+                      className="h-8 text-xs bg-background"
                     />
                   </div>
                   {fileBusy === f.id && <p className="text-[11px] text-gold">جاري رفع الملف...</p>}
                   {typeof answers[f.id] === "string" && answers[f.id] && (
-                    <a href={answers[f.id] as string} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:underline">
+                    <a href={answers[f.id] as string} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
                       ✓ تم تسجيل الملف/الرابط (اضغط للمعاينة)
                     </a>
                   )}
@@ -269,7 +269,7 @@ export function SessionRegisterForm({
               {f.type === "CHECKBOX" && f.options.length > 0 && (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {f.options.map((o) => (
-                    <label key={o} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5 text-sm text-zinc-200 transition-colors hover:border-gold/25">
+                    <label key={o} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-muted/30 px-3.5 py-2.5 text-sm text-foreground transition-colors hover:border-gold/40">
                       <Checkbox
                         checked={((answers[f.id] as string[]) ?? []).includes(o)}
                         onCheckedChange={(chk) => {
@@ -303,9 +303,9 @@ export function SessionRegisterForm({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg bg-black/[0.03] dark:bg-white/[0.03] px-3 py-2">
-      <span className="text-xs text-zinc-600 dark:text-zinc-500">{label}</span>
-      <span className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-200">{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/50 px-3 py-2 border border-border/50">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="truncate text-sm font-bold text-foreground">{value}</span>
     </div>
   );
 }

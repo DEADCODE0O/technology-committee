@@ -134,16 +134,16 @@ export function Countdown({
   // ═══════════════════════════════════════════════════════════════
   if (activeVariant === "blocks" || activeVariant === "banner") {
     const cardTheme = isUrgent
-      ? "border-rose-300/70 dark:border-rose-500/40 bg-gradient-to-b from-rose-50 via-white to-white dark:from-rose-950/30 dark:via-night/90 dark:to-night/90 shadow-[0_14px_35px_-12px_rgba(190,18,60,0.18)] dark:shadow-[0_0_35px_rgba(244,63,94,0.18)]"
+      ? "border-rose-300/80 dark:border-rose-500/40 bg-gradient-to-b from-rose-50 via-white to-white dark:from-rose-950/40 dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(190,18,60,0.18)] dark:shadow-[0_0_35px_rgba(244,63,94,0.18)]"
       : isSuccess
-      ? "border-emerald-300/70 dark:border-emerald-500/40 bg-gradient-to-b from-emerald-50 via-white to-white dark:from-emerald-950/25 dark:via-night/90 dark:to-night/90 shadow-[0_14px_35px_-12px_rgba(5,120,85,0.16)] dark:shadow-[0_0_35px_rgba(16,185,129,0.15)]"
-      : "border-gold/40 dark:border-gold/35 bg-gradient-to-b from-[#fbf7ec] via-white to-white dark:from-gold/[0.08] dark:via-night/90 dark:to-night/90 shadow-[0_14px_35px_-12px_rgba(150,113,31,0.2)] dark:shadow-[0_0_35px_rgba(201,164,92,0.15)]";
+      ? "border-emerald-300/80 dark:border-emerald-500/40 bg-gradient-to-b from-emerald-50 via-white to-white dark:from-emerald-950/35 dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(5,120,85,0.16)] dark:shadow-[0_0_35px_rgba(16,185,129,0.15)]"
+      : "border-amber-300/80 dark:border-gold/35 bg-gradient-to-b from-amber-50/60 via-white to-white dark:from-gold/[0.1] dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(150,113,31,0.2)] dark:shadow-[0_0_35px_rgba(201,164,92,0.15)]";
 
     const digitBoxTheme = isUrgent
-      ? "border-rose-200 dark:border-rose-500/30 bg-gradient-to-b from-white to-rose-50 text-rose-600 dark:bg-black/60 dark:text-rose-300 dark:[text-shadow:0_0_15px_rgba(244,63,94,0.45)]"
+      ? "border-rose-300 bg-white text-rose-700 dark:border-rose-500/40 dark:bg-zinc-900/90 dark:text-rose-300 dark:[text-shadow:0_0_15px_rgba(244,63,94,0.5)] shadow-sm"
       : isSuccess
-      ? "border-emerald-200 dark:border-emerald-500/30 bg-gradient-to-b from-white to-emerald-50 text-emerald-600 dark:bg-black/60 dark:text-emerald-300 dark:[text-shadow:0_0_15px_rgba(16,185,129,0.45)]"
-      : "border-gold/30 dark:border-gold/30 bg-gradient-to-b from-white to-[#faf5e6] text-gold-deep dark:bg-black/60 dark:text-gold-pale dark:[text-shadow:0_0_15px_rgba(201,164,92,0.35)]";
+      ? "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/40 dark:bg-zinc-900/90 dark:text-emerald-300 dark:[text-shadow:0_0_15px_rgba(16,185,129,0.5)] shadow-sm"
+      : "border-amber-300 bg-white text-amber-900 dark:border-gold/40 dark:bg-zinc-900/90 dark:text-amber-200 dark:[text-shadow:0_0_15px_rgba(201,164,92,0.5)] shadow-sm";
 
     const badgeLabel = isLess3h
       ? "🔥 فرصة أخيرة — يغلق التسجيل بعد قليل!"
@@ -168,14 +168,14 @@ export function Countdown({
                 <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
               </span>
             ) : (
-              <Clock className="h-4 w-4 text-gold" />
+              <Clock className="h-4 w-4 text-amber-700 dark:text-gold" />
             )}
-            <span className={`text-xs font-black tracking-wide ${isUrgent ? "text-rose-600 dark:text-rose-300" : isSuccess ? "text-emerald-700 dark:text-emerald-300" : "text-gold-deep dark:text-gold-light"}`}>
+            <span className={`text-xs font-black tracking-wide ${isUrgent ? "text-rose-700 dark:text-rose-300" : isSuccess ? "text-emerald-800 dark:text-emerald-300" : "text-amber-900 dark:text-gold-light"}`}>
               {badgeLabel}
             </span>
           </div>
 
-          <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.04] px-2.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:text-zinc-400">
+          <span className="rounded-full bg-black/[0.04] dark:bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-bold text-zinc-700 dark:text-zinc-300">
             عدّاد حي لحظي
           </span>
         </div>
@@ -189,12 +189,12 @@ export function Countdown({
         </div>
 
         {/* سطر الدعم التسويقي */}
-        <div className="mt-3.5 flex items-center justify-between border-t border-black/[0.06] dark:border-white/[0.06] pt-3 text-[11px] text-zinc-600 dark:text-zinc-400">
-          <span className="inline-flex items-center gap-1.5 font-bold text-zinc-700 dark:text-zinc-300">
-            <Zap className={`h-3.5 w-3.5 ${isUrgent ? "text-rose-500 dark:text-rose-400" : "text-gold"}`} />
+        <div className="mt-3.5 flex items-center justify-between border-t border-black/[0.08] dark:border-white/[0.08] pt-3 text-[11px] text-zinc-600 dark:text-zinc-400">
+          <span className="inline-flex items-center gap-1.5 font-bold text-zinc-800 dark:text-zinc-200">
+            <Zap className={`h-3.5 w-3.5 ${isUrgent ? "text-rose-600 dark:text-rose-400" : "text-amber-600 dark:text-gold"}`} />
             {subtitle || "المقاعد محدودة وتُحجز بأسبقية التسجيل"}
           </span>
-          <span className="text-[10px] text-zinc-500 dark:text-zinc-500">ينتهي تلقائياً</span>
+          <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-semibold">ينتهي تلقائياً</span>
         </div>
       </div>
     );
@@ -205,10 +205,10 @@ export function Countdown({
   // ═══════════════════════════════════════════════════════════════
   if (activeVariant === "pill") {
     const pillTheme = isUrgent
-      ? "border-rose-300/80 dark:border-rose-500/40 bg-gradient-to-r from-rose-50 to-rose-100 text-rose-600 dark:from-rose-950/40 dark:via-red-900/30 dark:to-rose-950/40 dark:text-rose-300 shadow-[0_4px_14px_-4px_rgba(190,18,60,0.25)] dark:shadow-[0_0_20px_rgba(244,63,94,0.22)]"
+      ? "border-rose-400 dark:border-rose-500/40 bg-rose-100/90 text-rose-800 dark:from-rose-950/60 dark:to-rose-950/60 dark:bg-rose-950/60 dark:text-rose-300 shadow-sm"
       : isSuccess
-      ? "border-emerald-300/80 dark:border-emerald-500/40 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700 dark:from-emerald-950/40 dark:via-teal-900/30 dark:to-emerald-950/40 dark:text-emerald-300 shadow-[0_4px_14px_-4px_rgba(5,120,85,0.25)] dark:shadow-[0_0_20px_rgba(16,185,129,0.18)]"
-      : "border-gold/45 dark:border-gold/30 bg-gradient-to-r from-[#faf5e6] to-[#f5edda] text-gold-deep dark:from-gold/[0.12] dark:via-gold/[0.05] dark:to-gold/[0.12] dark:text-gold-light shadow-[0_4px_14px_-4px_rgba(150,113,31,0.22)] dark:shadow-[0_0_20px_rgba(201,164,92,0.15)]";
+      ? "border-emerald-400 dark:border-emerald-500/40 bg-emerald-100/90 text-emerald-800 dark:from-emerald-950/60 dark:to-emerald-950/60 dark:bg-emerald-950/60 dark:text-emerald-300 shadow-sm"
+      : "border-amber-400/80 dark:border-gold/40 bg-amber-100/90 text-amber-950 dark:bg-gold/15 dark:text-amber-200 shadow-sm";
 
     const formattedTime = d > 0 ? `${d}ي ${pad(h)}س ${pad(m)}د ${pad(s)}ث` : `${pad(h)}:${pad(m)}:${pad(s)}`;
 
@@ -228,10 +228,10 @@ export function Countdown({
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
           </span>
         ) : (
-          <span className="h-1.5 w-1.5 rounded-full bg-gold" />
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-600 dark:bg-gold" />
         )}
 
-        {prefix && <span className="text-zinc-700 dark:text-zinc-300 font-bold">{prefix}:</span>}
+        {prefix && <span className="font-bold text-zinc-900 dark:text-zinc-100">{prefix}:</span>}
         <span className="font-mono tracking-wider">{formattedTime}</span>
       </span>
     );
@@ -241,10 +241,10 @@ export function Countdown({
   // 3) نمط السطر المطور (Inline High-Impact) — افتراضي أنيق
   // ═══════════════════════════════════════════════════════════════
   const inlineTheme = isUrgent
-    ? "border-rose-300/70 dark:border-rose-500/40 bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-300 shadow-[0_3px_10px_-3px_rgba(190,18,60,0.2)] dark:shadow-[0_0_15px_rgba(244,63,94,0.2)]"
+    ? "border-rose-400 dark:border-rose-500/40 bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 shadow-sm"
     : isSuccess
-    ? "border-emerald-300/70 dark:border-emerald-500/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/25 dark:text-emerald-300 shadow-[0_3px_10px_-3px_rgba(5,120,85,0.2)] dark:shadow-[0_0_15px_rgba(16,185,129,0.18)]"
-    : "border-gold/40 dark:border-gold/30 bg-[#faf5e6] text-gold-deep dark:bg-gold/[0.08] dark:text-gold-light shadow-[0_3px_10px_-3px_rgba(150,113,31,0.18)] dark:shadow-[0_0_15px_rgba(201,164,92,0.12)]";
+    ? "border-emerald-400 dark:border-emerald-500/40 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300 shadow-sm"
+    : "border-amber-400/80 dark:border-gold/30 bg-amber-50 text-amber-950 dark:bg-gold/[0.12] dark:text-amber-200 shadow-sm";
 
   const clockText = d > 0 ? `${d} يوم · ${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(h)}:${pad(m)}:${pad(s)}`;
 
@@ -254,17 +254,17 @@ export function Countdown({
       suppressHydrationWarning
     >
       {isUrgent ? (
-        <Flame className="h-3.5 w-3.5 animate-pulse text-rose-500 dark:text-rose-400" />
+        <Flame className="h-3.5 w-3.5 animate-pulse text-rose-600 dark:text-rose-400" />
       ) : isSuccess ? (
         <span className="relative flex h-2 w-2">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
         </span>
       ) : (
-        <Clock className="h-3 w-3 text-gold" />
+        <Clock className="h-3 w-3 text-amber-700 dark:text-gold" />
       )}
 
-      {prefix ? <span className="opacity-90">{prefix}:</span> : null}
+      {prefix ? <span className="opacity-90 font-bold">{prefix}:</span> : null}
       <span className="font-mono tracking-wider">{clockText}</span>
     </span>
   );
@@ -289,10 +289,10 @@ function DigitBlock({
       <span className={`font-mono text-2xl sm:text-3xl font-black tracking-wider ${pulse ? "animate-pulse" : ""}`}>
         {pad(value)}
       </span>
-      <span className="mt-0.5 text-[11px] font-extrabold tracking-wide text-zinc-700 dark:text-zinc-300">
+      <span className="mt-0.5 text-[11px] font-black tracking-wide text-zinc-900 dark:text-zinc-100">
         {label}
       </span>
-      <span className="text-[8px] font-latin font-bold tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
+      <span className="text-[8px] font-latin font-black tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
         {sublabel}
       </span>
     </div>

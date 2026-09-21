@@ -11,12 +11,10 @@ import { getStudentProgress } from "@/lib/progress";
 import { getStudentRank, getAvatarFramesVisible, getCharmHeartsVisible } from "@/lib/platform";
 import { getStudentNotifications } from "@/lib/notifications";
 import { getSocialCounters } from "@/actions/messaging";
-import { getStudentFeed } from "@/actions/student-posts";
 import { UserCharmHeart } from "@/components/ui/user-charm-heart";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { getAccountFlair } from "@/lib/account-style";
 import { ProfileAvatarInteractive } from "@/components/profile/profile-avatar-interactive";
-import { StudentPostCard } from "@/components/community/student-post-card";
 import { GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +41,6 @@ export default async function ProfilePage() {
     heartsVisible,
     notifications,
     socialCounters,
-    myPosts,
   ] = await Promise.all([
     db.user.findUnique({
       where: { id: user.id },
@@ -93,13 +90,12 @@ export default async function ProfilePage() {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 20,
     }),
     getAvatarFramesVisible(),
     getCharmHeartsVisible(),
     getStudentNotifications(user),
     getSocialCounters(user.id),
-    getStudentFeed({ userId: user.id }),
   ]);
 
   const activeQuests = questRows.filter((q) => q.quest.active);
@@ -406,60 +402,118 @@ export default async function ProfilePage() {
           )}
         </section>
 
-        {/* ── 3. منشوراتي في المجتمع (وتحتيهم البوستات الي نزلهم) ── */}
-        <section className="space-y-4 pt-2" aria-labelledby="sec-student-posts">
+        {/* ── 3. سجل مشاركاتي في الورش والكورسات 🧭 ── */}
+        <section className="space-y-4 pt-2" aria-labelledby="sec-student-workshops">
           <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30">
-                <MessageSquare className="h-4 w-4" />
+                <CalendarDays className="h-4 w-4" />
               </div>
               <div>
-                <h2 id="sec-student-posts" className="text-base sm:text-lg font-black text-foreground">
-                  منشوراتي في المجتمع ({myPosts.length})
+                <h2 id="sec-student-workshops" className="text-base sm:text-lg font-black text-foreground">
+                  سجل مشاركاتي في الورش والكورسات ({attendedHistory.length}) 🧭
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  كافة المنشورات والأفكار والأسئلة التي شاركتها مع زملائك
+                  كافة الجلسات والورش التدريبية التي قمت بالتسجيل فيها وحضورها
                 </p>
               </div>
             </div>
 
             <Link
-              href="/panel"
+              href="/activities"
               className="inline-flex items-center gap-1.5 rounded-2xl bg-gold/15 border border-gold/30 px-3.5 py-2 text-xs font-black text-gold hover:bg-gold hover:text-night transition-all shadow-sm shrink-0"
             >
-              <PenSquare className="h-3.5 w-3.5" />
-              نشر بوست جديد
+              <Sparkles className="h-3.5 w-3.5" />
+              استكشف الورش المتاحة
             </Link>
           </div>
 
-          {/* قائمة المنشورات الخاصة بالطالب */}
-          {myPosts.length > 0 ? (
-            <div className="space-y-4">
-              {myPosts.map((post) => (
-                <StudentPostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={user.id}
-                  currentUserRole={user.role}
-                />
-              ))}
+          {/* قائمة الورش والجلسات الخاصة بالطالب */}
+          {attendedHistory.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {attendedHistory.map((reg) => {
+                const isAttended = reg.attendance?.some((a: { present: boolean }) => a.present);
+                const isPast = new Date(reg.session.startsAt) < new Date();
+
+                return (
+                  <div
+                    key={reg.id}
+                    className="flex flex-col justify-between rounded-3xl border border-border bg-card/80 p-5 shadow-sm space-y-3 hover:border-gold/40 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="rounded-full bg-gold/10 border border-gold/25 px-2.5 py-0.5 text-[10px] font-black text-gold">
+                          {reg.session.activity.title}
+                        </span>
+
+                        {isAttended ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            تم الحضور ✓
+                          </span>
+                        ) : reg.status === "WAITLISTED" ? (
+                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-400">
+                            قائمة الانتظار
+                          </span>
+                        ) : isPast ? (
+                          <span className="rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-extrabold text-muted-foreground">
+                            انتهت
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 text-[10px] font-black text-blue-600 dark:text-blue-400">
+                            مسجل ⏳
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-sm font-extrabold text-foreground line-clamp-1">
+                        {reg.session.title}
+                      </h3>
+
+                      <p className="mt-1 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                        <CalendarDays className="h-3.5 w-3.5 text-gold shrink-0" />
+                        {new Intl.DateTimeFormat("ar-EG", {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        }).format(new Date(reg.session.startsAt))}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-border flex items-center justify-between">
+                      <Link
+                        href={`/sessions/${reg.session.id}`}
+                        className="inline-flex items-center gap-1 text-xs font-black text-gold hover:underline"
+                      >
+                        تفاصيل الجلسة
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </Link>
+
+                      <span className="text-[10px] text-muted-foreground">
+                        رقم التسجيل: #{reg.id.slice(-5)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card/40 p-8 text-center space-y-3">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                <PenSquare className="h-6 w-6 text-gold" />
+                <CalendarDays className="h-6 w-6 text-gold" />
               </div>
-              <h3 className="text-sm font-black text-foreground">لم تنشر أي منشورات في المجتمع بعد</h3>
+              <h3 className="text-sm font-black text-foreground">لم تسجل في أي ورش أو كورسات بعد</h3>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                شارك أفكارك، إنجازاتك التقنية، أو اسأل زملاءك في الكلية لتحصل على تفاعلات ونقاط خبرة إضافية!
+                استكشف الورش والجلسات التدريبية المتاحة الآن، بادر بحجز مقعدك لتطوير مهاراتك التقنية وجمع النقاط والشارات!
               </p>
               <div className="pt-2">
                 <Link
-                  href="/panel"
+                  href="/activities"
                   className="inline-flex items-center gap-2 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow-md"
                 >
                   <Sparkles className="h-4 w-4" />
-                  انتقل للمجتمع وشارك أول منشور
+                  استكشف الورش والكورسات المتاحة 🧭
                 </Link>
               </div>
             </div>

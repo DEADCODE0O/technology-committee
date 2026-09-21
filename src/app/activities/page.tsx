@@ -351,9 +351,9 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
       className={`group overflow-hidden rounded-3xl border transition-all hover:-translate-y-1 ${
         state === "OPEN"
           ? isAlmostFull
-            ? "border-rose-500/30 bg-surface hover:border-rose-500/50 hover:shadow-[0_20px_50px_-20px_rgba(244,63,94,0.3)]"
-            : "border-emerald-500/25 bg-surface hover:border-emerald-500/45 hover:shadow-[0_20px_50px_-20px_rgba(16,185,129,0.25)]"
-          : "border-white/[0.07] bg-surface hover:border-gold/30 hover:shadow-[0_20px_50px_-20px_rgba(201,164,92,0.25)]"
+            ? "border-rose-500/30 bg-card hover:border-rose-500/50 hover:shadow-[0_20px_50px_-20px_rgba(244,63,94,0.3)]"
+            : "border-emerald-500/25 bg-card hover:border-emerald-500/45 hover:shadow-[0_20px_50px_-20px_rgba(16,185,129,0.25)]"
+          : "border-border bg-card hover:border-gold/30 hover:shadow-[0_20px_50px_-20px_rgba(201,164,92,0.25)]"
       }`}>
       <div className="relative aspect-[16/9] overflow-hidden">
         {useNextImage ? (
@@ -423,7 +423,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
       <div className="p-4">
         {s ? (
           state === "PAST" ? (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-foreground">
               أُقيمت {fmtDate(s.startsAt)} · {registered} مشاركًا{a.sessions.length > 1 ? ` · ${a.sessions.length} ${a.type === "COURSE" ? "محاضرات" : "مواعيد"}` : ""}
             </p>
           ) : (
@@ -434,19 +434,19 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
                   <Countdown to={countdown.to} prefix={countdown.prefix} tone={countdown.tone} variant="pill" className="w-full justify-center" />
                 </div>
               ) : isTeaser ? (
-                <p className="text-xs font-bold text-gold/90">التفاصيل قريبًا — تابعنا 👀</p>
+                <p className="text-xs font-bold text-gold-deep dark:text-gold-light">التفاصيل قريبًا — تابعنا 👀</p>
               ) : null}
 
               {/* شريط المقاعد والنسبة بالألوان (أخضر / أحمر عند الاقتراب) */}
               {seats > 0 && state === "OPEN" && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className={`font-black ${isAlmostFull ? "text-rose-400" : "text-emerald-400"}`}>
+                    <span className={`font-black ${isAlmostFull ? "text-rose-600 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"}`}>
                       {isFull ? "اكتملت المقاعد" : isAlmostFull ? `⚡ فرصة أخيرة: متبقي ${seatsLeft} مقعد` : `🟢 متوفر ${seatsLeft} مقعد`}
                     </span>
-                    <span className="text-zinc-500 font-bold">{registered} / {seats}</span>
+                    <span className="text-muted-foreground font-bold">{registered} / {seats}</span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.06]">
                     <div
                       className={`h-full rounded-full transition-all ${
                         isAlmostFull
@@ -461,7 +461,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
                 </div>
               )}
 
-              <p className="text-[11px] text-zinc-500">
+              <p className="text-[11px] text-muted-foreground">
                 {a.type === "COURSE" && a.sessions.length > 1
                   ? `${a.sessions.length} محاضرات · `
                   : a.sessions.length > 1 ? `${a.sessions.length} مواعيد · ` : ""}
@@ -470,7 +470,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
             </div>
           )
         ) : (
-          <p className="text-xs text-zinc-500">لم تُعلن {sessionWord} بعد — تابعنا</p>
+          <p className="text-xs text-muted-foreground">لم تُعلن {sessionWord} بعد — تابعنا</p>
         )}
       </div>
     </Link>

@@ -39,22 +39,22 @@ export function CommunityFeedView({
   heartsVisible = true,
 }: CommunityFeedViewProps) {
   const router = useRouter();
-  const [filter, setFilter] = useState<"ALL" | "STUDENTS" | "COMMITTEE" | "QUESTION" | "ACHIEVEMENT">("ALL");
+  const isAdmin = currentUserRole === "SUPER_ADMIN" || currentUserRole === "ADMIN";
+  const [filter, setFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // تصفية المنشورات
-  const filteredStudentPosts = studentPosts.filter((p) => {
-    if (filter === "ALL" || filter === "STUDENTS") return true;
-    if (filter === "QUESTION" && p.category === "QUESTION") return true;
-    if (filter === "ACHIEVEMENT" && p.category === "ACHIEVEMENT") return true;
-    return false;
+  // تصفية المنشورات الرسمية للجنة
+  const filteredCommitteePosts = committeePosts.filter((p) => {
+    if (filter === "ALL") return true;
+    if (filter === "NEWS") return p.type === "NEWS" || p.type === "ANNOUNCEMENT" || p.type === "GENERAL";
+    if (filter === "WORKSHOP") return p.type === "WORKSHOP" || p.type === "EVENT";
+    if (filter === "RECOGNITION") return p.type === "RECOGNITION" || p.type === "ACHIEVEMENT";
+    return true;
   });
-
-  const showCommitteePosts = filter === "ALL" || filter === "COMMITTEE";
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* رأس الصفحة وزر إنشاء منشور */}
+      {/* رأس الصفحة وزر إنشاء منشور للإدارة فقط */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-border bg-card/60 p-5 backdrop-blur-sm shadow-sm">
         <div>
           <div className="flex items-center gap-2.5">
@@ -66,18 +66,18 @@ export function CommunityFeedView({
             </h1>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            تواصل، تفاعل، شارك أفكارك وإنجازاتك التقنية مع زملائك بالكلية.
+            أحدث الإعلانات والورش والأخبار الرسمية من إدارة اللجنة التكنولوجية.
           </p>
         </div>
 
-        {isStudent && (
+        {isAdmin && (
           <button
             type="button"
             onClick={() => setCreateDialogOpen(true)}
             className="flex items-center justify-center gap-2 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow-md shrink-0"
           >
             <PenSquare className="h-4 w-4" />
-            أنشئ منشوراً جديداً
+            إضافة إعلان أو منشور رسمي
           </button>
         )}
       </div>
@@ -85,16 +85,15 @@ export function CommunityFeedView({
       {/* شريط الفلاتر والتبويبات */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
         {[
-          { key: "ALL", label: "الكل 🔥" },
-          { key: "STUDENTS", label: `منشورات الطلاب (${studentPosts.length}) 👥` },
-          { key: "COMMITTEE", label: `إعلانات اللجنة (${committeePosts.length}) 📢` },
-          { key: "QUESTION", label: "أسئلة واستفسارات ❓" },
-          { key: "ACHIEVEMENT", label: "إنجازات وفخر 🏆" },
+          { key: "ALL", label: `الكل (${committeePosts.length}) 📢` },
+          { key: "NEWS", label: "أخبار وإعلانات ⚡" },
+          { key: "WORKSHOP", label: "ورش وكورسات 🧭" },
+          { key: "RECOGNITION", label: "إنجازات وتكريمات 🏆" },
         ].map((tab) => (
           <button
             key={tab.key}
             type="button"
-            onClick={() => setFilter(tab.key as any)}
+            onClick={() => setFilter(tab.key)}
             className={`rounded-2xl px-4 py-2 text-xs font-extrabold transition-all shrink-0 border ${
               filter === tab.key
                 ? "bg-gold text-night border-gold shadow-sm"
@@ -108,33 +107,9 @@ export function CommunityFeedView({
 
       {/* خلاصة المنشورات */}
       <div className="space-y-6">
-        {/* منشورات الطلاب */}
-        {filteredStudentPosts.length > 0 && (
+        {filteredCommitteePosts.length > 0 ? (
           <div className="space-y-4">
-            {filteredStudentPosts.map((sp) => (
-              <StudentPostCard
-                key={sp.id}
-                post={sp}
-                currentUserId={currentUserId}
-                currentUserRole={currentUserRole}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* منشورات اللجنة الرسمية */}
-        {showCommitteePosts && committeePosts.length > 0 && (
-          <div className="space-y-4">
-            {filter === "ALL" && filteredStudentPosts.length > 0 && (
-              <div className="flex items-center gap-2 pt-4 border-t border-border">
-                <Megaphone className="h-4 w-4 text-gold" />
-                <h3 className="text-xs font-extrabold text-muted-foreground">
-                  إعلانات وأخبار اللجنة الرسمية
-                </h3>
-              </div>
-            )}
-
-            {committeePosts.map((p) => {
+            {filteredCommitteePosts.map((p) => {
               const typeIcon = COMMUNITY_POST_TYPE_ICONS[p.type] ?? "📢";
               const typeLabel = COMMUNITY_POST_TYPE_LABELS[p.type] ?? "خبر";
 
@@ -192,7 +167,7 @@ export function CommunityFeedView({
                     {p.title}
                   </h2>
 
-                  <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-zinc-300">
+                  <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-foreground/90 dark:text-zinc-200">
                     {p.body}
                   </p>
 
@@ -223,16 +198,14 @@ export function CommunityFeedView({
               );
             })}
           </div>
-        )}
-
-        {filteredStudentPosts.length === 0 && (!showCommitteePosts || committeePosts.length === 0) && (
+        ) : (
           <div className="rounded-3xl border border-dashed border-border p-12 text-center bg-card">
             <Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
             <h3 className="text-base font-extrabold text-foreground">
-              لا توجد منشورات في هذا القسم
+              لا توجد منشورات في هذا القسم حالياً
             </h3>
             <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-              كن أول من يبدأ بالنشر ومشاركة أفكاره مع زملائه باللجنة!
+              تابعنا باستمرار للاطلاع على أحدث إعلانات وورش وأنشطة اللجنة التكنولوجية.
             </p>
           </div>
         )}

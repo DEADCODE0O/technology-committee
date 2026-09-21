@@ -234,7 +234,7 @@ export async function getStudentFeed(options?: {
 }
 
 /**
- * إنشاء منشور طالب جديد مع فلترة الكلمات ونشر فوري
+ * إنشاء منشور في المجتمع — مقتصر حصراً على إدارة اللجنة لضمان الامتثال
  */
 export async function createStudentPost(input: {
   body: string;
@@ -242,16 +242,16 @@ export async function createStudentPost(input: {
   category?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   try {
-    const user = await requireStudentAction();
+    const user = await getCurrentUser();
+    if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
+      return {
+        ok: false,
+        error: "نشر المنشورات في المجتمع مقتصر حالياً على إدارة اللجنة والمنسقين الأكاديميين المعتمدين.",
+      };
+    }
     const text = input.body?.trim();
     if (!text) return { ok: false, error: "نص المنشور لا يمكن أن يكون فارغاً" };
     if (text.length > 2000) return { ok: false, error: "المنشور طويل جداً (الحد الأقصى 2000 حرف)" };
-
-    // Rate limit: منشور كل دقيقتين
-    const rl = rateLimit(`post:${user.id}`, 3, 2 * 60 * 1000);
-    if (!rl.ok) {
-      return { ok: false, error: `هدئ سرعتك — يمكنك النشر بعد ${rl.retryAfterSec} ثانية` };
-    }
 
     const cleanBody = await maskBannedWords(text);
 
