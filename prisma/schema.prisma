@@ -81,6 +81,8 @@ model User {
   studentPosts         StudentPost[]
   studentReactions     StudentPostReaction[]
   studentPostComments  StudentPostComment[]
+  sessionEvaluations   SessionEvaluation[]
+  demandPollVotes      DemandPollVote[]
 }
 
 // ─── ملف الطالب ──────────────────────────────────────────────
@@ -272,6 +274,7 @@ model Session {
   registrations Registration[]
   pointEvents   PointEvent[]
   attendance    Attendance[]
+  evaluations   SessionEvaluation[]
 }
 
 // أسئلة التسجيل الديناميكية — على مستوى النشاط (تُسأل مرة واحدة)
@@ -1027,3 +1030,61 @@ model BannedWord {
   id   String @id @default(cuid())
   word String @unique // lowercase
 }
+
+// ─── التقييم السري اللحظي للجلسات والمحاضرين (Confidential Pulse) ────
+// ملاحظات مشفرة وتظهر فقط للإدارة والدكتورة المشرفة لدعم اتخاذ القرار
+model SessionEvaluation {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instructorRating   Int      // 1 - 5
+  contentRating      Int      // 1 - 5
+  organizationRating Int      // 1 - 5
+  overallRating      Float    // المعدل أو التقييم العام (1.0 - 5.0)
+  recommendScore     Int?     // 1 - 10 لحساب مؤشر صافي الترويج (NPS)
+  privateFeedback    String?  // ملاحظات سرية لا يراها المحاضر ولا الطلاب
+  strengths          String?  // نقاط القوة
+  improvements       String?  // نقاط الضعف والمقترحات
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ─── استطلاعات رغبات وتوجهات الطلاب (Demand Wishlist & Polling) ───────
+model DemandPoll {
+  id            String           @id @default(cuid())
+  title         String           // عنوان الاستطلاع، مثل: "ما هي الورشة التي ترغب بها الأسبوع القادم؟"
+  description   String?
+  status        String           @default("ACTIVE") // ACTIVE | CLOSED
+  targetGrade   String?          // ALL | FIRST | SECOND | THIRD | FOURTH
+  targetSection String?          // ALL | IS | COMMERCIAL | TOURISM | LANGS
+  options       String           // JSON: [{"id": "1", "label": "الذكاء الاصطناعي"}, {"id": "2", "label": "الأمن السيبراني"}]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  votes         DemandPollVote[]
+
+  @@index([status, createdAt])
+}
+
+model DemandPollVote {
+  id               String     @id @default(cuid())
+  pollId           String
+  poll             DemandPoll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  optionId         String
+  customSuggestion String?    // مقترح إضافي من الطالب
+  createdAt        DateTime   @default(now())
+
+  @@unique([pollId, userId])
+  @@index([pollId])
+  @@index([userId])
+}
+

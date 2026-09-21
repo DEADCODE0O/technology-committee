@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { SessionFeedbackDialog } from "@/components/platform/session-feedback-dialog";
 
 export type DynField = {
   id: string;
@@ -83,31 +84,37 @@ export function SessionRegisterForm({
               <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                 بانتظارك يوم الورشة — سجّل حضورك بمسح كود الـ QR عند الدخول.
               </p>
-              <form
-                className="mt-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!confirm("متأكد إنك عايز تلغي التسجيل؟")) return;
-                  startTransition(async () => {
-                    const res = await cancelRegistration(existing.id);
-                    if (res.ok) {
-                      toast.success("تم إلغاء التسجيل");
-                      router.refresh();
-                    } else toast.error(res.error || "تعذر الإلغاء");
-                  });
-                }}
-              >
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="sm"
-                  disabled={pending}
-                  className="text-red-300/80 hover:bg-red-500/10 hover:text-red-300"
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <SessionFeedbackDialog
+                  sessionId={sessionId}
+                  sessionTitle={sessionTitle}
+                  triggerButtonText="تقييم الورشة والملاحظات السرية"
+                />
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!confirm("متأكد إنك عايز تلغي التسجيل؟")) return;
+                    startTransition(async () => {
+                      const res = await cancelRegistration(existing.id);
+                      if (res.ok) {
+                        toast.success("تم إلغاء التسجيل");
+                        router.refresh();
+                      } else toast.error(res.error || "تعذر الإلغاء");
+                    });
+                  }}
                 >
-                  <XCircle className="h-4 w-4" />
-                  إلغاء تسجيلي
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    className="text-red-300/80 hover:bg-red-500/10 hover:text-red-300"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    إلغاء تسجيلي
+                  </Button>
+                </form>
+              </div>
             </div>
           </div>
         )}

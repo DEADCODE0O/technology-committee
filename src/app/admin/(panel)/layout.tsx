@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
-  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy, Eye,
+  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy, Eye, TrendingUp,
 } from "lucide-react";
 import { requireAdmin, getCurrentUser } from "@/lib/auth";
 import { canUser, isAdminRole, MODULES, type Module } from "@/lib/permissions";
@@ -20,6 +20,7 @@ import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 const MENU: { key: string; label: string; href: string; icon: React.ReactNode; module: Module }[] = [
   { key: "dashboard", label: "لوحة التحكم", href: "/admin", icon: <LayoutDashboard className="h-5 w-5" />, module: MODULES.DASHBOARD },
+  { key: "analytics", label: "الاستخبارات والقرارات", href: "/admin/analytics", icon: <TrendingUp className="h-5 w-5" />, module: MODULES.DASHBOARD },
   { key: "programs", label: "البرامج", href: "/admin/programs", icon: <Sparkles2 className="h-5 w-5" />, module: MODULES.PROGRAMS },
   { key: "activities", label: "الأنشطة والتنفيذات", href: "/admin/activities", icon: <FolderKanban className="h-5 w-5" />, module: MODULES.WORKSHOPS },
   { key: "tasks", label: "المهام والتكليفات", href: "/admin/tasks", icon: <ClipboardCheck className="h-5 w-5" />, module: MODULES.WORKSHOPS },

@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, ScanLine } from "lucide-react";
 import { qrCheckIn } from "@/actions/attendance";
 import { Button } from "@/components/ui/button";
+import { SessionFeedbackDialog } from "@/components/platform/session-feedback-dialog";
 
 export function QrCheckinButton({ token, title }: { token: string; title: string }) {
   const [pending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<{ sessionId?: string; sessionTitle?: string } | null>(null);
   const router = useRouter();
 
   const submit = () => {
@@ -17,6 +19,7 @@ export function QrCheckinButton({ token, title }: { token: string; title: string
       const res = await qrCheckIn(token);
       if (res.ok) {
         setSuccess(true);
+        setSessionInfo({ sessionId: res.sessionId, sessionTitle: res.sessionTitle || title });
         toast.success(res.sessionTitle ? `تم تسجيل حضورك في «${res.sessionTitle}»` : `تم تسجيل حضورك في «${title}»`);
         router.refresh();
       } else {
@@ -27,10 +30,22 @@ export function QrCheckinButton({ token, title }: { token: string; title: string
 
   if (success) {
     return (
-      <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-6 text-center">
+      <div className="mt-6 rounded-2xl border border-gold/30 bg-gold/[0.08] p-6 text-center space-y-4">
         <CheckCircle2 className="mx-auto h-10 w-10 text-gold" />
-        <p className="mt-3 text-lg font-extrabold text-gold-light">تم تسجيل حضورك ✦</p>
-        <p className="mt-1 text-sm text-zinc-400">استمتع بالنشاط — نقطك اتضافت تلقائيًا.</p>
+        <div>
+          <p className="text-lg font-extrabold text-gold-light">تم تسجيل حضورك ✦</p>
+          <p className="mt-1 text-sm text-zinc-400">استمتع بالنشاط — تم توثيق حضورك وإضافة نقاطك تلقائياً.</p>
+        </div>
+
+        {sessionInfo?.sessionId && (
+          <div className="pt-2 border-t border-gold/20 flex justify-center">
+            <SessionFeedbackDialog
+              sessionId={sessionInfo.sessionId}
+              sessionTitle={sessionInfo.sessionTitle || title}
+              triggerButtonText="شاركنا رأيك السري في المحاضرة والمحاضر"
+            />
+          </div>
+        )}
       </div>
     );
   }

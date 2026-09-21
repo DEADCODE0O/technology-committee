@@ -188,7 +188,7 @@ export async function markAllPresent(sessionId: string): Promise<{ ok: boolean; 
 
 export async function qrCheckIn(
   qrToken: string
-): Promise<{ ok: boolean; error?: string; activityTitle?: string; sessionTitle?: string }> {
+): Promise<{ ok: boolean; error?: string; activityTitle?: string; sessionTitle?: string; sessionId?: string }> {
   try {
     const user = await requireStudentAction();
 
@@ -213,7 +213,7 @@ export async function qrCheckIn(
       where: { registrationId: reg.id, sessionId: session.id },
     });
     if (existing?.present) {
-      return { ok: true, activityTitle: session.activity.title, sessionTitle: session.title };
+      return { ok: true, activityTitle: session.activity.title, sessionTitle: session.title, sessionId: session.id };
     }
     if (existing) {
       await db.attendance.update({
@@ -255,7 +255,7 @@ export async function qrCheckIn(
     });
 
     refresh(session.id, session.activityId);
-    return { ok: true, activityTitle: session.activity.title, sessionTitle: session.title };
+    return { ok: true, activityTitle: session.activity.title, sessionTitle: session.title, sessionId: session.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }
