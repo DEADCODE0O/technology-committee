@@ -11,6 +11,7 @@ import {
   Star,
   Users,
   AlertCircle,
+  Edit3,
 } from "lucide-react";
 import { submitSurveyVote } from "@/actions/surveys";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ export function CommunityPollCard({
   canVote,
 }: CommunityPollCardProps) {
   const [hasVoted, setHasVoted] = useState(initialHasVoted);
+  const [isEditingVote, setIsEditingVote] = useState(false);
   const [totalVotes, setTotalVotes] = useState(initialTotalVotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,14 +73,17 @@ export function CommunityPollCard({
   });
 
   const isClosed = status !== "OPEN" || (deadline && new Date(deadline) < new Date());
+  const isAnswered = (hasVoted && !isEditingVote) || isClosed;
 
   const handleSingleSelect = (qId: string, option: string) => {
-    if (hasVoted || isClosed) return;
+    if (isClosed) return;
+    if (hasVoted && !isEditingVote) return;
     setSelectedAnswers((prev) => ({ ...prev, [qId]: option }));
   };
 
   const handleMultiSelect = (qId: string, option: string) => {
-    if (hasVoted || isClosed) return;
+    if (isClosed) return;
+    if (hasVoted && !isEditingVote) return;
     setSelectedAnswers((prev) => {
       const current: string[] = Array.isArray(prev[qId]) ? [...prev[qId]] : [];
       const idx = current.indexOf(option);
@@ -92,13 +97,14 @@ export function CommunityPollCard({
   };
 
   const handleRatingSelect = (qId: string, star: number) => {
-    if (hasVoted || isClosed) return;
+    if (isClosed) return;
+    if (hasVoted && !isEditingVote) return;
     setSelectedAnswers((prev) => ({ ...prev, [qId]: star }));
   };
 
   const handleSubmit = async () => {
     if (!canVote) {
-      toast.error("يرجى تسجيل الدخول كطالب للمشاركة في الاستبيان");
+      toast.error("يرجى تسجيل الدخول أولاً للمشاركة في الاستبيان");
       return;
     }
 
@@ -116,12 +122,15 @@ export function CommunityPollCard({
     try {
       const res = await submitSurveyVote(surveyId, selectedAnswers);
       if (res.ok) {
+        if (!hasVoted) {
+          setTotalVotes((v) => v + 1);
+        }
         setHasVoted(true);
-        setTotalVotes((v) => v + 1);
+        setIsEditingVote(false);
         if (res.awardedPoints) {
           toast.success(`تم تسجيل تصويتك بنجاح! 🎉 وحصلت على +${res.awardedPoints} XP`);
         } else {
-          toast.success("تم تحديث تصويتك بنجاح ✓");
+          toast.success("تم حفظ وتحديث تصويتك بنجاح ✓");
         }
       } else {
         toast.error(res.error || "فشل تسجيل التصويت");
@@ -159,6 +168,17 @@ export function CommunityPollCard({
             </span>
           )}
 
+          {hasVoted && !isClosed && (
+            <button
+              type="button"
+              onClick={() => setIsEditingVote(!isEditingVote)}
+              className="inline-flex items-center gap-1 rounded-full bg-gold/15 hover:bg-gold/25 border border-gold/30 px-2.5 py-1 text-[10px] font-black text-gold transition-all"
+            >
+              <Edit3 className="h-3 w-3" />
+              {isEditingVote ? "إلغاء التعديل ✕" : "تعديل إجابتي ✏️"}
+            </button>
+          )}
+
           {isClosed ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-1 text-[10px] font-extrabold text-muted-foreground">
               <Lock className="h-3 w-3" />
@@ -187,7 +207,7 @@ export function CommunityPollCard({
       {/* الأسئلة والخيارات */}
       <div className="space-y-5">
         {questions.map((q, qIndex) => {
-          const isAnswered = hasVoted || isClosed;
+          const isQuestionAnswered = (hasVoted && !isEditingVote) || isClosed;
 
           return (
             <div
@@ -205,7 +225,7 @@ export function CommunityPollCard({
                   )}
                 </div>
 
-                {q.type === "POLL_MULTI" && !isAnswered && (
+                {q.type === "POLL_MULTI" && !isQuestionAnswered && (
                   <span className="rounded-md bg-gold/10 px-2 py-0.5 text-[9px] font-black text-gold border border-gold/20 shrink-0">
                     اختيار متعدد
                   </span>
@@ -213,7 +233,7 @@ export function CommunityPollCard({
               </div>
 
               {/* حالة 1: تم التصويت أو الاستبيان مغلق -> إظهار أشرطة النسب والنتائج */}
-              {isAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
+              {isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
                 <div className="space-y-2 pt-1">
                   {q.optionsStats.map((opt) => {
                     const isSelectedByUser =
@@ -265,8 +285,8 @@ export function CommunityPollCard({
                 </div>
               ) : null}
 
-              {/* حالة 2: لم يصوت بعد -> إظهار الأزرار التفاعلية للاختيار */}
-              {!isAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
+              {/* حالة 2: لم يصوت بعد أو في وضع التعديل -> إظهار الأزرار التفاعلية للاختيار */}
+              {!isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
                 <div className="grid gap-2 sm:grid-cols-1 pt-1">
                   {q.options.map((opt) => {
                     const isSelected =
@@ -309,7 +329,7 @@ export function CommunityPollCard({
               {/* سؤال تقييم نجوم (RATING) */}
               {q.type === "RATING" && (
                 <div className="pt-1">
-                  {isAnswered ? (
+                  {isQuestionAnswered ? (
                     <div className="flex items-center gap-3 p-3 rounded-2xl bg-card border border-border">
                       <div className="flex items-center gap-1 text-gold">
                         {[1, 2, 3, 4, 5].map((s) => (
@@ -355,7 +375,7 @@ export function CommunityPollCard({
               )}
 
               {/* سؤال نصي (TEXT) */}
-              {q.type === "TEXT" && !isAnswered && (
+              {q.type === "TEXT" && !isQuestionAnswered && (
                 <div className="pt-1">
                   <textarea
                     rows={2}
@@ -373,12 +393,12 @@ export function CommunityPollCard({
         })}
       </div>
 
-      {/* زر إرسال التصويت في حال لم يسبق له التصويت */}
-      {!hasVoted && !isClosed && (
+      {/* زر إرسال التصويت في حال لم يسبق له التصويت أو في وضع التعديل */}
+      {(!hasVoted || isEditingVote) && !isClosed && (
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
-            تحصل على <strong className="text-gold">+15 XP</strong> فور إرسال تصويتك الأول!
+            {hasVoted ? "يمكنك تحديث وتغيير إجاباتك بحرية" : "تحصل على +15 XP فور إرسال تصويتك الأول!"}
           </p>
 
           <button
@@ -390,19 +410,19 @@ export function CommunityPollCard({
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 animate-spin rounded-full border-2 border-night border-t-transparent" />
-                جاري الإرسال...
+                جاري الحفظ...
               </span>
             ) : (
               <>
                 <Send className="h-3.5 w-3.5" />
-                إرسال تصويتي 🚀
+                {isEditingVote ? "حفظ التعديل 🚀" : "إرسال تصويتي 🚀"}
               </>
             )}
           </button>
         </div>
       )}
 
-      {hasVoted && !isClosed && (
+      {hasVoted && !isEditingVote && !isClosed && (
         <p className="text-[11px] text-center text-muted-foreground">
           شكراً لمشاركتك! صوتك يساهم في تحديد مسار القرارات والأنشطة القادمة 🌟
         </p>

@@ -19,19 +19,31 @@ import {
   Calendar,
   X,
   ExternalLink,
+  Pencil,
+  Pin,
 } from "lucide-react";
 import {
   createSurvey,
+  updateSurvey,
+  toggleSurveyPin,
   toggleSurveyStatus,
   deleteSurvey,
   getSurveyAnalytics,
   type CreateSurveyInput,
+  type UpdateSurveyInput,
   type SurveyAnalyticsResult,
 } from "@/actions/surveys";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-interface SurveyListItem {
+export interface SurveyQuestionItem {
+  id: string;
+  type: "POLL_SINGLE" | "POLL_MULTI" | "RATING" | "TEXT";
+  question: string;
+  options: string[];
+}
+
+export interface SurveyListItem {
   id: string;
   title: string;
   description: string | null;
@@ -40,6 +52,8 @@ interface SurveyListItem {
   createdAt: string;
   responsesCount: number;
   questionsCount: number;
+  pinned?: boolean;
+  questions?: SurveyQuestionItem[];
 }
 
 interface SurveyManagerProps {
@@ -60,9 +74,8 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const [deadline, setDeadline] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [postToCommunity, setPostToCommunity] = useState(true);
-  const [questions, setQuestions] = useState<
-    { id: string; type: "POLL_SINGLE" | "POLL_MULTI" | "RATING" | "TEXT"; question: string; options: string[] }[]
-  >([
+  const [pinned, setPinned] = useState(false);
+  const [questions, setQuestions] = useState<SurveyQuestionItem[]>([
     {
       id: "q_1",
       type: "POLL_SINGLE",
@@ -71,6 +84,17 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // حالة نموذج التعديل
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editStatus, setEditStatus] = useState<"OPEN" | "CLOSED">("OPEN");
+  const [editPinned, setEditPinned] = useState(false);
+  const [editQuestions, setEditQuestions] = useState<SurveyQuestionItem[]>([]);
+  const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
 
   // إحصائيات عامة
   const totalVotes = surveys.reduce((acc, s) => acc + s.responsesCount, 0);
@@ -149,6 +173,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         deadline: deadline ? deadline : undefined,
         bannerUrl: bannerUrl.trim() || undefined,
         postToCommunity,
+        pinned,
       };
 
       const res = await createSurvey(payload);
@@ -159,6 +184,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         setDescription("");
         setDeadline("");
         setBannerUrl("");
+        setPinned(false);
         router.refresh();
       } else {
         toast.error(res.error || "فشل إنشاء الاستبيان");
@@ -168,6 +194,157 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleTogglePin = async (surveyId: string, currentPinned: boolean) => {
+    try {
+      const res = await toggleSurveyPin(surveyId, !currentPinned);
+      if (res.ok) {
+        toast.success(!currentPinned ? "تم تثبيت الاستبيان في أعلى المجتمع 📌" : "تم إلغاء تثبيت الاستبيان من المجتمع");
+        setSurveys((prev) =>
+          prev.map((s) => (s.id === surveyId ? { ...s, pinned: !currentPinned } : s))
+        );
+        router.refresh();
+      } else {
+        toast.error(res.error || "فشل تغيير حالة التثبيت");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء تغيير حالة التثبيت");
+    }
+  };
+
+  const handleOpenEdit = (s: SurveyListItem) => {
+    setEditingId(s.id);
+    setEditTitle(s.title);
+    setEditDescription(s.description || "");
+    setEditDeadline(s.deadline ? s.deadline.slice(0, 16) : "");
+    setEditStatus((s.status as "OPEN" | "CLOSED") || "OPEN");
+    setEditPinned(!!s.pinned);
+    setEditQuestions(
+      s.questions && s.questions.length > 0
+        ? s.questions.map((q) => ({
+            id: q.id,
+            type: q.type,
+            question: q.question,
+            options: q.options && q.options.length > 0 ? [...q.options] : ["خيار 1", "خيار 2"],
+          }))
+        : [
+            {
+              id: "q_1",
+              type: "POLL_SINGLE",
+              question: "سؤال الاستبيان",
+              options: ["خيار 1", "خيار 2"],
+            },
+          ]
+    );
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+
+    if (!editTitle.trim()) {
+      toast.error("يرجى إدخال عنوان الاستبيان");
+      return;
+    }
+
+    for (const q of editQuestions) {
+      if (!q.question.trim()) {
+        toast.error("يرجى ملء كافة نصوص الأسئلة");
+        return;
+      }
+      if ((q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") && q.options.length < 2) {
+        toast.error("كل سؤال اختياري يجب أن يحتوي على خيارين على الأقل");
+        return;
+      }
+    }
+
+    setIsEditingSubmitting(true);
+    try {
+      const res = await updateSurvey({
+        id: editingId,
+        title: editTitle.trim(),
+        description: editDescription.trim() || undefined,
+        status: editStatus,
+        deadline: editDeadline || undefined,
+        pinned: editPinned,
+        questions: editQuestions.map((q) => ({
+          id: q.id,
+          type: q.type,
+          question: q.question,
+          options: q.options,
+        })),
+      });
+
+      if (res.ok) {
+        toast.success("تم حفظ تعديل الاستبيان بنجاح! ✏️");
+        setSurveys((prev) =>
+          prev.map((s) =>
+            s.id === editingId
+              ? {
+                  ...s,
+                  title: editTitle.trim(),
+                  description: editDescription.trim() || null,
+                  status: editStatus,
+                  deadline: editDeadline || null,
+                  pinned: editPinned,
+                  questionsCount: editQuestions.length,
+                  questions: editQuestions,
+                }
+              : s
+          )
+        );
+        setIsEditOpen(false);
+        router.refresh();
+      } else {
+        toast.error(res.error || "فشل حفظ التعديل");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء حفظ التعديل");
+    } finally {
+      setIsEditingSubmitting(false);
+    }
+  };
+
+  const handleAddEditQuestion = () => {
+    setEditQuestions((prev) => [
+      ...prev,
+      {
+        id: `q_${prev.length + 1}`,
+        type: "POLL_SINGLE",
+        question: "",
+        options: ["خيار 1", "خيار 2"],
+      },
+    ]);
+  };
+
+  const handleRemoveEditQuestion = (index: number) => {
+    if (editQuestions.length <= 1) {
+      toast.error("يجب أن يحتوي الاستبيان على سؤال واحد على الأقل");
+      return;
+    }
+    setEditQuestions((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddEditOption = (qIndex: number) => {
+    setEditQuestions((prev) => {
+      const copy = [...prev];
+      copy[qIndex].options.push(`خيار جديد ${copy[qIndex].options.length + 1}`);
+      return copy;
+    });
+  };
+
+  const handleRemoveEditOption = (qIndex: number, optIndex: number) => {
+    if (editQuestions[qIndex].options.length <= 2) {
+      toast.error("يجب أن يحتوي السؤال على خيارين على الأقل");
+      return;
+    }
+    setEditQuestions((prev) => {
+      const copy = [...prev];
+      copy[qIndex].options = copy[qIndex].options.filter((_, i) => i !== optIndex);
+      return copy;
+    });
   };
 
   const handleViewAnalytics = async (surveyId: string) => {
@@ -313,7 +490,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                 className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/20 transition-colors"
               >
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-black text-foreground">{s.title}</span>
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-[10px] font-black border ${
@@ -324,6 +501,12 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                     >
                       {s.status === "OPEN" ? "مفتوح للتصويت 🟢" : "مغلق 🏁"}
                     </span>
+                    {s.pinned && (
+                      <span className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black bg-gold/15 text-gold border border-gold/30">
+                        <Pin className="h-3 w-3 fill-current" />
+                        مثبت في المجتمع 📌
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -355,6 +538,28 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
 
                   {canManage && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin(s.id, !!s.pinned)}
+                        className={`inline-flex items-center gap-1 rounded-xl border p-2 text-xs transition-all ${
+                          s.pinned
+                            ? "border-gold/50 bg-gold/20 text-gold shadow-sm"
+                            : "border-border bg-card text-muted-foreground hover:border-gold/40 hover:text-gold"
+                        }`}
+                        title={s.pinned ? "إلغاء تثبيت الاستبيان من المجتمع" : "تثبيت الاستبيان في أعلى المجتمع 📌"}
+                      >
+                        <Pin className={`h-4 w-4 ${s.pinned ? "fill-current" : ""}`} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(s)}
+                        className="inline-flex items-center gap-1 rounded-xl border border-border bg-card hover:bg-muted p-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        title="تعديل الاستبيان والأسئلة"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(s.id, s.status)}
@@ -471,6 +676,22 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   نشر الاستبيان فوراً كمنشور تفاعلي رسمي في قسم المجتمع 📢
                 </label>
               </div>
+
+              {postToCommunity && (
+                <div className="flex items-center gap-2 p-3 rounded-2xl bg-gold/10 border border-gold/20">
+                  <input
+                    type="checkbox"
+                    id="pinCommunity"
+                    checked={pinned}
+                    onChange={(e) => setPinned(e.target.checked)}
+                    className="h-4 w-4 rounded accent-gold"
+                  />
+                  <label htmlFor="pinCommunity" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                    <Pin className="h-3.5 w-3.5 text-gold" />
+                    تثبيت الاستبيان في أعلى خلاصة المجتمع 📌 (Pinned Post)
+                  </label>
+                </div>
+              )}
 
               {/* ── منشئ الأسئلة ── */}
               <div className="space-y-3 pt-2">
@@ -596,6 +817,224 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   className="rounded-2xl bg-gold px-6 py-2 text-xs font-black text-night hover:bg-gold-light shadow-md disabled:opacity-50"
                 >
                   {isSubmitting ? "جاري الإنشاء..." : "إنشاء ونشر الآن 🚀"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── نافذة تعديل استبيان (Edit Survey Modal) ── */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-gold/30 bg-card p-6 sm:p-7 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <h3 className="text-lg font-black text-foreground flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-gold" />
+                تعديل بيانات وأسئلة الاستبيان
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditOpen(false)}
+                className="rounded-full p-1 text-muted-foreground hover:bg-muted"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">
+                  عنوان الاستبيان <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="عنوان الاستبيان..."
+                  className="w-full rounded-2xl border border-border bg-muted/20 px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground mb-1">
+                  وصف ومقدمة الاستبيان
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="وصف الاستبيان..."
+                  className="w-full rounded-2xl border border-border bg-muted/20 px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    الموعد النهائي للتصويت
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editDeadline}
+                    onChange={(e) => setEditDeadline(e.target.value)}
+                    className="w-full rounded-2xl border border-border bg-muted/20 px-3.5 py-2 text-xs text-foreground focus:border-gold focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-foreground mb-1">
+                    حالة الاستبيان
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as "OPEN" | "CLOSED")}
+                    className="w-full rounded-2xl border border-border bg-muted/20 px-3.5 py-2 text-xs text-foreground focus:border-gold focus:outline-none"
+                  >
+                    <option value="OPEN">مفتوح للتصويت 🟢</option>
+                    <option value="CLOSED">مغلق 🏁</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 p-3 rounded-2xl bg-gold/10 border border-gold/20">
+                <input
+                  type="checkbox"
+                  id="editPinCommunity"
+                  checked={editPinned}
+                  onChange={(e) => setEditPinned(e.target.checked)}
+                  className="h-4 w-4 rounded accent-gold"
+                />
+                <label htmlFor="editPinCommunity" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                  <Pin className="h-3.5 w-3.5 text-gold" />
+                  تثبيت الاستبيان في أعلى خلاصة المجتمع 📌 (Pinned)
+                </label>
+              </div>
+
+              {/* أسئلة الاستبيان */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-foreground flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-gold" />
+                    الأسئلة والخيارات ({editQuestions.length})
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleAddEditQuestion}
+                    className="inline-flex items-center gap-1 rounded-xl bg-muted hover:bg-muted/80 px-2.5 py-1 text-[11px] font-black text-gold"
+                  >
+                    <Plus className="h-3 w-3" />
+                    إضافة سؤال
+                  </button>
+                </div>
+
+                {editQuestions.map((q, qIdx) => (
+                  <div key={q.id} className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-black text-gold">سؤال {qIdx + 1}</span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={q.type}
+                          onChange={(e) => {
+                            const newType = e.target.value as any;
+                            setEditQuestions((prev) => {
+                              const copy = [...prev];
+                              copy[qIdx].type = newType;
+                              return copy;
+                            });
+                          }}
+                          className="rounded-xl border border-border bg-card px-2.5 py-1 text-[11px] font-bold text-foreground focus:border-gold"
+                        >
+                          <option value="POLL_SINGLE">اختيار فردي (Radio)</option>
+                          <option value="POLL_MULTI">اختيار متعدد (Checkbox)</option>
+                          <option value="RATING">تقييم نجوم (1-5)</option>
+                          <option value="TEXT">إجابة نصية حرة</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveEditQuestion(qIdx)}
+                          className="text-muted-foreground hover:text-rose-500 p-1"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <input
+                      type="text"
+                      required
+                      value={q.question}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditQuestions((prev) => {
+                          const copy = [...prev];
+                          copy[qIdx].question = val;
+                          return copy;
+                        });
+                      }}
+                      placeholder="نص السؤال..."
+                      className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground focus:border-gold focus:outline-none"
+                    />
+
+                    {(q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") && (
+                      <div className="space-y-2 pt-1 ps-2 border-s-2 border-gold/40">
+                        <p className="text-[11px] font-bold text-muted-foreground">خيارات الإجابة:</p>
+                        {q.options.map((opt, optIdx) => (
+                          <div key={optIdx} className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground w-4">{optIdx + 1}.</span>
+                            <input
+                              type="text"
+                              required
+                              value={opt}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditQuestions((prev) => {
+                                  const copy = [...prev];
+                                  copy[qIdx].options[optIdx] = val;
+                                  return copy;
+                                });
+                              }}
+                              className="flex-1 rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-gold focus:outline-none"
+                            />
+                            {q.options.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveEditOption(qIdx, optIdx)}
+                                className="text-muted-foreground hover:text-rose-500 p-1"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => handleAddEditOption(qIdx)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-gold hover:underline pt-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          إضافة خيار
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="rounded-2xl border border-border px-4 py-2 text-xs font-bold text-muted-foreground hover:bg-muted"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditingSubmitting}
+                  className="rounded-2xl bg-gold px-6 py-2 text-xs font-black text-night hover:bg-gold-light shadow-md disabled:opacity-50"
+                >
+                  {isEditingSubmitting ? "جاري الحفظ..." : "حفظ التعديلات 💾"}
                 </button>
               </div>
             </form>

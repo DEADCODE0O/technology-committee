@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { requireAdmin, requireStudentAction, requireActionUser } from "@/lib/auth";
+import { requireAdmin, requireActionUser, getCurrentUser } from "@/lib/auth";
 import { MODULES } from "@/lib/permissions";
 import { stampSeasonId } from "@/lib/progress";
 import { logAudit } from "@/lib/platform";
@@ -28,15 +28,29 @@ export interface CreateSurveyInput {
   deadline?: string | null;
   postToCommunity?: boolean;
   bannerUrl?: string | null;
+  pinned?: boolean;
 }
 
-// ─── 1. تصويت الطالب في الاستبيان ───────────────────────────────
+export interface UpdateSurveyInput {
+  id: string;
+  title: string;
+  description?: string;
+  questions: SurveyQuestion[];
+  deadline?: string | null;
+  status?: string;
+  pinned?: boolean;
+}
+
+// ─── 1. تصويت المستخدم في الاستبيان ───────────────────────────────
 export async function submitSurveyVote(
   surveyId: string,
   answers: Record<string, string | string[]>
 ): Promise<{ ok: boolean; error?: string; awardedPoints?: number }> {
   try {
-    const student = await requireStudentAction();
+    const user = await getCurrentUser();
+    if (!user) {
+      return { ok: false, error: "يرجى تسجيل الدخول أولاً للمشاركة في الاستبيان" };
+    }
 
     const survey = await db.dataRequest.findUnique({
       where: { id: surveyId },
@@ -60,7 +74,7 @@ export async function submitSurveyVote(
       where: {
         requestId_userId: {
           requestId: surveyId,
-          userId: student.id,
+          userId: user.id,
         },
       },
     });
@@ -69,12 +83,12 @@ export async function submitSurveyVote(
       where: {
         requestId_userId: {
           requestId: surveyId,
-          userId: student.id,
+          userId: user.id,
         },
       },
       create: {
         requestId: surveyId,
-        userId: student.id,
+        userId: user.id,
         answers: JSON.stringify(answers),
       },
       update: {
@@ -83,12 +97,12 @@ export async function submitSurveyVote(
     });
 
     let awardedPoints = 0;
-    if (!existing) {
-      // منح 15 نقطة تشجيعية للمشاركة لأول مرة
+    if (!existing && user.role === "STUDENT") {
+      // منح 15 نقطة تشجيعية للطلاب عند المشاركة لأول مرة
       const seasonId = await stampSeasonId();
       await db.pointEvent.create({
         data: {
-          userId: student.id,
+          userId: user.id,
           points: 15,
           reason: `المشاركة في استبيان: ${survey.title}`,
           ruleAction: "COMMUNITY_SURVEY",
@@ -161,7 +175,7 @@ export async function createSurvey(
           imageUrl: input.bannerUrl?.trim() || null,
           links: JSON.stringify([{ label: "DATA_REQUEST", url: request.id }]),
           status: "PUBLISHED",
-          pinned: false,
+          pinned: input.pinned ?? false,
           createdById: admin.id,
         },
       });
@@ -173,7 +187,7 @@ export async function createSurvey(
       entity: "DATA_REQUEST",
       entityId: request.id,
       summary: `إنشاء استبيان: ${request.title}`,
-      after: { title: request.title, questionsCount: formattedFields.length },
+      after: { title: request.title, questionsCount: formattedFields.length, pinned: input.pinned },
     });
 
     revalidatePath("/community");
@@ -182,6 +196,116 @@ export async function createSurvey(
   } catch (err: any) {
     console.error("createSurvey error:", err);
     return { ok: false, error: err.message || "فشل إنشاء الاستبيان" };
+  }
+}
+
+// ─── 2.1 تعديل استبيان قائم ──────────────────────────────────────
+export async function updateSurvey(
+  input: UpdateSurveyInput
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.DATA_REQUESTS, "manage");
+
+    if (!input.title?.trim()) {
+      return { ok: false, error: "عنوان الاستبيان مطلوب" };
+    }
+
+    if (!input.questions || input.questions.length === 0) {
+      return { ok: false, error: "يجب إضافة سؤال واحد على الأقل" };
+    }
+
+    const formattedFields = input.questions.map((q, idx) => ({
+      id: q.id || `q_${idx + 1}`,
+      type: q.type || "POLL_SINGLE",
+      label: q.question.trim(),
+      description: q.description?.trim() || null,
+      options: q.options ? q.options.filter((o) => o.trim().length > 0) : [],
+      required: true,
+    }));
+
+    const deadlineDate = input.deadline ? new Date(input.deadline) : null;
+
+    await db.dataRequest.update({
+      where: { id: input.id },
+      data: {
+        title: input.title.trim(),
+        description: input.description?.trim() || null,
+        fields: JSON.stringify(formattedFields),
+        deadline: deadlineDate,
+        ...(input.status ? { status: input.status } : {}),
+      },
+    });
+
+    // تحديث أي منشور مجتمع مرتبط به
+    const linkedPosts = await db.communityPost.findMany({
+      where: { links: { contains: input.id } },
+    });
+
+    for (const p of linkedPosts) {
+      await db.communityPost.update({
+        where: { id: p.id },
+        data: {
+          title: input.title.trim(),
+          body: input.description?.trim() || p.body,
+          ...(typeof input.pinned === "boolean" ? { pinned: input.pinned } : {}),
+        },
+      });
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "SURVEY_UPDATED",
+      entity: "DATA_REQUEST",
+      entityId: input.id,
+      summary: `تعديل استبيان: ${input.title}`,
+    });
+
+    revalidatePath("/community");
+    revalidatePath("/admin/surveys");
+    revalidatePath(`/admin/surveys/${input.id}`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("updateSurvey error:", err);
+    return { ok: false, error: err.message || "فشل تعديل الاستبيان" };
+  }
+}
+
+// ─── 2.2 تثبيت / إلغاء تثبيت الاستبيان في المجتمع ────────────────
+export async function toggleSurveyPin(
+  surveyId: string,
+  pinned: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.DATA_REQUESTS, "manage");
+
+    const posts = await db.communityPost.findMany({
+      where: { links: { contains: surveyId } },
+    });
+
+    if (posts.length === 0) {
+      return { ok: false, error: "المنشور المرتبط بالاستبيان غير موجود في قسم المجتمع" };
+    }
+
+    for (const p of posts) {
+      await db.communityPost.update({
+        where: { id: p.id },
+        data: { pinned },
+      });
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "SURVEY_PIN_TOGGLED",
+      entity: "COMMUNITY_POST",
+      entityId: posts[0].id,
+      summary: `${pinned ? "تثبيت" : "إلغاء تثبيت"} استبيان «${posts[0].title}» في المجتمع`,
+    });
+
+    revalidatePath("/community");
+    revalidatePath("/admin/surveys");
+    return { ok: true };
+  } catch (err: any) {
+    return { ok: false, error: err.message || "فشل تغيير حالة التثبيت" };
   }
 }
 

@@ -21,6 +21,8 @@ import { safeExternalUrl } from "@/lib/links";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { CommunityPollCard } from "./community-poll-card";
+import { setCommunityPostState } from "@/actions/community";
+import { toast } from "sonner";
 
 interface CommunityFeedViewProps {
   studentPosts: StudentPostFeedItem[];
@@ -43,6 +45,24 @@ export function CommunityFeedView({
   const isAdmin = currentUserRole === "SUPER_ADMIN" || currentUserRole === "ADMIN";
   const [filter, setFilter] = useState<string>("ALL");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [pinningId, setPinningId] = useState<string | null>(null);
+
+  const handleTogglePin = async (postId: string, currentPinned: boolean) => {
+    setPinningId(postId);
+    try {
+      const res = await setCommunityPostState(postId, { pinned: !currentPinned });
+      if (res.ok) {
+        toast.success(!currentPinned ? "تم تثبيت المنشور في أعلى المجتمع 📌" : "تم إلغاء تثبيت المنشور");
+        router.refresh();
+      } else {
+        toast.error(res.error || "فشل تغيير حالة التثبيت");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء تغيير حالة التثبيت");
+    } finally {
+      setPinningId(null);
+    }
+  };
 
   // تصفية المنشورات الرسمية للجنة
   const filteredCommitteePosts = committeePosts.filter((p) => {
@@ -154,11 +174,28 @@ export function CommunityFeedView({
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      {p.pinned && (
-                        <span className="flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 text-gold px-2.5 py-0.5 text-[10px] font-black">
-                          <Pin className="h-3 w-3" />
-                          مثبت
-                        </span>
+                      {isAdmin ? (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePin(p.id, !!p.pinned)}
+                          disabled={pinningId === p.id}
+                          className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black border transition-all ${
+                            p.pinned
+                              ? "bg-gold/20 border-gold/50 text-gold shadow-sm"
+                              : "bg-muted/40 border-border text-muted-foreground hover:border-gold/50 hover:text-gold"
+                          }`}
+                          title={p.pinned ? "إلغاء تثبيت المنشور" : "تثبيت المنشور في أعلى المجتمع"}
+                        >
+                          <Pin className={`h-3 w-3 ${p.pinned ? "fill-current" : ""}`} />
+                          {p.pinned ? "مثبت 📌" : "تثبيت"}
+                        </button>
+                      ) : (
+                        p.pinned && (
+                          <span className="flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 text-gold px-2.5 py-0.5 text-[10px] font-black">
+                            <Pin className="h-3 w-3 fill-current" />
+                            مثبت
+                          </span>
+                        )
                       )}
                       <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[10px] font-extrabold text-muted-foreground border border-border">
                         {typeIcon} {typeLabel}
@@ -184,7 +221,7 @@ export function CommunityFeedView({
                       totalVotes={p.surveyData.totalVotes}
                       hasVoted={p.surveyData.hasVoted}
                       questions={p.surveyData.questions}
-                      canVote={isStudent}
+                      canVote={!!currentUserId}
                     />
                   )}
 

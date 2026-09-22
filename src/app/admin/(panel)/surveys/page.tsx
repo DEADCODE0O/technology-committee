@@ -15,25 +15,35 @@ export default async function AdminSurveysPage() {
   const admin = await requireAdmin(MODULES.DATA_REQUESTS);
   const canManage = canUser(admin, MODULES.DATA_REQUESTS, "manage");
 
-  const surveys = await db.dataRequest.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      _count: {
-        select: {
-          responses: true,
+  const [surveys, surveyPosts] = await Promise.all([
+    db.dataRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: {
+            responses: true,
+          },
         },
       },
-    },
-  });
+    }),
+    db.communityPost.findMany({
+      where: { type: "SURVEY" },
+      select: { id: true, links: true, pinned: true },
+    }),
+  ]);
 
   const formatted = surveys.map((s) => {
     let questionsCount = 0;
+    let parsedFields: any[] = [];
     try {
       const parsed = JSON.parse(s.fields);
-      questionsCount = Array.isArray(parsed) ? parsed.length : 0;
+      parsedFields = Array.isArray(parsed) ? parsed : [];
+      questionsCount = parsedFields.length;
     } catch {
       questionsCount = 0;
     }
+
+    const linkedPost = surveyPosts.find((p) => p.links?.includes(s.id));
 
     return {
       id: s.id,
@@ -44,6 +54,13 @@ export default async function AdminSurveysPage() {
       createdAt: s.createdAt.toISOString(),
       responsesCount: s._count.responses,
       questionsCount,
+      pinned: linkedPost?.pinned ?? false,
+      questions: parsedFields.map((f, idx) => ({
+        id: f.id || `q_${idx + 1}`,
+        type: f.type || "POLL_SINGLE",
+        question: f.label || "",
+        options: Array.isArray(f.options) ? f.options : [],
+      })),
     };
   });
 

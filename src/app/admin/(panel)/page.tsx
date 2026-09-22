@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   Users, FolderKanban, Clock, CheckCircle2, Zap, TrendingUp, ArrowLeft,
-  CalendarDays, Sparkles, Hourglass,
+  CalendarDays, Sparkles, Hourglass, BarChart3, MessagesSquare, ShieldCheck,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -56,8 +56,8 @@ export default async function AdminDashboardPage() {
       {/* الترحيب */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-zinc-50">أهلاً بك في مركز التحكم</h1>
-          <p className="mt-1 text-sm text-zinc-500">نظرة سريعة على نبض المنصة الآن</p>
+          <h1 className="text-2xl font-extrabold text-foreground">أهلاً بك في مركز التحكم</h1>
+          <p className="mt-1 text-sm text-muted-foreground">نظرة سريعة على نبض المنصة وأهم المؤشرات الحيوية</p>
         </div>
         <Link
           href="/admin/activities/new"
@@ -66,6 +66,89 @@ export default async function AdminDashboardPage() {
           + نشاط جديد
         </Link>
       </div>
+
+      {/* ── مركز الوصول السريع والعمليات اليومية (Mobile-First Quick Actions) ── */}
+      <section className="rounded-3xl border border-gold/25 bg-gold/[0.03] p-4 sm:p-5 space-y-3 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-gold" />
+            <h2 className="text-sm font-black text-foreground">
+              مركز الوصول السريع والعمليات اليومية
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold text-muted-foreground hidden sm:inline">
+            تحكم فوري وسلس من الموبايل 📱
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+          <Link
+            href="/admin/activities/new"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-gold/30 bg-card hover:bg-gold/10 transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-gold/15 text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <FolderKanban className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">+ ورشة جديدة</span>
+            <span className="text-[9px] text-muted-foreground">إطلاق نشاط</span>
+          </Link>
+
+          <Link
+            href="/admin/surveys"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-gold/30 bg-card hover:bg-gold/10 transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-gold/15 text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <BarChart3 className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">الاستبيانات 📊</span>
+            <span className="text-[9px] text-muted-foreground">استطلاع وقرار</span>
+          </Link>
+
+          <Link
+            href="/admin/community"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border bg-card hover:bg-muted transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-muted text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <MessagesSquare className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">المجتمع 📢</span>
+            <span className="text-[9px] text-muted-foreground">منشور رسمي</span>
+          </Link>
+
+          <Link
+            href="/admin/students"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border bg-card hover:bg-muted transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-muted text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <Users className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">الطلاب 👥</span>
+            <span className="text-[9px] text-muted-foreground">كشف ونقاط</span>
+          </Link>
+
+          <Link
+            href="/admin/analytics"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border bg-card hover:bg-muted transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-muted text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <TrendingUp className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">الاستخبارات 📈</span>
+            <span className="text-[9px] text-muted-foreground">تحليل القرارات</span>
+          </Link>
+
+          <Link
+            href="/admin/audit"
+            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-border bg-card hover:bg-muted transition-all text-center group shadow-xs active:scale-95"
+          >
+            <div className="h-8.5 w-8.5 rounded-xl bg-muted text-gold flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="h-4 w-4" />
+            </div>
+            <span className="text-xs font-black text-foreground">التدقيق 🛡️</span>
+            <span className="text-[9px] text-muted-foreground">سجل الأمان</span>
+          </Link>
+        </div>
+      </section>
 
       {/* بطاقات الإحصائيات */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
