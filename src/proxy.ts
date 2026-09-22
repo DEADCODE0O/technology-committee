@@ -12,12 +12,16 @@ import { updateSession } from "@/lib/supabase/middleware";
 // ═══════════════════════════════════════════════════════════════
 
 export async function proxy(request: NextRequest) {
+  // استثناء مسار فحص الشات الدوري من تحديث جلسة Supabase لمنع استهلاك Egress المصادقة
+  if (request.nextUrl.pathname.startsWith("/api/chat/poll")) {
+    return NextResponse.next();
+  }
   return updateSession(request);
 }
 
 export const config = {
-  // كل الصفحات والأكشنات ما عدا الملفات الثابتة والوسائط
+  // كل الصفحات والأكشنات ما عدا الملفات الثابتة والوسائط وفحص الشات الدوري
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/qr|api/uploads|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/qr|api/uploads|api/chat/poll|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
   ],
 };

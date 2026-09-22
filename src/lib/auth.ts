@@ -14,6 +14,7 @@ import "server-only";
 //    bcrypt + JWT في كوكي httpOnly — لا يُستخدم في الإنتاج.
 // ═══════════════════════════════════════════════════════════════
 
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
@@ -377,7 +378,7 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
   };
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<SessionUser | null> {
   try {
     // ── فحص وضع محاكاة الطالب (Impersonation) للمشرفين أولاً ──
     const store = await cookies();
@@ -534,7 +535,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     console.error("getCurrentUser error:", err);
     return null;
   }
-}
+});
 
 // ─── حرس الصفحات (Server Components) ─────────────────────────
 

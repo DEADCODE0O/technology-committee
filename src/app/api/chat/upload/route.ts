@@ -9,8 +9,8 @@ import { rateLimit, clientIp, waitMessage } from "@/lib/rate-limit";
 //  تدعم الرفع على Supabase Storage أو uploads/ محلياً
 // ═══════════════════════════════════════════════════════════════
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_AUDIO_SIZE = 6 * 1024 * 1024; // 6MB
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB كحد أقصى بعد ضغط الكانفاس
+const MAX_AUDIO_SIZE = 2 * 1024 * 1024; // 2MB كحد أقصى لتسجيلات الصوت (Opus 24kbps)
 
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers);
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   if (file.size <= 0 || file.size > maxAllowed) {
     return NextResponse.json(
-      { error: `حجم الملف يجب ألا يتجاوز ${mediaType === "AUDIO" ? "6" : "5"} ميجابايت` },
+      { error: `حجم الملف يجب ألا يتجاوز 2 ميجابايت` },
       { status: 400 }
     );
   }
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   const fileName = `chat_${user.id}_${timestamp}_${randomStr}.${ext}`;
   let finalUrl = "";
 
-  // 1) محاولة الرفع على Supabase Storage
+  // 1) محاولة الرفع على Supabase Storage مع كاش CDN كامل
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const bucket = process.env.SUPABASE_BUCKET || "avatars";
@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
             Authorization: `Bearer ${serviceKey}`,
             "Content-Type": mimeType,
             "x-upsert": "true",
+            "cache-control": "public, max-age=31536000, immutable",
           },
           body: buffer,
         }

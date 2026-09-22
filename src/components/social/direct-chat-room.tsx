@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChatAudioPlayer } from "./chat-audio-player";
 import { MessageActionSheet } from "./message-action-sheet";
+import { compressImageClient } from "@/lib/client-compress";
 
 interface MessageItem {
   id: string;
@@ -177,31 +178,101 @@ export function DirectChatRoom({
     scrollToBottom("smooth");
   }, [messages.length]);
 
-  // ── 2. Smart Polling: كل 3.5 ثوان لجلب الرسائل الجديدة ──
+  // تتبع أحدث الرسائل دائماً لاستخدامها في الاستعلام بالدلتا
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // ── 2. Smart Zero-Egress Delta Polling ──
+  // - إيقاف تام للاستعلامات عند قفل الشاشة أو وضع التبويب في الخلفية (Page Visibility API)
+  // - التباطؤ التلقائي عند خمول المحادثة (Adaptive Backoff: 4s -> 8s -> 20s)
+  // - فحص التحديثات الخفيفة بنمط Delta Polling عبر /api/chat/poll بدون تكرار طلبات Auth
   useEffect(() => {
     let isMounted = true;
-    const interval = setInterval(async () => {
+    let timer: NodeJS.Timeout | null = null;
+    let lastActivityTime = Date.now();
+
+    const handleUserActivity = () => {
+      lastActivityTime = Date.now();
+    };
+
+    window.addEventListener("pointerdown", handleUserActivity, { passive: true });
+    window.addEventListener("keydown", handleUserActivity, { passive: true });
+
+    const poll = async () => {
+      if (!isMounted) return;
+
+      // 1) إذا كان التبويب في الخلفية أو شاشة الهاتف مغلقة: توقف كلياً (0 بايت Egress)
+      if (typeof document !== "undefined" && document.hidden) {
+        return;
+      }
+
       try {
-        const res = await getConversationMessages(otherUser.id, 60);
-        if (isMounted && res.ok && res.messages) {
-          setMessages((prev) => {
-            if (
-              res.messages.length !== prev.length ||
-              (res.messages.length > 0 && res.messages[res.messages.length - 1].id !== prev[prev.length - 1]?.id)
-            ) {
-              return res.messages;
-            }
-            return prev;
-          });
+        const lastMsg = messagesRef.current[messagesRef.current.length - 1];
+        const afterTime = lastMsg?.createdAt || "";
+        const afterId = lastMsg?.id || "";
+
+        const params = new URLSearchParams({
+          type: "direct",
+          targetId: otherUser.id,
+          ...(afterTime ? { afterTime } : {}),
+          ...(afterId ? { afterId } : {}),
+        });
+
+        const res = await fetch(`/api/chat/poll?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data.ok && data.hasNew && Array.isArray(data.messages) && data.messages.length > 0) {
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const additions = data.messages.filter((m: MessageItem) => !existingIds.has(m.id));
+              if (additions.length > 0) {
+                return [...prev, ...additions];
+              }
+              return prev;
+            });
+            lastActivityTime = Date.now();
+          }
         }
       } catch {
         // Silent catch
+      } finally {
+        if (!isMounted) return;
+
+        // حساب الفترة التالية حسب مدة الخمول:
+        const idleMs = Date.now() - lastActivityTime;
+        let nextInterval = 4000; // نشط: 4 ثوان
+        if (idleMs > 120000) {
+          nextInterval = 20000; // خامل جداً (أكثر من دقيقتين): 20 ثانية
+        } else if (idleMs > 30000) {
+          nextInterval = 8000; // خامل قليلاً (أكثر من 30 ثانية): 8 ثوان
+        }
+
+        timer = setTimeout(poll, nextInterval);
       }
-    }, 3500);
+    };
+
+    // عند العودة للتبويب من شاشة القفل: فحص فوري
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        lastActivityTime = Date.now();
+        if (timer) clearTimeout(timer);
+        poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // جدولة أول فحص بعد 4 ثوان
+    timer = setTimeout(poll, 4000);
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("pointerdown", handleUserActivity);
+      window.removeEventListener("keydown", handleUserActivity);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [otherUser.id]);
 
@@ -280,13 +351,24 @@ export function DirectChatRoom({
     }
   };
 
-  // ── 4. التسجيل الصوتي الحقيقي عبر MediaRecorder ──
+  // ── 4. التسجيل الصوتي الحقيقي فائق الضغط عبر MediaRecorder (Opus 24kbps) ──
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
 
-      const mediaRecorder = new MediaRecorder(stream);
+      const options: MediaRecorderOptions = {
+        audioBitsPerSecond: 24000, // Opus 24kbps نقي جداً للصوت البشري وحجمه 30KB فقط لكل 10 ثوان
+      };
+      if (typeof MediaRecorder !== "undefined") {
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          options.mimeType = "audio/webm;codecs=opus";
+        } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+          options.mimeType = "audio/mp4";
+        }
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (e) => {
@@ -297,7 +379,9 @@ export function DirectChatRoom({
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((track) => track.stop());
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: options.mimeType || "audio/webm",
+        });
         if (audioBlob.size > 0 && recordingDuration > 0) {
           await uploadAndSendAudio(audioBlob, recordingDuration);
         }
@@ -308,7 +392,15 @@ export function DirectChatRoom({
       setRecordingDuration(0);
 
       recordingTimerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        setRecordingDuration((prev) => {
+          if (prev >= 60) {
+            // الحد الأقصى 60 ثانية لحماية الباندويث والتخزين
+            stopRecording();
+            toast.info("تم إنهاء التسجيل تلقائياً عند الحد الأقصى (دقيقة واحدة) ⏱️");
+            return 60;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err) {
       toast.error("يرجى منح صلاحية الميكروفون لتسجيل الرسائل الصوتية 🎙️");
@@ -372,20 +464,23 @@ export function DirectChatRoom({
     }
   };
 
-  // ── 5. إرسال الصور في الشات ──
+  // ── 5. إرسال الصور في الشات مع ضغط الكانفاس التلقائي ──
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("حجم الصورة يجب ألا يتجاوز 10 ميجابايت");
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("حجم الملف كبير جداً (الحد الأقصى 15 ميجابايت)");
       return;
     }
 
     setIsUploadingMedia(true);
     try {
+      // ضغط الصورة برمجياً على الكانفاس لتخفيض حجمها بنسبة 90%+ قبل إرسالها
+      const compressed = await compressImageClient(file);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       formData.append("type", "IMAGE");
 
       const res = await fetch("/api/chat/upload", {

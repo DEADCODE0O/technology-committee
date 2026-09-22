@@ -95,6 +95,7 @@ export async function POST(req: NextRequest) {
             Authorization: `Bearer ${serviceKey}`,
             "Content-Type": detected.mime,
             "x-upsert": "true", // استبدال فوري للملف القديم لعدم استهلاك مساحة التخزين المجانية
+            "cache-control": "public, max-age=31536000, immutable",
           },
           body: bytes,
         }
