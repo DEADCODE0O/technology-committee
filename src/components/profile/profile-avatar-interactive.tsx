@@ -32,6 +32,7 @@ export function ProfileAvatarInteractive({
 }: ProfileAvatarInteractiveProps) {
   const [showInlineFrames, setShowInlineFrames] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl ?? null);
+  const [currentFrameId, setCurrentFrameId] = useState<string | null>(user.avatarFrameId ?? null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -173,7 +174,7 @@ export function ProfileAvatarInteractive({
           <AvatarWithFrame
             avatarUrl={currentAvatarUrl}
             name={user.fullName}
-            frameId={user.avatarFrameId}
+            frameId={currentFrameId}
             framesVisible={framesVisible}
             size="2xl"
             level={user.level}
@@ -249,7 +250,7 @@ export function ProfileAvatarInteractive({
             title="إظهار/إخفاء خزانة إطارات التميز للمستويات"
           >
             <Sparkles className="h-3 w-3" />
-            <span>{user.avatarFrameId ? "تغيير الإطار 👑" : "إطار التميز 👑"}</span>
+            <span>{currentFrameId ? "تغيير الإطار 👑" : "إطار التميز 👑"}</span>
             {showInlineFrames ? (
               <ChevronUp className="h-3 w-3" />
             ) : (
@@ -261,27 +262,28 @@ export function ProfileAvatarInteractive({
 
       {/* ── 3. خزانة الإطارات المدمجة مباشرة داخل الصفحة (بدون أي نافذة منبثقة أو شاشة معتمة) ── */}
       {framesVisible && showInlineFrames && (
-        <div className="w-full mt-3 rounded-3xl border border-gold/30 bg-card/95 p-4 sm:p-6 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+        <div className="w-full mt-3 rounded-3xl border border-gold/30 bg-card/95 p-3.5 sm:p-5 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2.5 mb-3">
             <span className="text-xs font-black text-gold flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4" /> خزانة الإطارات المباشرة
+              <Sparkles className="h-3.5 w-3.5" /> خزانة إطارات التميز (تمرير سريع)
             </span>
             <button
               type="button"
               onClick={() => setShowInlineFrames(false)}
               className="rounded-lg px-2.5 py-1 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
             >
-              ✕ إخفاء الخزانة
+              ✕ إخفاء
             </button>
           </div>
           <FrameWardrobeInline
             user={{
               fullName: user.fullName,
               avatarUrl: currentAvatarUrl,
-              avatarFrameId: user.avatarFrameId,
+              avatarFrameId: currentFrameId,
               level: user.level,
               points: user.points,
             }}
+            onFrameChanged={(newId) => setCurrentFrameId(newId)}
           />
         </div>
       )}
