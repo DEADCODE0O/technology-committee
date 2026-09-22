@@ -6,7 +6,6 @@ import { getStudentCodeConfig } from "@/lib/platform";
 import { RegisterWizard } from "@/components/platform/register-wizard";
 import { PublicSiteSideLink } from "@/components/platform/public-site-side-link";
 import { GoogleButton } from "@/components/platform/google-button";
-import { FacebookButton } from "@/components/platform/facebook-button";
 import { isAdminRole } from "@/lib/permissions";
 import { AuthThemeCorner } from "@/components/platform/auth-theme-corner";
 
@@ -54,9 +53,8 @@ export default async function RegisterPage({
         <div className="space-y-4">
           <div className="space-y-2.5 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
             <GoogleButton returnTo={returnTo} label="إنشاء حساب بحساب Google" />
-            <FacebookButton returnTo={returnTo} label="إنشاء حساب بحساب Facebook" />
             <p className="mt-1 text-center text-[11px] leading-5 text-zinc-500">
-              تسجيل دخول فوري وآمن بنقرة واحدة — وبعدها نطلب فقط بياناتك الدراسية الأساسية.
+              تسجيل دخول فوري وآمن بنقرة واحدة بحساب Google — وبعدها نطلب فقط بياناتك الدراسية الأساسية.
             </p>
           </div>
           <div className="flex items-center gap-3" aria-hidden="true">
