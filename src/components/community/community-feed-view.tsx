@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -211,7 +212,7 @@ export function CommunityFeedView({
                     {p.body}
                   </p>
 
-                  {p.surveyData && (
+                  {p.surveyData ? (
                     <CommunityPollCard
                       surveyId={p.surveyData.surveyId}
                       title={p.surveyData.title}
@@ -223,7 +224,23 @@ export function CommunityFeedView({
                       questions={p.surveyData.questions}
                       canVote={!!currentUserId}
                     />
-                  )}
+                  ) : p.type === "SURVEY" ? (
+                    <div className="overflow-hidden rounded-3xl border border-gold/40 bg-gold/5 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm my-3">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-gold flex items-center gap-1">
+                          <Sparkles className="h-3 w-3" /> استطلاع رأي واستبيان رسمي 📊
+                        </span>
+                        <h3 className="text-sm font-bold text-foreground mt-0.5">{p.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">شارك برأيك وصوّت في هذا الاستبيان للمساهمة في اتخاذ القرار.</p>
+                      </div>
+                      <Link
+                        href="/surveys"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow-md shrink-0"
+                      >
+                        المشاركة في الاستبيان ↗
+                      </Link>
+                    </div>
+                  ) : null}
 
                   {p.media && (
                     <div className="mt-4">

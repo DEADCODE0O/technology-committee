@@ -72,7 +72,8 @@ export function CommunityPollCard({
   // نصوص المقترحات المكتوبة في خيار أخرى
   const [otherTexts, setOtherTexts] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
-    questions.forEach((q) => {
+    const list = Array.isArray(questions) ? questions : [];
+    list.forEach((q) => {
       const val = q.userAnswer;
       if (typeof val === "string") {
         if (val.startsWith("أخرى: ")) {
@@ -81,8 +82,8 @@ export function CommunityPollCard({
           initial[q.id] = val.replace("__OTHER__: ", "");
         }
       } else if (Array.isArray(val)) {
-        const item = val.find((v) => v.startsWith("أخرى: ") || v.startsWith("__OTHER__: "));
-        if (item) {
+        const item = val.find((v) => typeof v === "string" && (v.startsWith("أخرى: ") || v.startsWith("__OTHER__: ")));
+        if (item && typeof item === "string") {
           initial[q.id] = item.replace(/^(أخرى: |__OTHER__: )/, "");
         }
       }
@@ -93,7 +94,8 @@ export function CommunityPollCard({
   // تخزين الإجابات المختارة
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(() => {
     const initial: Record<string, any> = {};
-    questions.forEach((q) => {
+    const list = Array.isArray(questions) ? questions : [];
+    list.forEach((q) => {
       if (q.userAnswer !== undefined && q.userAnswer !== null) {
         if (typeof q.userAnswer === "string") {
           if (q.userAnswer.startsWith("أخرى:") || q.userAnswer.startsWith("__OTHER__:")) {
@@ -103,7 +105,7 @@ export function CommunityPollCard({
           }
         } else if (Array.isArray(q.userAnswer)) {
           initial[q.id] = q.userAnswer.map((v) =>
-            v.startsWith("أخرى:") || v.startsWith("__OTHER__:") ? "أخرى" : v
+            typeof v === "string" && (v.startsWith("أخرى:") || v.startsWith("__OTHER__:")) ? "أخرى" : v
           );
         } else {
           initial[q.id] = q.userAnswer;
@@ -113,8 +115,8 @@ export function CommunityPollCard({
     return initial;
   });
 
-  const isClosed = status !== "OPEN" || (deadline && new Date(deadline) < new Date());
-  const isAnswered = (hasVoted && !isEditingVote) || isClosed;
+  const isClosed = status !== "OPEN" || Boolean(deadline && new Date(deadline) < new Date());
+  const isAnswered = Boolean((hasVoted && !isEditingVote) || isClosed);
 
   const handleCopySurveyLink = () => {
     if (typeof window !== "undefined") {
@@ -246,7 +248,7 @@ export function CommunityPollCard({
             className="inline-flex items-center gap-1 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/25 px-2.5 py-1 text-[10px] font-black text-gold transition-all"
           >
             <ExternalLink className="h-3 w-3" />
-            <span className="hidden xs:inline">صفحة مستقلة ↗</span>
+            <span className="hidden sm:inline">صفحة مستقلة ↗</span>
           </Link>
 
           <button
@@ -312,141 +314,156 @@ export function CommunityPollCard({
       )}
 
       {/* الأسئلة والخيارات */}
-      <div className="space-y-5">
-        {questions.map((q, qIndex) => {
-          const isQuestionAnswered = (hasVoted && !isEditingVote) || isClosed;
-          const currentSelected = selectedAnswers[q.id];
+      {(!questions || questions.length === 0) ? (
+        <div className="rounded-2xl border border-dashed border-gold/40 bg-gold/5 p-4 text-center space-y-2">
+          <p className="text-xs font-bold text-foreground">خيارات الاستبيان متاحة الآن للمشاركة والتصويت 📊</p>
+          <Link
+            href={`/surveys/${surveyId}`}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-xs font-black text-night hover:bg-gold-light transition-all shadow-sm"
+          >
+            فتح الاستبيان والتصويت مباشرة ↗
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {questions.map((q, qIndex) => {
+            const isQuestionAnswered = (hasVoted && !isEditingVote) || isClosed;
+            const currentSelected = selectedAnswers[q.id];
+            const safeOptions = Array.isArray(q.options) ? q.options : [];
+            const safeOptionsStats = Array.isArray(q.optionsStats) && q.optionsStats.length > 0
+              ? q.optionsStats
+              : safeOptions.map((o) => ({ option: o, count: 0, percentage: 0, isOther: false }));
 
-          return (
-            <div
-              key={q.id}
-              className="space-y-3 rounded-2xl bg-muted/20 border border-border/60 p-4"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-black text-gold">سؤال {qIndex + 1}</span>
-                  <h4 className="text-xs sm:text-sm font-bold text-foreground">
-                    {q.question}
-                  </h4>
-                  {q.description && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{q.description}</p>
+            return (
+              <div
+                key={q.id}
+                className="space-y-3 rounded-2xl bg-muted/20 border border-border/60 p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-black text-gold">سؤال {qIndex + 1}</span>
+                    <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                      {q.question}
+                    </h4>
+                    {q.description && (
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{q.description}</p>
+                    )}
+                  </div>
+
+                  {q.type === "POLL_MULTI" && !isQuestionAnswered && (
+                    <span className="rounded-md bg-gold/10 px-2 py-0.5 text-[9px] font-black text-gold border border-gold/20 shrink-0">
+                      اختيار متعدد
+                    </span>
                   )}
                 </div>
 
-                {q.type === "POLL_MULTI" && !isQuestionAnswered && (
-                  <span className="rounded-md bg-gold/10 px-2 py-0.5 text-[9px] font-black text-gold border border-gold/20 shrink-0">
-                    اختيار متعدد
-                  </span>
-                )}
-              </div>
-
-              {/* حالة 1: تم التصويت أو الاستبيان مغلق -> إظهار أشرطة النسب والنتائج */}
-              {isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
-                <div className="space-y-2 pt-1">
-                  {q.optionsStats.map((opt) => {
-                    const isSelectedByUser =
-                      q.type === "POLL_SINGLE"
-                        ? currentSelected === opt.option ||
-                          (opt.isOther &&
-                            typeof currentSelected === "string" &&
-                            (currentSelected.startsWith("أخرى:") ||
-                              currentSelected.startsWith("__OTHER__:")))
-                        : Array.isArray(currentSelected) &&
-                          (currentSelected.includes(opt.option) ||
+                {/* حالة 1: تم التصويت أو الاستبيان مغلق -> إظهار أشرطة النسب والنتائج */}
+                {isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
+                  <div className="space-y-2 pt-1">
+                    {safeOptionsStats.map((opt) => {
+                      const isSelectedByUser =
+                        q.type === "POLL_SINGLE"
+                          ? currentSelected === opt.option ||
                             (opt.isOther &&
-                              currentSelected.some(
-                                (v: string) =>
-                                  v.startsWith("أخرى:") || v.startsWith("__OTHER__:")
-                              )));
+                              typeof currentSelected === "string" &&
+                              (currentSelected.startsWith("أخرى:") ||
+                                currentSelected.startsWith("__OTHER__:")))
+                          : Array.isArray(currentSelected) &&
+                            (currentSelected.includes(opt.option) ||
+                              (opt.isOther &&
+                                currentSelected.some(
+                                  (v: unknown) =>
+                                    typeof v === "string" && (v.startsWith("أخرى:") || v.startsWith("__OTHER__:"))
+                                )));
 
-                    return (
-                      <div
-                        key={opt.option}
-                        className={`relative overflow-hidden rounded-xl border p-3 transition-all ${
-                          isSelectedByUser
-                            ? "border-gold/50 bg-gold/[0.08]"
-                            : "border-border/80 bg-card/60"
-                        }`}
-                      >
-                        {/* خلفية شريط التقدم النسبة المئوية */}
+                      return (
                         <div
-                          className={`absolute inset-y-0 start-0 opacity-20 transition-all duration-700 ${
-                            isSelectedByUser ? "bg-gold" : "bg-muted-foreground"
-                          }`}
-                          style={{ width: `${opt.percentage}%` }}
-                        />
-
-                        <div className="relative flex items-center justify-between gap-2 text-xs font-bold">
-                          <span className="flex items-center gap-2 text-foreground">
-                            {isSelectedByUser && (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
-                            )}
-                            {opt.option}
-                          </span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[11px] text-muted-foreground">
-                              ({opt.count} صوت)
-                            </span>
-                            <span
-                              className={`text-xs font-black ${
-                                isSelectedByUser ? "text-gold" : "text-foreground"
-                              }`}
-                            >
-                              {opt.percentage}%
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* لو كان هناك مقترح مخصص كتبه المستخدم في خيار أخرى */}
-                        {opt.isOther && isSelectedByUser && otherTexts[q.id] && (
-                          <div className="relative mt-2 rounded-xl bg-gold/10 border border-gold/25 p-2 text-[10px] text-foreground">
-                            <span className="font-black text-gold">مقترحك المكتوب: </span>
-                            {otherTexts[q.id]}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {/* حالة 2: لم يصوت بعد أو في وضع التعديل -> إظهار الأزرار التفاعلية للاختيار */}
-              {!isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
-                <div className="grid gap-2 sm:grid-cols-1 pt-1">
-                  {q.options.map((opt) => {
-                    const isSelected =
-                      q.type === "POLL_SINGLE"
-                        ? currentSelected === opt
-                        : Array.isArray(currentSelected) && currentSelected.includes(opt);
-
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() =>
-                          q.type === "POLL_SINGLE"
-                            ? handleSingleSelect(q.id, opt)
-                            : handleMultiSelect(q.id, opt)
-                        }
-                        className={`w-full flex items-center justify-between gap-3 rounded-2xl border p-3.5 text-start transition-all ${
-                          isSelected
-                            ? "border-gold bg-gold/15 text-gold-deep dark:text-gold shadow-sm"
-                            : "border-border/80 bg-card/80 text-foreground hover:border-gold/40 hover:bg-muted/40"
-                        }`}
-                      >
-                        <span className="text-xs sm:text-sm font-extrabold">{opt}</span>
-                        <div
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
-                            isSelected
-                              ? "border-gold bg-gold text-night"
-                              : "border-muted-foreground/40 bg-transparent"
+                          key={opt.option}
+                          className={`relative overflow-hidden rounded-xl border p-3 transition-all ${
+                            isSelectedByUser
+                              ? "border-gold/50 bg-gold/[0.08]"
+                              : "border-border/80 bg-card/60"
                           }`}
                         >
-                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
+                          {/* خلفية شريط التقدم النسبة المئوية */}
+                          <div
+                            className={`absolute inset-y-0 start-0 opacity-20 transition-all duration-700 ${
+                              isSelectedByUser ? "bg-gold" : "bg-muted-foreground"
+                            }`}
+                            style={{ width: `${opt.percentage}%` }}
+                          />
+
+                          <div className="relative flex items-center justify-between gap-2 text-xs font-bold">
+                            <span className="flex items-center gap-2 text-foreground">
+                              {isSelectedByUser && (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
+                              )}
+                              {opt.option}
+                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[11px] text-muted-foreground">
+                                ({opt.count} صوت)
+                              </span>
+                              <span
+                                className={`text-xs font-black ${
+                                  isSelectedByUser ? "text-gold" : "text-foreground"
+                                }`}
+                              >
+                                {opt.percentage}%
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* لو كان هناك مقترح مخصص كتبه المستخدم في خيار أخرى */}
+                          {opt.isOther && isSelectedByUser && otherTexts[q.id] && (
+                            <div className="relative mt-2 rounded-xl bg-gold/10 border border-gold/25 p-2 text-[10px] text-foreground">
+                              <span className="font-black text-gold">مقترحك المكتوب: </span>
+                              {otherTexts[q.id]}
+                            </div>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {/* حالة 2: لم يصوت بعد أو في وضع التعديل -> إظهار الأزرار التفاعلية للاختيار */}
+                {!isQuestionAnswered && (q.type === "POLL_SINGLE" || q.type === "POLL_MULTI") ? (
+                  <div className="grid gap-2 sm:grid-cols-1 pt-1">
+                    {safeOptions.map((opt) => {
+                      const isSelected =
+                        q.type === "POLL_SINGLE"
+                          ? currentSelected === opt
+                          : Array.isArray(currentSelected) && currentSelected.includes(opt);
+
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() =>
+                            q.type === "POLL_SINGLE"
+                              ? handleSingleSelect(q.id, opt)
+                              : handleMultiSelect(q.id, opt)
+                          }
+                          className={`w-full flex items-center justify-between gap-3 rounded-2xl border p-3.5 text-start transition-all ${
+                            isSelected
+                              ? "border-gold bg-gold/15 text-gold-deep dark:text-gold shadow-sm"
+                              : "border-border/80 bg-card/80 text-foreground hover:border-gold/40 hover:bg-muted/40"
+                          }`}
+                        >
+                          <span className="text-xs sm:text-sm font-extrabold">{opt}</span>
+                          <div
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                              isSelected
+                                ? "border-gold bg-gold text-night"
+                                : "border-muted-foreground/40 bg-transparent"
+                            }`}
+                          >
+                            {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
+                          </div>
+                        </button>
+                      );
+                    })}
 
                   {/* خيار «أخرى» لكتابة مقترح غير مذكور */}
                   {q.allowOther && (
@@ -582,6 +599,7 @@ export function CommunityPollCard({
           );
         })}
       </div>
+      )}
 
       {/* زر إرسال التصويت في حال لم يسبق له التصويت أو في وضع التعديل */}
       {(!hasVoted || isEditingVote) && !isClosed && (

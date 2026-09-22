@@ -81,9 +81,9 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
           }
         } else if (Array.isArray(val)) {
           const otherItem = val.find(
-            (v: string) => v.startsWith("أخرى: ") || v.startsWith("__OTHER__: ")
+            (v: unknown) => typeof v === "string" && (v.startsWith("أخرى: ") || v.startsWith("__OTHER__: "))
           );
-          if (otherItem) {
+          if (otherItem && typeof otherItem === "string") {
             initial[q.id] = otherItem.replace(/^(أخرى: |__OTHER__: )/, "");
           }
         }
@@ -106,8 +106,8 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
               initial[q.id] = val;
             }
           } else if (Array.isArray(val)) {
-            initial[q.id] = val.map((v: string) =>
-              v.startsWith("أخرى: ") || v.startsWith("__OTHER__: ") ? "أخرى" : v
+            initial[q.id] = val.map((v: unknown) =>
+              typeof v === "string" && (v.startsWith("أخرى: ") || v.startsWith("__OTHER__: ")) ? "أخرى" : v
             );
           } else {
             initial[q.id] = val;
@@ -119,8 +119,8 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
   });
 
   const isClosed =
-    survey.status !== "OPEN" || (survey.deadline && new Date(survey.deadline) < new Date());
-  const isAnswered = (hasVoted && !isEditingVote) || isClosed;
+    survey.status !== "OPEN" || Boolean(survey.deadline && new Date(survey.deadline) < new Date());
+  const isAnswered = Boolean((hasVoted && !isEditingVote) || isClosed);
 
   // نسخ رابط الاستبيان
   const handleCopyLink = () => {

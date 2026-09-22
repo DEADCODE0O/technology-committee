@@ -161,126 +161,143 @@ export default async function CommunityPage() {
     if (p.type === "SURVEY" || (p.links && p.links.includes("DATA_REQUEST"))) {
       try {
         const parsedLinks = JSON.parse(p.links || "[]");
-        const found = parsedLinks.find((l: any) => l.label === "DATA_REQUEST");
+        const found = parsedLinks.find((l: any) => l.label === "DATA_REQUEST" || l.label === "SURVEY");
         if (found?.url) surveyIds.push(found.url);
       } catch {}
+      if (p.links) {
+        const cuidMatch = p.links.match(/c[a-z0-9]{24}/g);
+        if (cuidMatch) cuidMatch.forEach((id) => surveyIds.push(id));
+      }
     }
   });
 
   const surveyDataMap = new Map<string, any>();
-  if (surveyIds.length > 0) {
-    const surveys = await db.dataRequest.findMany({
-      where: { id: { in: surveyIds } },
-      include: {
-        responses: {
-          select: {
-            userId: true,
-            answers: true,
-          },
+  const surveyByTitleMap = new Map<string, any>();
+
+  // جلب جميع الاستبيانات المفتوحة أو المحددة بالمعرف لضمان عدم ضياع أي استبيان
+  const surveys = await db.dataRequest.findMany({
+    where: {
+      OR: [
+        { id: { in: surveyIds.length > 0 ? surveyIds : ["__NONE__"] } },
+        { status: "OPEN" },
+      ],
+    },
+    include: {
+      responses: {
+        select: {
+          userId: true,
+          answers: true,
         },
       },
-    });
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
 
-    surveys.forEach((s) => {
-      let fields: any[] = [];
+  surveys.forEach((s) => {
+    let fields: any[] = [];
+    try {
+      fields = JSON.parse(s.fields);
+    } catch {
+      fields = [];
+    }
+
+    const totalVotes = s.responses.length;
+    const userResp = user ? s.responses.find((r) => r.userId === user.id) : null;
+    let userAnswers: Record<string, any> = {};
+    if (userResp?.answers) {
       try {
-        fields = JSON.parse(s.fields);
-      } catch {
-        fields = [];
-      }
+        userAnswers = JSON.parse(userResp.answers);
+      } catch {}
+    }
 
-      const totalVotes = s.responses.length;
-      const userResp = user ? s.responses.find((r) => r.userId === user.id) : null;
-      let userAnswers: Record<string, any> = {};
-      if (userResp?.answers) {
+    const questions = fields.map((f, idx) => {
+      const qId = f.id || `q_${idx + 1}`;
+      const qType = f.type || "POLL_SINGLE";
+      const options: string[] = Array.isArray(f.options) ? f.options : [];
+      const allowOther = !!f.allowOther;
+
+      const optionCounts: Record<string, number> = {};
+      options.forEach((o) => (optionCounts[o] = 0));
+      if (allowOther) optionCounts["أخرى"] = 0;
+
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      s.responses.forEach((resp) => {
+        let ans: Record<string, any> = {};
         try {
-          userAnswers = JSON.parse(userResp.answers);
+          ans = JSON.parse(resp.answers);
         } catch {}
+        const val = ans[qId];
+        if (val === undefined || val === null || val === "") return;
+
+        const recordVote = (v: string) => {
+          const str = String(v).trim();
+          if (str.startsWith("أخرى:") || str.startsWith("__OTHER__:") || str === "أخرى") {
+            optionCounts["أخرى"] = (optionCounts["أخرى"] || 0) + 1;
+          } else if (optionCounts[str] !== undefined) {
+            optionCounts[str] = (optionCounts[str] || 0) + 1;
+          } else {
+            optionCounts[str] = (optionCounts[str] || 0) + 1;
+          }
+        };
+
+        if (qType === "POLL_SINGLE") {
+          recordVote(val);
+        } else if (qType === "POLL_MULTI") {
+          const arr = Array.isArray(val) ? val : [val];
+          arr.forEach(recordVote);
+        } else if (qType === "RATING") {
+          const num = Number(val);
+          if (!isNaN(num) && num >= 1 && num <= 5) {
+            ratingSum += num;
+            ratingCount++;
+          }
+        }
+      });
+
+      const allOptionsToDisplay = [...options];
+      if (allowOther && !allOptionsToDisplay.includes("أخرى")) {
+        allOptionsToDisplay.push("أخرى");
       }
 
-      const questions = fields.map((f) => {
-        const qId = f.id;
-        const qType = f.type || "POLL_SINGLE";
-        const options: string[] = f.options || [];
-        const allowOther = !!f.allowOther;
+      const optionsStats = allOptionsToDisplay.map((opt) => ({
+        option: opt,
+        count: optionCounts[opt] || 0,
+        percentage: totalVotes > 0 ? Math.round(((optionCounts[opt] || 0) / totalVotes) * 100) : 0,
+        isOther: opt === "أخرى",
+      }));
 
-        const optionCounts: Record<string, number> = {};
-        options.forEach((o) => (optionCounts[o] = 0));
-        if (allowOther) optionCounts["أخرى"] = 0;
-
-        let ratingSum = 0;
-        let ratingCount = 0;
-
-        s.responses.forEach((resp) => {
-          let ans: Record<string, any> = {};
-          try {
-            ans = JSON.parse(resp.answers);
-          } catch {}
-          const val = ans[qId];
-          if (val === undefined || val === null || val === "") return;
-
-          const recordVote = (v: string) => {
-            const str = String(v).trim();
-            if (str.startsWith("أخرى:") || str.startsWith("__OTHER__:") || str === "أخرى") {
-              optionCounts["أخرى"] = (optionCounts["أخرى"] || 0) + 1;
-            } else if (optionCounts[str] !== undefined) {
-              optionCounts[str] = (optionCounts[str] || 0) + 1;
-            } else {
-              optionCounts[str] = (optionCounts[str] || 0) + 1;
-            }
-          };
-
-          if (qType === "POLL_SINGLE") {
-            recordVote(val);
-          } else if (qType === "POLL_MULTI") {
-            const arr = Array.isArray(val) ? val : [val];
-            arr.forEach(recordVote);
-          } else if (qType === "RATING") {
-            const num = Number(val);
-            if (!isNaN(num) && num >= 1 && num <= 5) {
-              ratingSum += num;
-              ratingCount++;
-            }
-          }
-        });
-
-        const allOptionsToDisplay = [...options];
-        if (allowOther && !allOptionsToDisplay.includes("أخرى")) {
-          allOptionsToDisplay.push("أخرى");
-        }
-
-        const optionsStats = allOptionsToDisplay.map((opt) => ({
-          option: opt,
-          count: optionCounts[opt] || 0,
-          percentage: totalVotes > 0 ? Math.round(((optionCounts[opt] || 0) / totalVotes) * 100) : 0,
-          isOther: opt === "أخرى",
-        }));
-
-        return {
-          id: qId,
-          type: qType,
-          question: f.label || f.question || "سؤال",
-          description: f.description,
-          options,
-          allowOther,
-          optionsStats,
-          averageRating: ratingCount > 0 ? Math.round((ratingSum / ratingCount) * 10) / 10 : undefined,
-          userAnswer: userAnswers[qId],
-        };
-      });
-
-      surveyDataMap.set(s.id, {
-        surveyId: s.id,
-        title: s.title,
-        description: s.description,
-        status: s.status,
-        deadline: s.deadline ? s.deadline.toISOString() : null,
-        totalVotes,
-        hasVoted: !!userResp,
-        questions,
-      });
+      return {
+        id: qId,
+        type: qType,
+        question: f.label || f.question || "سؤال",
+        description: f.description,
+        options,
+        allowOther,
+        optionsStats,
+        averageRating: ratingCount > 0 ? Math.round((ratingSum / ratingCount) * 10) / 10 : undefined,
+        userAnswer: userAnswers[qId],
+      };
     });
-  }
+
+    const surveyObj = {
+      surveyId: s.id,
+      title: s.title,
+      description: s.description,
+      status: s.status,
+      deadline: s.deadline ? s.deadline.toISOString() : null,
+      totalVotes,
+      hasVoted: !!userResp,
+      questions,
+    };
+
+    surveyDataMap.set(s.id, surveyObj);
+    if (s.title) {
+      surveyByTitleMap.set(s.title.trim().toLowerCase(), surveyObj);
+    }
+  });
 
   const formattedCommitteePosts = visible.map((p) => {
     const authorPoints = p.createdBy?.pointEvents?.reduce((acc, e) => acc + e.points, 0) ?? 0;
@@ -288,13 +305,51 @@ export default async function CommunityPage() {
 
     let surveyData = null;
     if (p.type === "SURVEY" || (p.links && p.links.includes("DATA_REQUEST"))) {
+      // 1. محاولة المطابقة المباشرة عبر معرّف الرابط
       try {
         const parsed = JSON.parse(p.links || "[]");
-        const found = parsed.find((l: any) => l.label === "DATA_REQUEST");
-        if (found?.url) {
-          surveyData = surveyDataMap.get(found.url) || null;
+        const found = parsed.find((l: any) => l.label === "DATA_REQUEST" || l.label === "SURVEY");
+        if (found?.url && surveyDataMap.has(found.url)) {
+          surveyData = surveyDataMap.get(found.url);
         }
       } catch {}
+
+      // 2. محاولة استخراج أي معرّف CUID من الروابط
+      if (!surveyData && p.links) {
+        const cuidMatch = p.links.match(/c[a-z0-9]{24}/g);
+        if (cuidMatch) {
+          for (const cid of cuidMatch) {
+            if (surveyDataMap.has(cid)) {
+              surveyData = surveyDataMap.get(cid);
+              break;
+            }
+          }
+        }
+      }
+
+      // 3. محاولة المطابقة التامة بالعنوان
+      if (!surveyData && p.title) {
+        const normTitle = p.title.trim().toLowerCase();
+        if (surveyByTitleMap.has(normTitle)) {
+          surveyData = surveyByTitleMap.get(normTitle);
+        }
+      }
+
+      // 4. محاولة المطابقة الجزئية بالعنوان
+      if (!surveyData && p.title) {
+        const normTitle = p.title.trim().toLowerCase();
+        for (const [titleKey, data] of surveyByTitleMap.entries()) {
+          if (normTitle.includes(titleKey) || titleKey.includes(normTitle)) {
+            surveyData = data;
+            break;
+          }
+        }
+      }
+
+      // 5. إذا كان المنشور استبياناً رسمياً ولم يرتبط بعد، نأخذ أحدث استبيان متاح
+      if (!surveyData && p.type === "SURVEY" && surveyDataMap.size > 0) {
+        surveyData = Array.from(surveyDataMap.values())[0];
+      }
     }
 
     const commentsForStudent = p.comments.map((c) => {
