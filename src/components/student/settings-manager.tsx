@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -19,13 +19,17 @@ import {
   Moon,
   Laptop,
   Camera,
+  RotateCcw,
+  Trash2,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { updateStudentGeneralSettings, changeStudentPassword } from "@/actions/settings";
-import { restoreAccountAvatarAction } from "@/actions/profile";
+import { restoreAccountAvatarAction, setAvatarUrlAction } from "@/actions/profile";
+import { PRESET_AVATARS } from "@/lib/avatars";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { FrameWardrobeModal } from "@/components/profile/frame-wardrobe-modal";
-import { WhatsappAvatarModal } from "@/components/profile/whatsapp-avatar-modal";
 import { useTheme } from "next-themes";
 
 interface SettingsManagerProps {
@@ -82,13 +86,6 @@ export function SettingsManager({ user }: SettingsManagerProps) {
   const [passwordFeedback, setPasswordFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [isPendingPassword, startPasswordTransition] = useTransition();
 
-  // Avatar & Frame state
-  const [wardrobeOpen, setWardrobeOpen] = useState(false);
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
-  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl);
-  const [isPendingAvatar, startAvatarTransition] = useTransition();
-  const [avatarFeedback, setAvatarFeedback] = useState<string | null>(null);
-
   const handleGeneralSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralFeedback(null);
@@ -129,29 +126,154 @@ export function SettingsManager({ user }: SettingsManagerProps) {
     });
   };
 
-  const handleRestoreGoogleAvatar = () => {
-    setAvatarFeedback(null);
+  // Avatar & Frame state
+  const [wardrobeOpen, setWardrobeOpen] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl);
+  const [avatarFilter, setAvatarFilter] = useState<"ALL" | "BOY" | "GIRL">("ALL");
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPendingAvatar, startAvatarTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new window.Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return resolve(file);
+
+            const maxSize = 512;
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+
+            const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+            const sx = (img.naturalWidth - minDim) / 2;
+            const sy = (img.naturalHeight - minDim) / 2;
+
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const compressed = new File([blob], "avatar.webp", {
+                    type: "image/webp",
+                    lastModified: Date.now(),
+                  });
+                  resolve(compressed);
+                } else {
+                  resolve(file);
+                }
+              },
+              "image/webp",
+              0.85
+            );
+          } catch {
+            resolve(file);
+          }
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب ألا يتجاوز 20 ميجابايت");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append("file", compressed);
+
+      const res = await fetch("/api/profile/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "تعذر رفع الصورة");
+      }
+
+      setCurrentAvatarUrl(data.url);
+      toast.success("تم تحديث صورتك الشخصية بنجاح! 📸");
+      router.refresh();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "فشل رفع الصورة");
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  const handleSelectPreset = (src: string) => {
     startAvatarTransition(async () => {
-      const res = await restoreAccountAvatarAction();
+      const res = await setAvatarUrlAction(src);
       if (res.ok) {
-        setAvatarFeedback("تمت استعادة صورة الحساب بنجاح!");
+        setCurrentAvatarUrl(src);
+        toast.success("تم تعيين الشخصية الرمزية بنجاح!");
         router.refresh();
       } else {
-        setAvatarFeedback(res.error || "تعذر استعادة الصورة");
+        toast.error(res.error || "تعذر تعيين الشخصية");
+      }
+    });
+  };
+
+  const handleRemoveAvatar = () => {
+    startAvatarTransition(async () => {
+      const res = await setAvatarUrlAction("INITIALS");
+      if (res.ok) {
+        setCurrentAvatarUrl(null);
+        toast.success("تم حذف صورتك الشخصية والعودة للشعار البسيط");
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر حذف الصورة");
+      }
+    });
+  };
+
+  const handleRestoreGoogleAvatar = () => {
+    startAvatarTransition(async () => {
+      const res = await restoreAccountAvatarAction();
+      if (res.ok && res.avatarUrl) {
+        setCurrentAvatarUrl(res.avatarUrl);
+        toast.success("تمت استعادة صورة الحساب الأصلية من Google بنجاح! 📸");
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر استعادة الصورة");
       }
     });
   };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      {/* مدخل رفع الصور المخفي — يفتح الكاميرا/المعرض مباشرة بدون أي نوافذ منبثقة */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
       {/* ── الرأس التعريفي ── */}
       <div className="rounded-3xl border border-border bg-card/70 p-6 sm:p-7 shadow-sm backdrop-blur-md">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-start">
           <div className="flex flex-col items-center gap-2 shrink-0">
             <div
               className="relative group cursor-pointer"
-              onClick={() => setPhotoModalOpen(true)}
-              title="انقر لتغيير أو استعادة صورتك الشخصية"
+              onClick={() => fileInputRef.current?.click()}
+              title="انقر لتغيير صورتك الشخصية مباشرة من جهازك"
             >
               <AvatarWithFrame
                 avatarUrl={currentAvatarUrl}
@@ -165,7 +287,11 @@ export function SettingsManager({ user }: SettingsManagerProps) {
                 className="absolute bottom-0 end-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#121b22] text-gold border border-gold/70 shadow-lg group-hover:scale-110 group-hover:bg-gold group-hover:text-night transition-all"
                 title="تغيير الصورة الشخصية"
               >
-                <Camera className="h-3.5 w-3.5" />
+                {isUploading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-gold" />
+                ) : (
+                  <Camera className="h-3.5 w-3.5" />
+                )}
               </span>
             </div>
             <button
@@ -241,6 +367,151 @@ export function SettingsManager({ user }: SettingsManagerProps) {
             <p className="text-xs text-muted-foreground mt-0.5">
               هذه البيانات تظهر لزملائك في المجتمع والشات والملف التعريفي.
             </p>
+          </div>
+
+          {/* ── خانة الصورة الشخصية المباشرة (طبيعية وبدون أي نوافذ منبثقة) ── */}
+          <div className="rounded-2xl border border-border bg-card/80 p-4 sm:p-5 space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/60 pb-4">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className="relative group cursor-pointer shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="انقر لرفع صورة جديدة مباشرة من جهازك"
+                >
+                  <AvatarWithFrame
+                    avatarUrl={currentAvatarUrl}
+                    name={displayName || user.profile?.fullName || user.email}
+                    frameId={user.avatarFrameId}
+                    size="lg"
+                    level={user.level}
+                    showLevel
+                  />
+                  <span className="absolute -bottom-1 -end-1 flex h-6 w-6 items-center justify-center rounded-full bg-gold text-night border border-background shadow-md group-hover:scale-110 transition-transform">
+                    {isUploading || isPendingAvatar ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Camera className="h-3 w-3" />
+                    )}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-extrabold text-foreground">الصورة الشخصية</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    اختر صورة من هاتفك أو استعد صورة Google أو اختر شخصية كرتونية مباشرة.
+                  </p>
+                </div>
+              </div>
+
+              {/* أزرار الإجراءات المباشرة */}
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  disabled={isUploading || isPendingAvatar}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold px-3.5 py-2 text-xs font-black text-night hover:bg-gold/90 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Camera className="h-3.5 w-3.5" />
+                  )}
+                  <span>رفع صورة جديدة</span>
+                </button>
+
+                {(user.avatarUrl || user.provider === "GOOGLE") && (
+                  <button
+                    type="button"
+                    disabled={isUploading || isPendingAvatar}
+                    onClick={handleRestoreGoogleAvatar}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-muted-foreground hover:text-gold hover:border-gold/50 transition-all"
+                    title="استعادة صورتك الأصلية من Google"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 text-gold" />
+                    <span>صورة Google</span>
+                  </button>
+                )}
+
+                {currentAvatarUrl && currentAvatarUrl !== "INITIALS" && (
+                  <button
+                    type="button"
+                    disabled={isUploading || isPendingAvatar}
+                    onClick={handleRemoveAvatar}
+                    className="inline-flex items-center justify-center gap-1 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-500/20 transition-all"
+                    title="إزالة الصورة والعودة للشعار البسيط"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>إزالة</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* اختيار شخصية رمزية مباشرة وبشكل طبيعي داخل الصفحة */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-gold" />
+                  أو اختر شخصية رمزية جاهزة:
+                </span>
+
+                {/* تصنيف الشخصيات */}
+                <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/60 text-[10px] font-bold">
+                  {(["ALL", "BOY", "GIRL"] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setAvatarFilter(cat)}
+                      className={`px-2 py-0.5 rounded-md transition-all ${
+                        avatarFilter === cat
+                          ? "bg-gold text-night font-black shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {cat === "ALL" ? "الكل" : cat === "BOY" ? "شباب" : "بنات"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* معرض الشخصيات الرمزية بشكل أفقي سلس */}
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-2 custom-scrollbar pt-1">
+                {PRESET_AVATARS.filter(
+                  (a) => avatarFilter === "ALL" || a.gender === avatarFilter
+                ).map((preset) => {
+                  const isSelected = currentAvatarUrl === preset.src;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={isPendingAvatar}
+                      onClick={() => handleSelectPreset(preset.src)}
+                      className={`relative shrink-0 rounded-2xl p-1 transition-all group focus:outline-none ${
+                        isSelected
+                          ? "ring-2 ring-gold scale-105 bg-gold/10"
+                          : "hover:scale-105 hover:bg-muted/50 border border-border/50"
+                      }`}
+                      title={preset.name}
+                    >
+                      <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-muted/30">
+                        <Image
+                          src={preset.src}
+                          alt={preset.name}
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover group-hover:scale-110 transition-transform"
+                        />
+                      </div>
+                      {isSelected && (
+                        <span className="absolute -top-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-night text-[9px] font-black shadow">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {generalFeedback && (
@@ -533,23 +804,6 @@ export function SettingsManager({ user }: SettingsManagerProps) {
                 فتح خزانة الإطارات 👘
               </button>
             </div>
-
-            {/* صورة الحساب الأصلية */}
-            {user.provider === "GOOGLE" && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleRestoreGoogleAvatar}
-                  disabled={isPendingAvatar}
-                  className="text-xs font-bold text-muted-foreground hover:text-gold transition-colors underline"
-                >
-                  {isPendingAvatar ? "جارٍ الاستعادة..." : "🔄 استعادة صورتي الأصلية من حساب Google"}
-                </button>
-                {avatarFeedback && (
-                  <p className="mt-1 text-xs text-emerald-500 font-bold">{avatarFeedback}</p>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -591,22 +845,6 @@ export function SettingsManager({ user }: SettingsManagerProps) {
           </div>
         </div>
       )}
-
-      {/* محرر الصورة الشخصية بنمط واتساب */}
-      <WhatsappAvatarModal
-        user={{
-          fullName: displayName || user.profile?.fullName || user.email,
-          avatarUrl: currentAvatarUrl,
-          accountAvatarUrl: user.avatarUrl,
-          provider: user.provider,
-        }}
-        isOpen={photoModalOpen}
-        onOpenChange={setPhotoModalOpen}
-        onAvatarUpdated={(newUrl) => {
-          setCurrentAvatarUrl(newUrl);
-          router.refresh();
-        }}
-      />
 
       {/* نافذة خزانة الإطارات المنبثقة المستقلة */}
       <FrameWardrobeModal

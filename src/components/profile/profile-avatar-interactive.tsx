@@ -1,14 +1,16 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════
-//  الصورة الشخصية التفاعلية مع محرر واتساب وفصل خزانة الإطارات
+//  الصورة الشخصية التفاعلية — رفع طبيعي ومباشر بدون أي نوافذ منبثقة
+//  النقر على الكاميرا يفتح ملفات/كاميرا الجهاز مباشرة وسلس بنقرة واحدة
 // ═══════════════════════════════════════════════════════════════
 
-import { useState } from "react";
-import { Camera, Sparkles } from "lucide-react";
+import { useState, useRef, useTransition } from "react";
+import { toast } from "sonner";
+import { Camera, Sparkles, RotateCcw, Trash2, Loader2 } from "lucide-react";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { WhatsappAvatarModal } from "./whatsapp-avatar-modal";
 import { FrameWardrobeModal } from "./frame-wardrobe-modal";
+import { restoreAccountAvatarAction, setAvatarUrlAction } from "@/actions/profile";
 
 interface ProfileAvatarInteractiveProps {
   user: {
@@ -27,20 +29,145 @@ export function ProfileAvatarInteractive({
   user,
   framesVisible = true,
 }: ProfileAvatarInteractiveProps) {
-  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [framesModalOpen, setFramesModalOpen] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl ?? null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasPhoto = Boolean(currentAvatarUrl && currentAvatarUrl !== "INITIALS");
+  const hasAccountPhoto = Boolean(user.accountAvatarUrl || user.provider === "GOOGLE");
+
+  // ضغط خفيف وسريع في المتصفح بصيغة WebP
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new window.Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return resolve(file);
+
+            const maxSize = 512;
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+
+            const minDim = Math.min(img.naturalWidth, img.naturalHeight);
+            const sx = (img.naturalWidth - minDim) / 2;
+            const sy = (img.naturalHeight - minDim) / 2;
+
+            ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, maxSize, maxSize);
+
+            canvas.toBlob(
+              (blob) => {
+                if (blob) {
+                  const compressed = new File([blob], "avatar.webp", {
+                    type: "image/webp",
+                    lastModified: Date.now(),
+                  });
+                  resolve(compressed);
+                } else {
+                  resolve(file);
+                }
+              },
+              "image/webp",
+              0.85
+            );
+          } catch {
+            resolve(file);
+          }
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // رفع الصورة مباشرة عند اختيارها من الهاتف أو الكمبيوتر
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("حجم الصورة يجب ألا يتجاوز 20 ميجابايت");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const compressed = await compressImage(file);
+      const formData = new FormData();
+      formData.append("file", compressed);
+
+      const res = await fetch("/api/profile/upload-avatar", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "تعذر رفع الصورة");
+      }
+
+      setCurrentAvatarUrl(data.url);
+      toast.success("تم تحديث صورتك الشخصية بنجاح! 📸");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "فشل رفع الصورة");
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
+  // استعادة صورة Google الأصلية بنقرة واحدة
+  const handleRestoreAccountAvatar = () => {
+    startTransition(async () => {
+      const res = await restoreAccountAvatarAction();
+      if (res.ok && res.avatarUrl) {
+        setCurrentAvatarUrl(res.avatarUrl);
+        toast.success("تمت استعادة صورتك الشخصية الأصلية من Google بنجاح! 📸");
+      } else {
+        toast.error(res.error || "تعذر استعادة صورة الحساب");
+      }
+    });
+  };
+
+  // إزالة الصورة الحالية
+  const handleDeleteAvatar = () => {
+    startTransition(async () => {
+      const res = await setAvatarUrlAction("INITIALS");
+      if (res.ok) {
+        setCurrentAvatarUrl(null);
+        toast.success("تمت إزالة صورتك الشخصية والعودة للشعار البسيط");
+      } else {
+        toast.error(res.error || "تعذر إزالة الصورة");
+      }
+    });
+  };
 
   return (
-    <div className="flex flex-col items-center sm:items-start gap-2.5">
-      {/* ── 1. الصورة الشخصية مع أيقونة الكاميرا (تفتح محرر واتساب حصراً) ── */}
+    <div className="flex flex-col items-center sm:items-start gap-3">
+      {/* المدخل المخفي لفتح المعرض/الكاميرا مباشرة بدون أي نوافذ منبثقة */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* ── 1. الصورة الشخصية مع أيقونة الكاميرا (النقر يفتح اختيار الصورة مباشرة) ── */}
       <div className="relative inline-block">
         <button
           type="button"
-          onClick={() => setPhotoModalOpen(true)}
-          className="relative group focus:outline-none rounded-full cursor-pointer transition-all hover:ring-4 hover:ring-gold/35 hover:scale-[1.03]"
-          title="انقر لتغيير أو استعادة صورتك الشخصية"
-          aria-label="تغيير أو استعادة صورتك الشخصية"
+          disabled={isUploading || isPending}
+          onClick={() => fileInputRef.current?.click()}
+          className="relative group focus:outline-none rounded-full cursor-pointer transition-all hover:ring-4 hover:ring-gold/35 hover:scale-[1.03] disabled:opacity-50"
+          title="انقر لتغيير صورتك الشخصية مباشرة من جهازك"
+          aria-label="تغيير الصورة الشخصية"
         >
           <AvatarWithFrame
             avatarUrl={currentAvatarUrl}
@@ -52,43 +179,77 @@ export function ProfileAvatarInteractive({
             showLevel
           />
 
-          {/* شارة الكاميرا بنمط واتساب وفيسبوك الحديث */}
+          {/* شارة الكاميرا السريعة */}
           <span
             className="absolute bottom-1 end-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#121b22] text-gold border-2 border-gold/70 shadow-2xl transition-all group-hover:scale-110 group-hover:bg-gold group-hover:text-night"
-            title="تغيير الصورة الشخصية"
+            title="انقر لاختيار صورة جديدة من جهازك"
           >
-            <Camera className="h-4 w-4" />
+            {isUploading || isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gold" />
+            ) : (
+              <Camera className="h-4 w-4" />
+            )}
           </span>
         </button>
       </div>
 
-      {/* ── 2. زر منفصل ومخصص لخزانة الإطارات (مستقل تماماً عن الصور) ── */}
-      {framesVisible && (
+      {/* ── 2. أزرار التحكم الطبيعية أسفل الصورة (بدون أي نوافذ منبثقة) ── */}
+      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+        {/* زر تغيير الصورة المباشر */}
         <button
           type="button"
-          onClick={() => setFramesModalOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.08] hover:bg-gold/[0.18] px-3.5 py-1 text-[11px] font-black text-gold-deep dark:text-gold-light transition-all shadow-sm hover:border-gold/60 active:scale-95"
-          title="افتح خزانة إطارات التميز للمستويات"
+          disabled={isUploading || isPending}
+          onClick={() => fileInputRef.current?.click()}
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 hover:bg-muted px-3 py-1 text-[11px] font-bold text-foreground transition-all shadow-sm active:scale-95"
+          title="اختر صورة جديدة من جهازك"
         >
-          <Sparkles className="h-3.5 w-3.5 text-gold animate-pulse" />
-          <span>{user.avatarFrameId ? "تغيير إطار التميز 👑" : "اختر إطار التميز 👑"}</span>
+          <Camera className="h-3 w-3 text-gold" />
+          <span>تغيير الصورة</span>
         </button>
-      )}
 
-      {/* نافذة تغيير الصورة بأسلوب واتساب (WhatsApp Style) */}
-      <WhatsappAvatarModal
-        user={{
-          fullName: user.fullName,
-          avatarUrl: currentAvatarUrl,
-          accountAvatarUrl: user.accountAvatarUrl,
-          provider: user.provider,
-        }}
-        isOpen={photoModalOpen}
-        onOpenChange={setPhotoModalOpen}
-        onAvatarUpdated={(newUrl) => setCurrentAvatarUrl(newUrl)}
-      />
+        {/* زر استعادة صورة Google بنقرة واحدة */}
+        {hasAccountPhoto && (
+          <button
+            type="button"
+            disabled={isUploading || isPending}
+            onClick={handleRestoreAccountAvatar}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-card/80 hover:bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:text-gold transition-all"
+            title="استعادة صورتك الأصلية من Google"
+          >
+            <RotateCcw className="h-3 w-3 text-gold" />
+            <span>صورة Google</span>
+          </button>
+        )}
 
-      {/* نافذة خزانة الإطارات المستقلة */}
+        {/* زر حذف الصورة */}
+        {hasPhoto && (
+          <button
+            type="button"
+            disabled={isUploading || isPending}
+            onClick={handleDeleteAvatar}
+            className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 text-[10px] font-bold text-red-500 transition-all"
+            title="إزالة الصورة والعودة للحروف الأولى"
+          >
+            <Trash2 className="h-3 w-3" />
+            <span>إزالة</span>
+          </button>
+        )}
+
+        {/* زر منفصل ومخصص لخزانة الإطارات */}
+        {framesVisible && (
+          <button
+            type="button"
+            onClick={() => setFramesModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold/20 px-3 py-1 text-[11px] font-black text-gold transition-all shadow-sm active:scale-95"
+            title="افتح خزانة إطارات التميز للمستويات"
+          >
+            <Sparkles className="h-3 w-3 text-gold animate-pulse" />
+            <span>{user.avatarFrameId ? "تغيير الإطار 👑" : "إطار التميز 👑"}</span>
+          </button>
+        )}
+      </div>
+
+      {/* خزانة الإطارات المخصصة حصرياً للإطارات */}
       {framesVisible && (
         <FrameWardrobeModal
           user={{
