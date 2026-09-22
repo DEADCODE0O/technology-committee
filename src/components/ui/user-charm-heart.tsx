@@ -1,12 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+// ═══════════════════════════════════════════════════════════════
+//  شارة القلب التفاعلية — بدون أي نوافذ منبثقة معتمة
+//  النقر ينتقل بسلاسة للدليل في الصفحة أو يفتح بطاقة معلومات خفيفة
+// ═══════════════════════════════════════════════════════════════
+
+import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import {
   getCharmTier,
   getNextCharmTier,
-  CHARM_TIERS,
 } from '@/lib/charm-hearts';
 import { VectorCharmHeart } from '@/components/ui/vector-charm-heart';
+import { Sparkles, X, ArrowLeft, Heart } from 'lucide-react';
 
 interface UserCharmHeartProps {
   level: number;
@@ -27,9 +33,23 @@ export function UserCharmHeart({
   disableModal = false,
   visible = true,
 }: UserCharmHeartProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const safeLevel = Math.max(0, Math.min(12, level));
   const tier = getCharmTier(safeLevel);
+
+  // إغلاق البطاقة عند النقر خارجها
+  useEffect(() => {
+    if (!popoverOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setPopoverOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [popoverOpen]);
 
   if (!visible) return null;
 
@@ -71,13 +91,32 @@ export function UserCharmHeart({
       )
     : 100;
 
-  // المحتوى الداخلي لأيقونة القلب الفيكتور ثلاثية الأبعاد
+  const handleClick = (e: React.MouseEvent) => {
+    if (disableModal) return;
+    e.stopPropagation();
+
+    // إذا كان دليل القلوب موجوداً في نفس الصفحة، ننتقل إليه بسلاسة فوراً
+    const guideEl = document.getElementById('charm-hearts-guide');
+    if (guideEl) {
+      guideEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      guideEl.classList.add('ring-2', 'ring-gold', 'rounded-3xl');
+      setTimeout(() => {
+        guideEl.classList.remove('ring-2', 'ring-gold');
+      }, 2000);
+      return;
+    }
+
+    // إذا لم يكن الدليل في الصفحة، نفتح بطاقة معلومات منبثقة خفيفة وغير معتمة
+    setPopoverOpen((prev) => !prev);
+  };
+
+  // المحتوى الداخلي لأيقونة القلب الفيكتور
   const heartIconContent = (
     <div className={`relative inline-flex items-center justify-center shrink-0 ${sizeConfig.wrapper}`}>
       <div className="w-full h-full transition-transform duration-200 group-hover:scale-110 flex items-center justify-center">
         <VectorCharmHeart level={tier.level} />
       </div>
-      {/* شارة رقم المستوى في الزاوية السفلية اليمنى */}
+      {/* شارة رقم المستوى */}
       <span
         className={`absolute rounded-full font-black flex items-center justify-center shadow-md border border-white/80 leading-none select-none z-10 ${sizeConfig.badge}`}
         style={{
@@ -94,19 +133,14 @@ export function UserCharmHeart({
   );
 
   return (
-    <>
+    <div ref={containerRef} className="relative inline-block text-start">
       <button
         type="button"
-        onClick={(e) => {
-          if (!disableModal) {
-            e.stopPropagation();
-            setIsOpen(true);
-          }
-        }}
+        onClick={handleClick}
         className={`inline-flex items-center gap-2 select-none group transition-all duration-200 ${
           disableModal ? 'cursor-default' : 'cursor-pointer hover:scale-105 active:scale-95'
         } ${className}`}
-        title={`المستوى ${tier.level}: ${tier.title} (اضغط لعرض تفاصيل الترقية)`}
+        title={`المستوى ${tier.level}: ${tier.title} (انقر لعرض تفاصيل الترقية)`}
         aria-label={`مستوى التفاعل: ${tier.level} - ${tier.title}`}
       >
         {showTitle ? (
@@ -121,165 +155,85 @@ export function UserCharmHeart({
         )}
       </button>
 
-      {/* ── مودال مستويات القلوب المبسط والأنيق ── */}
-      {isOpen && (
+      {/* ── بطاقة سريعة خفيفة وموضعية (بدون أي شاشة معتمة أو مودال) ── */}
+      {popoverOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
-          onClick={() => setIsOpen(false)}
+          className="absolute top-full mt-2 end-0 z-40 w-72 sm:w-80 rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 text-foreground"
+          dir="rtl"
         >
-          <div
-            className="relative w-full max-w-lg max-h-[88vh] bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-right font-sans text-white"
-            onClick={(e) => e.stopPropagation()}
-            dir="rtl"
-          >
-            {/* Header */}
-            <div className="p-5 border-b border-zinc-800/80 bg-zinc-900/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center border shadow overflow-hidden p-1"
-                  style={{
-                    backgroundColor: `${tier.heartColor}20`,
-                    borderColor: `${tier.heartColor}50`,
-                  }}
-                >
-                  <VectorCharmHeart level={tier.level} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    مستويات التفاعل (القلوب)
-                  </h3>
-                  <p className="text-xs text-zinc-400">
-                    كلما زادت نقاطك وتفاعلك ارتفع مستوى قلبك وتميز مظهر حسابك
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center transition-colors"
-                aria-label="إغلاق"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="p-5 overflow-y-auto space-y-4 custom-scrollbar">
-              {/* بطاقة المستوى الحالي والتقدم */}
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <div className="flex items-center gap-2.5">
               <div
-                className="p-4 rounded-2xl border relative overflow-hidden flex items-center justify-between gap-4"
+                className="w-8 h-8 rounded-xl flex items-center justify-center border p-1 shadow-xs shrink-0"
                 style={{
-                  background: `radial-gradient(circle at top right, ${tier.heartColor}20 0%, rgba(24,24,27,0.95) 80%)`,
-                  borderColor: `${tier.heartColor}40`,
+                  backgroundColor: `${tier.heartColor}20`,
+                  borderColor: `${tier.heartColor}50`,
                 }}
               >
-                <div className="flex items-center gap-3.5">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg shrink-0 p-1.5"
-                    style={{
-                      borderColor: tier.heartColor,
-                      boxShadow: `0 0 15px ${tier.glowColor}`,
-                    }}
-                  >
-                    <VectorCharmHeart level={tier.level} />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
-                      مستواك الحالي: {tier.level}
-                    </span>
-                    <h4 className="text-sm font-extrabold text-white mt-1">
-                      {tier.title}
-                    </h4>
-                    <p className="text-xs text-gold-light mt-0.5 font-bold">
-                      {effectivePoints} نقطة
-                    </p>
-                  </div>
-                </div>
-
-                {nextTier && (
-                  <div className="text-left shrink-0">
-                    <span className="text-[10px] text-zinc-400 block">المستوى التالي</span>
-                    <span className="text-xs font-bold text-zinc-200 block">
-                      متبقي {pointsToNext} نقطة
-                    </span>
-                    <div className="w-24 bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-1.5 ml-auto">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${progressPercent}%`,
-                          backgroundColor: tier.heartColor,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                <VectorCharmHeart level={tier.level} />
               </div>
-
-              {/* قائمة المستويات المبسطة */}
               <div>
-                <p className="text-xs font-bold text-zinc-400 mb-2">
-                  تدرج المستويات (0 إلى 12):
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {CHARM_TIERS.map((t) => {
-                    const isCurrent = t.level === tier.level;
-                    const isUnlocked = level >= t.level;
-
-                    return (
-                      <div
-                        key={t.level}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
-                          isCurrent
-                            ? 'bg-gold/15 border-gold shadow-sm ring-1 ring-gold/40'
-                            : isUnlocked
-                            ? 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'
-                            : 'bg-zinc-900/20 border-zinc-800/40 opacity-60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                            <UserCharmHeart level={t.level} size="xs" disableModal />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-extrabold text-zinc-200">
-                                {t.title}
-                              </span>
-                              {isCurrent && (
-                                <span className="text-[9px] bg-gold text-night px-1.5 py-0.2 rounded font-black">
-                                  أنت هنا
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-zinc-500">
-                              مستوى {t.level}
-                            </span>
-                          </div>
-                        </div>
-
-                        <span className="text-xs font-bold text-gold-light/90">
-                          {t.pointsRequired} نقطة
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <span className="text-xs font-black block">{tier.title}</span>
+                <span className="text-[10px] text-muted-foreground block">
+                  مستوى التفاعل {tier.level}
+                </span>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="p-3 border-t border-zinc-800 bg-zinc-900/40 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="px-4 py-2 rounded-xl bg-gold hover:bg-gold-light text-night font-extrabold text-xs shadow transition-all active:scale-95"
-              >
-                إغلاق
-              </button>
+            <button
+              type="button"
+              onClick={() => setPopoverOpen(false)}
+              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="إغلاق"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Progress */}
+          <div className="py-3 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-muted-foreground">رصيدك الحالي:</span>
+              <span className="font-black text-gold">{effectivePoints} نقطة</span>
             </div>
+
+            {nextTier ? (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>الهدف: {nextTier.title}</span>
+                  <span>باقي {pointsToNext} نقطة</span>
+                </div>
+                <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${progressPercent}%`,
+                      backgroundColor: tier.heartColor,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-[11px] font-bold text-emerald-500">
+                وصلت للقمة! أعلى رتبة تفاعلية 👑
+              </p>
+            )}
+          </div>
+
+          {/* Link to full guide in Profile */}
+          <div className="border-t border-border/60 pt-2.5">
+            <Link
+              href="/profile#charm-hearts-guide"
+              onClick={() => setPopoverOpen(false)}
+              className="flex items-center justify-between w-full rounded-xl bg-muted/60 hover:bg-gold/15 px-3 py-2 text-xs font-bold text-foreground hover:text-gold transition-colors group"
+            >
+              <span>دليل مستويات القلوب الـ 12</span>
+              <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-1" />
+            </Link>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

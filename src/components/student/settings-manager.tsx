@@ -29,7 +29,8 @@ import { restoreAccountAvatarAction, setAvatarUrlAction } from "@/actions/profil
 import { PRESET_AVATARS } from "@/lib/avatars";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { FrameWardrobeModal } from "@/components/profile/frame-wardrobe-modal";
+import { FrameWardrobeInline } from "@/components/profile/frame-wardrobe-inline";
+import { CharmHeartsGuideInline } from "@/components/ui/charm-hearts-guide-inline";
 import { useTheme } from "next-themes";
 
 interface SettingsManagerProps {
@@ -127,7 +128,6 @@ export function SettingsManager({ user }: SettingsManagerProps) {
   };
 
   // Avatar & Frame state
-  const [wardrobeOpen, setWardrobeOpen] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl);
   const [avatarFilter, setAvatarFilter] = useState<"ALL" | "BOY" | "GIRL">("ALL");
   const [isUploading, setIsUploading] = useState(false);
@@ -296,8 +296,8 @@ export function SettingsManager({ user }: SettingsManagerProps) {
             </div>
             <button
               type="button"
-              onClick={() => setWardrobeOpen(true)}
-              className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-[10px] font-bold text-gold hover:bg-gold/20 transition-colors"
+              onClick={() => setActiveTab("appearance")}
+              className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-[10px] font-bold text-gold hover:bg-gold/20 transition-colors cursor-pointer"
             >
               <Sparkles className="h-3 w-3" />
               <span>إطار التميز</span>
@@ -783,27 +783,25 @@ export function SettingsManager({ user }: SettingsManagerProps) {
             </div>
           </div>
 
-          {/* خزانة الإطارات */}
-          <div className="space-y-3 border-t border-border pt-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-extrabold text-foreground flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-gold" />
-                  إطار الصورة الرمزية
-                </h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  افتح إطارات جديدة بارتفاع مستواك الجامعي ونقاط تفاعلك.
-                </p>
-              </div>
+          {/* ── خزانة إطارات التميز والمستويات المباشرة داخل الصفحة ── */}
+          <div className="border-t border-border/70 pt-6">
+            <FrameWardrobeInline
+              user={{
+                fullName: displayName || user.profile?.fullName || user.email,
+                avatarUrl: currentAvatarUrl,
+                avatarFrameId: user.avatarFrameId,
+                level: user.level,
+                points: 0,
+              }}
+              onFrameChanged={() => router.refresh()}
+            />
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setWardrobeOpen(true)}
-                className="rounded-2xl border border-gold/40 bg-gold/10 px-5 py-2.5 text-xs font-black text-gold hover:bg-gold/20 transition-all shadow-sm shrink-0"
-              >
-                فتح خزانة الإطارات 👘
-              </button>
-            </div>
+          {/* ── دليل مستويات التفاعل والقلوب المباشر داخل الصفحة ── */}
+          <div className="border-t border-border/70 pt-6">
+            <CharmHeartsGuideInline
+              level={user.level}
+            />
           </div>
         </div>
       )}
@@ -845,23 +843,6 @@ export function SettingsManager({ user }: SettingsManagerProps) {
           </div>
         </div>
       )}
-
-      {/* نافذة خزانة الإطارات المنبثقة المستقلة */}
-      <FrameWardrobeModal
-        user={{
-          fullName: displayName || user.profile?.fullName || "طالب",
-          avatarUrl: currentAvatarUrl,
-          avatarFrameId: user.avatarFrameId,
-          level: user.level,
-          points: 0,
-        }}
-        externalOpen={wardrobeOpen}
-        onExternalOpenChange={(open) => {
-          setWardrobeOpen(open);
-          if (!open) router.refresh();
-        }}
-        hideTrigger={true}
-      />
     </div>
   );
 }

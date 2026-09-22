@@ -12,6 +12,7 @@ import { getStudentRank, getAvatarFramesVisible, getCharmHeartsVisible } from "@
 import { getStudentNotifications } from "@/lib/notifications";
 import { getSocialCounters } from "@/actions/messaging";
 import { UserCharmHeart } from "@/components/ui/user-charm-heart";
+import { CharmHeartsGuideInline } from "@/components/ui/charm-hearts-guide-inline";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { getAccountFlair } from "@/lib/account-style";
 import { ProfileAvatarInteractive } from "@/components/profile/profile-avatar-interactive";
@@ -301,6 +302,13 @@ export default async function ProfilePage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* دليل مستويات القلوب والتفاعل الطبيعي والمباشر */}
+          {heartsVisible && (
+            <div className="rounded-3xl border border-border bg-card/80 p-6 sm:p-7 shadow-sm">
+              <CharmHeartsGuideInline level={progress.level} points={progress.xp} />
             </div>
           )}
 

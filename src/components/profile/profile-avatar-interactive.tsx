@@ -3,13 +3,14 @@
 // ═══════════════════════════════════════════════════════════════
 //  الصورة الشخصية التفاعلية — رفع طبيعي ومباشر بدون أي نوافذ منبثقة
 //  النقر على الكاميرا يفتح ملفات/كاميرا الجهاز مباشرة وسلس بنقرة واحدة
+//  وزر الإطارات يفتح الخزانة كقسم مدمج ومباشر في الصفحة بدون أي شاشات معتمة
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useRef, useTransition } from "react";
 import { toast } from "sonner";
-import { Camera, Sparkles, RotateCcw, Trash2, Loader2 } from "lucide-react";
+import { Camera, Sparkles, RotateCcw, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { FrameWardrobeModal } from "./frame-wardrobe-modal";
+import { FrameWardrobeInline } from "./frame-wardrobe-inline";
 import { restoreAccountAvatarAction, setAvatarUrlAction } from "@/actions/profile";
 
 interface ProfileAvatarInteractiveProps {
@@ -29,7 +30,7 @@ export function ProfileAvatarInteractive({
   user,
   framesVisible = true,
 }: ProfileAvatarInteractiveProps) {
-  const [framesModalOpen, setFramesModalOpen] = useState(false);
+  const [showInlineFrames, setShowInlineFrames] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl ?? null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -149,7 +150,7 @@ export function ProfileAvatarInteractive({
   };
 
   return (
-    <div className="flex flex-col items-center sm:items-start gap-3">
+    <div className="flex flex-col items-center sm:items-start gap-3 w-full">
       {/* المدخل المخفي لفتح المعرض/الكاميرا مباشرة بدون أي نوافذ منبثقة */}
       <input
         ref={fileInputRef}
@@ -200,7 +201,7 @@ export function ProfileAvatarInteractive({
           type="button"
           disabled={isUploading || isPending}
           onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 hover:bg-muted px-3 py-1 text-[11px] font-bold text-foreground transition-all shadow-sm active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 hover:bg-muted px-3 py-1 text-[11px] font-bold text-foreground transition-all shadow-sm active:scale-95 cursor-pointer"
           title="اختر صورة جديدة من جهازك"
         >
           <Camera className="h-3 w-3 text-gold" />
@@ -213,7 +214,7 @@ export function ProfileAvatarInteractive({
             type="button"
             disabled={isUploading || isPending}
             onClick={handleRestoreAccountAvatar}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-card/80 hover:bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:text-gold transition-all"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-card/80 hover:bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground hover:text-gold transition-all cursor-pointer"
             title="استعادة صورتك الأصلية من Google"
           >
             <RotateCcw className="h-3 w-3 text-gold" />
@@ -227,43 +228,62 @@ export function ProfileAvatarInteractive({
             type="button"
             disabled={isUploading || isPending}
             onClick={handleDeleteAvatar}
-            className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 text-[10px] font-bold text-red-500 transition-all"
-            title="إزالة الصورة والعودة للحروف الأولى"
+            className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 text-[10px] font-bold text-red-500 transition-all cursor-pointer"
+            title="إزالة الصورة والعودة للشعار البسيط"
           >
             <Trash2 className="h-3 w-3" />
             <span>إزالة</span>
           </button>
         )}
 
-        {/* زر منفصل ومخصص لخزانة الإطارات */}
+        {/* زر إظهار/إخفاء خزانة الإطارات بشكل مدمج في الصفحة */}
         {framesVisible && (
           <button
             type="button"
-            onClick={() => setFramesModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 hover:bg-gold/20 px-3 py-1 text-[11px] font-black text-gold transition-all shadow-sm active:scale-95"
-            title="افتح خزانة إطارات التميز للمستويات"
+            onClick={() => setShowInlineFrames((prev) => !prev)}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black transition-all shadow-sm active:scale-95 cursor-pointer ${
+              showInlineFrames
+                ? "bg-gold text-night border border-gold"
+                : "border border-gold/40 bg-gold/10 hover:bg-gold/20 text-gold"
+            }`}
+            title="إظهار/إخفاء خزانة إطارات التميز للمستويات"
           >
-            <Sparkles className="h-3 w-3 text-gold animate-pulse" />
+            <Sparkles className="h-3 w-3" />
             <span>{user.avatarFrameId ? "تغيير الإطار 👑" : "إطار التميز 👑"}</span>
+            {showInlineFrames ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
           </button>
         )}
       </div>
 
-      {/* خزانة الإطارات المخصصة حصرياً للإطارات */}
-      {framesVisible && (
-        <FrameWardrobeModal
-          user={{
-            fullName: user.fullName,
-            avatarUrl: currentAvatarUrl,
-            avatarFrameId: user.avatarFrameId,
-            level: user.level,
-            points: user.points,
-          }}
-          framesVisible={framesVisible}
-          externalOpen={framesModalOpen}
-          onExternalOpenChange={setFramesModalOpen}
-          hideTrigger={true}
-        />
+      {/* ── 3. خزانة الإطارات المدمجة مباشرة داخل الصفحة (بدون أي نافذة منبثقة أو شاشة معتمة) ── */}
+      {framesVisible && showInlineFrames && (
+        <div className="w-full mt-3 rounded-3xl border border-gold/30 bg-card/95 p-4 sm:p-6 shadow-xl backdrop-blur-md animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-border/60 pb-3 mb-4">
+            <span className="text-xs font-black text-gold flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4" /> خزانة الإطارات المباشرة
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowInlineFrames(false)}
+              className="rounded-lg px-2.5 py-1 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+            >
+              ✕ إخفاء الخزانة
+            </button>
+          </div>
+          <FrameWardrobeInline
+            user={{
+              fullName: user.fullName,
+              avatarUrl: currentAvatarUrl,
+              avatarFrameId: user.avatarFrameId,
+              level: user.level,
+              points: user.points,
+            }}
+          />
+        </div>
       )}
     </div>
   );
