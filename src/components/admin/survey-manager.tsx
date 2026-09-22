@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   Plus,
@@ -21,6 +22,13 @@ import {
   ExternalLink,
   Pencil,
   Pin,
+  FileSpreadsheet,
+  MessageCircle,
+  Search,
+  Filter,
+  Layers,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   createSurvey,
@@ -32,6 +40,7 @@ import {
   type CreateSurveyInput,
   type UpdateSurveyInput,
   type SurveyAnalyticsResult,
+  type VoterInfo,
 } from "@/actions/surveys";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -41,6 +50,7 @@ export interface SurveyQuestionItem {
   type: "POLL_SINGLE" | "POLL_MULTI" | "RATING" | "TEXT";
   question: string;
   options: string[];
+  allowOther?: boolean;
 }
 
 export interface SurveyListItem {
@@ -68,6 +78,13 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const [selectedAnalytics, setSelectedAnalytics] = useState<SurveyAnalyticsResult | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
+  // تبويبات نافذة التحليلات والمفاضلة
+  const [analyticsTab, setAnalyticsTab] = useState<"SUMMARY" | "VOTERS" | "MATRIX">("SUMMARY");
+  const [selectedQuestionFilter, setSelectedQuestionFilter] = useState<string>("ALL");
+  const [selectedOptionFilter, setSelectedOptionFilter] = useState<string>("ALL");
+  const [voterSearchQuery, setVoterSearchQuery] = useState("");
+  const [voterGradeFilter, setVoterGradeFilter] = useState("ALL");
+
   // حالة نموذج الإنشاء
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -80,7 +97,13 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
       id: "q_1",
       type: "POLL_SINGLE",
       question: "ما هو موضوع الورشة أو المحاضرة القادمة التي تفضلها؟",
-      options: ["تطوير تطبيقات الموبايل (Flutter)", "الذكاء الاصطناعي وتعلم الآلة", "الأمن السيبراني والهاكينج الأخلاقي", "تطوير الويب الحديث (Next.js)"],
+      options: [
+        "تطوير تطبيقات الموبايل (Flutter)",
+        "الذكاء الاصطناعي وتعلم الآلة",
+        "الأمن السيبراني والهاكينج الأخلاقي",
+        "تطوير الويب الحديث (Next.js)",
+      ],
+      allowOther: true,
     },
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,6 +131,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         type: "POLL_SINGLE",
         question: "",
         options: ["خيار 1", "خيار 2"],
+        allowOther: false,
       },
     ]);
   };
@@ -123,7 +147,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const handleAddOption = (qIndex: number) => {
     setQuestions((prev) => {
       const copy = [...prev];
-      copy[qIndex].options.push(`خيار جديد`);
+      copy[qIndex].options.push(`خيار جديد ${copy[qIndex].options.length + 1}`);
       return copy;
     });
   };
@@ -168,6 +192,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
           type: q.type,
           question: q.question,
           options: q.options,
+          allowOther: !!q.allowOther,
           required: true,
         })),
         deadline: deadline ? deadline : undefined,
@@ -200,7 +225,11 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
     try {
       const res = await toggleSurveyPin(surveyId, !currentPinned);
       if (res.ok) {
-        toast.success(!currentPinned ? "تم تثبيت الاستبيان في أعلى المجتمع 📌" : "تم إلغاء تثبيت الاستبيان من المجتمع");
+        toast.success(
+          !currentPinned
+            ? "تم تثبيت الاستبيان في أعلى المجتمع 📌"
+            : "تم إلغاء تثبيت الاستبيان من المجتمع"
+        );
         setSurveys((prev) =>
           prev.map((s) => (s.id === surveyId ? { ...s, pinned: !currentPinned } : s))
         );
@@ -227,6 +256,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
             type: q.type,
             question: q.question,
             options: q.options && q.options.length > 0 ? [...q.options] : ["خيار 1", "خيار 2"],
+            allowOther: !!q.allowOther,
           }))
         : [
             {
@@ -234,6 +264,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
               type: "POLL_SINGLE",
               question: "سؤال الاستبيان",
               options: ["خيار 1", "خيار 2"],
+              allowOther: false,
             },
           ]
     );
@@ -274,6 +305,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
           type: q.type,
           question: q.question,
           options: q.options,
+          allowOther: !!q.allowOther,
         })),
       });
 
@@ -315,6 +347,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         type: "POLL_SINGLE",
         question: "",
         options: ["خيار 1", "خيار 2"],
+        allowOther: false,
       },
     ]);
   };
@@ -350,6 +383,11 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const handleViewAnalytics = async (surveyId: string) => {
     setIsLoadingAnalytics(true);
     setSelectedAnalytics(null);
+    setAnalyticsTab("SUMMARY");
+    setSelectedQuestionFilter("ALL");
+    setSelectedOptionFilter("ALL");
+    setVoterSearchQuery("");
+    setVoterGradeFilter("ALL");
     try {
       const data = await getSurveyAnalytics(surveyId);
       if (data) {
@@ -412,11 +450,19 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
           rows.push([qa.question, qa.type, opt.option, String(opt.count), `${opt.percentage}%`]);
         });
       } else if (qa.type === "RATING") {
-        rows.push([qa.question, qa.type, `متوسط التقييم: ${qa.averageRating}`, String(qa.totalAnswers), "100%"]);
+        rows.push([
+          qa.question,
+          qa.type,
+          `متوسط التقييم: ${qa.averageRating}`,
+          String(qa.totalAnswers),
+          "100%",
+        ]);
       }
     });
 
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + rows.map((e) => e.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" +
+      rows.map((e) => e.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")).join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -426,6 +472,73 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
     document.body.removeChild(link);
     toast.success("تم تصدير ملف CSV بنجاح! 📥");
   };
+
+  // تجميع قائمة المصوتين للمفاضلة والكشف
+  const filteredVoters = useMemo(() => {
+    if (!selectedAnalytics) return [];
+
+    interface EnrichedVoter extends VoterInfo {
+      questionId: string;
+      questionTitle: string;
+      optionChosen: string;
+      isOtherOption: boolean;
+    }
+
+    const list: EnrichedVoter[] = [];
+
+    selectedAnalytics.questionsAnalytics.forEach((qa) => {
+      if (selectedQuestionFilter !== "ALL" && qa.id !== selectedQuestionFilter) return;
+
+      qa.optionsStats.forEach((opt) => {
+        if (selectedOptionFilter !== "ALL" && opt.option !== selectedOptionFilter) return;
+
+        (opt.voters || []).forEach((v) => {
+          list.push({
+            ...v,
+            questionId: qa.id,
+            questionTitle: qa.question,
+            optionChosen: opt.option,
+            isOtherOption: !!opt.isOther,
+          });
+        });
+      });
+    });
+
+    return list.filter((v) => {
+      if (voterGradeFilter !== "ALL" && v.grade !== voterGradeFilter) return false;
+
+      if (voterSearchQuery.trim()) {
+        const q = voterSearchQuery.trim().toLowerCase();
+        const matchesName = v.studentName?.toLowerCase().includes(q);
+        const matchesCode = v.studentCode?.toLowerCase().includes(q);
+        const matchesPhone = v.phone?.includes(q);
+        const matchesText = v.customText?.toLowerCase().includes(q);
+        if (!matchesName && !matchesCode && !matchesPhone && !matchesText) return false;
+      }
+
+      return true;
+    });
+  }, [
+    selectedAnalytics,
+    selectedQuestionFilter,
+    selectedOptionFilter,
+    voterGradeFilter,
+    voterSearchQuery,
+  ]);
+
+  // قائمة الخيارات للسؤال المحدد في الفلترة
+  const availableOptionsForFilter = useMemo(() => {
+    if (!selectedAnalytics) return [];
+    if (selectedQuestionFilter === "ALL") {
+      const set = new Set<string>();
+      selectedAnalytics.questionsAnalytics.forEach((q) =>
+        q.optionsStats.forEach((o) => set.add(o.option))
+      );
+      return Array.from(set);
+    }
+    const q = selectedAnalytics.questionsAnalytics.find((i) => i.id === selectedQuestionFilter);
+    return q ? q.optionsStats.map((o) => o.option) : [];
+  }, [selectedAnalytics, selectedQuestionFilter]);
 
   return (
     <div className="space-y-6">
@@ -449,7 +562,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         <div className="rounded-2xl border border-border bg-card p-4 text-center">
           <Brain className="mx-auto h-5 w-5 text-gold" />
           <p className="mt-1.5 text-2xl font-black text-foreground">ذكاء القرار 💡</p>
-          <p className="text-[11px] font-bold text-muted-foreground">تحليلات وتوصيات تلقائية</p>
+          <p className="text-[11px] font-bold text-muted-foreground">تحليلات ومفاضلة ذكية</p>
         </div>
       </div>
 
@@ -459,7 +572,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
           <div>
             <h3 className="text-sm font-black text-foreground">إنشاء استبيان تفاعلي جديد</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              اطرح أسئلة أو استطلاعات لطلاب اللجنة، وانشرها مباشرة في المجتمع مع تحليلات ذكية لاتخاذ القرار.
+              اطرح استبيانات مستقلة مع خيار «أخرى» وكشوفات إكسيل وتحليلات دقيقة لهوية المصوتين.
             </p>
           </div>
           <button
@@ -519,22 +632,45 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                     <span>·</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", year: "numeric" }).format(
-                        new Date(s.createdAt)
-                      )}
+                      {new Intl.DateTimeFormat("ar-EG", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      }).format(new Date(s.createdAt))}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                  {/* زر التحليلات واتخاذ القرار */}
                   <button
                     type="button"
                     onClick={() => handleViewAnalytics(s.id)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-2 text-xs font-black text-gold hover:bg-gold hover:text-night transition-all shadow-sm"
                   >
                     <Brain className="h-3.5 w-3.5" />
-                    التحليلات واتخاذ القرار 💡
+                    التحليلات والمفاضلة 💡
                   </button>
+
+                  {/* زر تصدير الإكسيل المباشر */}
+                  <a
+                    href={`/api/admin/surveys/${s.id}/export`}
+                    download
+                    className="inline-flex items-center gap-1 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 p-2 text-xs text-emerald-600 dark:text-emerald-400 transition-colors"
+                    title="تحميل كشف الإكسيل الكامل (.xlsx)"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                  </a>
+
+                  {/* زر فتح صفحة الاستبيان المستقلة */}
+                  <Link
+                    href={`/surveys/${s.id}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1 rounded-xl border border-border bg-card hover:bg-muted p-2 text-xs text-muted-foreground hover:text-gold transition-colors"
+                    title="فتح كصفحة استبيان مستقلة ↗"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
 
                   {canManage && (
                     <>
@@ -546,7 +682,11 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                             ? "border-gold/50 bg-gold/20 text-gold shadow-sm"
                             : "border-border bg-card text-muted-foreground hover:border-gold/40 hover:text-gold"
                         }`}
-                        title={s.pinned ? "إلغاء تثبيت الاستبيان من المجتمع" : "تثبيت الاستبيان في أعلى المجتمع 📌"}
+                        title={
+                          s.pinned
+                            ? "إلغاء تثبيت الاستبيان من المجتمع"
+                            : "تثبيت الاستبيان في أعلى المجتمع 📌"
+                        }
                       >
                         <Pin className={`h-4 w-4 ${s.pinned ? "fill-current" : ""}`} />
                       </button>
@@ -566,7 +706,11 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                         className="inline-flex items-center gap-1 rounded-xl border border-border bg-card hover:bg-muted p-2 text-xs text-muted-foreground hover:text-foreground"
                         title={s.status === "OPEN" ? "إغلاق الاستبيان" : "إعادة فتح الاستبيان"}
                       >
-                        {s.status === "OPEN" ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                        {s.status === "OPEN" ? (
+                          <Lock className="h-4 w-4" />
+                        ) : (
+                          <Unlock className="h-4 w-4" />
+                        )}
                       </button>
 
                       <button
@@ -584,19 +728,20 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
             ))}
           </div>
         ) : (
-          <div className="p-12 text-center text-muted-foreground space-y-2">
-            <BarChart3 className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-bold">لا توجد أي استبيانات منشأة حتى الآن</p>
-            <p className="text-xs">ابدأ بإنشاء استبيانك الأول لقياس آراء الطلاب وتوجيه القرارات بدقة.</p>
+          <div className="p-12 text-center text-muted-foreground">
+            <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground/40 mb-3" />
+            <p className="text-sm font-bold">لا توجد استبيانات مسجلة حالياً</p>
           </div>
         )}
       </div>
 
-      {/* ── نافذة إنشاء استبيان جديد (Modal) ── */}
+      {/* ══════════════════════════════════════════════════════════════
+          نافذة إنشاء استبيان جديد (Create Modal)
+      ══════════════════════════════════════════════════════════════ */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-gold/30 bg-card p-6 sm:p-7 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
                 <BarChart3 className="h-5 w-5 text-gold" />
                 إنشاء استبيان واستطلاع رأي تفاعلي
@@ -620,7 +765,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="مثال: استطلاع رأي: الموعد الأنسب لورشة الأمن السيبراني"
+                  placeholder="مثال: استطلاع رأي: الموعد والموضوع الأنسب لورشة العمل القادمة"
                   className="w-full rounded-2xl border border-border bg-muted/20 px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
                 />
               </div>
@@ -672,7 +817,10 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   onChange={(e) => setPostToCommunity(e.target.checked)}
                   className="h-4 w-4 rounded accent-gold"
                 />
-                <label htmlFor="postCommunity" className="text-xs font-bold text-foreground cursor-pointer">
+                <label
+                  htmlFor="postCommunity"
+                  className="text-xs font-bold text-foreground cursor-pointer"
+                >
                   نشر الاستبيان فوراً كمنشور تفاعلي رسمي في قسم المجتمع 📢
                 </label>
               </div>
@@ -686,7 +834,10 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                     onChange={(e) => setPinned(e.target.checked)}
                     className="h-4 w-4 rounded accent-gold"
                   />
-                  <label htmlFor="pinCommunity" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                  <label
+                    htmlFor="pinCommunity"
+                    className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5"
+                  >
                     <Pin className="h-3.5 w-3.5 text-gold" />
                     تثبيت الاستبيان في أعلى خلاصة المجتمع 📌 (Pinned Post)
                   </label>
@@ -711,7 +862,10 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                 </div>
 
                 {questions.map((q, qIdx) => (
-                  <div key={q.id} className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
+                  <div
+                    key={q.id}
+                    className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-black text-gold">سؤال {qIdx + 1}</span>
                       <div className="flex items-center gap-2">
@@ -764,7 +918,9 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                         <p className="text-[11px] font-bold text-muted-foreground">خيارات الإجابة:</p>
                         {q.options.map((opt, optIdx) => (
                           <div key={optIdx} className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground w-4">{optIdx + 1}.</span>
+                            <span className="text-[10px] text-muted-foreground w-4">
+                              {optIdx + 1}.
+                            </span>
                             <input
                               type="text"
                               required
@@ -797,6 +953,33 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                         >
                           + إضافة خيار إضافي
                         </button>
+
+                        {/* مفتاح تفعيل خيار «أخرى» */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/60">
+                          <input
+                            type="checkbox"
+                            id={`allowOther_create_${qIdx}`}
+                            checked={!!q.allowOther}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setQuestions((prev) => {
+                                const copy = [...prev];
+                                copy[qIdx].allowOther = checked;
+                                return copy;
+                              });
+                            }}
+                            className="h-4 w-4 rounded accent-gold"
+                          />
+                          <label
+                            htmlFor={`allowOther_create_${qIdx}`}
+                            className="text-[11px] font-bold text-foreground cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span>تفعيل خيار «أخرى» لكتابة مقترح مخصص ✍️</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              (يتيح للطالب كتابة مقترح مخصص غير مذكور بالقائمة)
+                            </span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -816,7 +999,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   disabled={isSubmitting}
                   className="rounded-2xl bg-gold px-6 py-2 text-xs font-black text-night hover:bg-gold-light shadow-md disabled:opacity-50"
                 >
-                  {isSubmitting ? "جاري الإنشاء..." : "إنشاء ونشر الآن 🚀"}
+                  {isSubmitting ? "جاري الإنشاء..." : "إنشاء ونشر الاستبيان 🚀"}
                 </button>
               </div>
             </form>
@@ -824,14 +1007,16 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         </div>
       )}
 
-      {/* ── نافذة تعديل استبيان (Edit Survey Modal) ── */}
+      {/* ══════════════════════════════════════════════════════════════
+          نافذة تعديل استبيان (Edit Modal)
+      ══════════════════════════════════════════════════════════════ */}
       {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl rounded-3xl border border-gold/30 bg-card p-6 sm:p-7 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-lg font-black text-foreground flex items-center gap-2">
                 <Pencil className="h-5 w-5 text-gold" />
-                تعديل بيانات وأسئلة الاستبيان
+                تعديل الاستبيان والأسئلة ✏️
               </h3>
               <button
                 type="button"
@@ -905,7 +1090,10 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   onChange={(e) => setEditPinned(e.target.checked)}
                   className="h-4 w-4 rounded accent-gold"
                 />
-                <label htmlFor="editPinCommunity" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                <label
+                  htmlFor="editPinCommunity"
+                  className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5"
+                >
                   <Pin className="h-3.5 w-3.5 text-gold" />
                   تثبيت الاستبيان في أعلى خلاصة المجتمع 📌 (Pinned)
                 </label>
@@ -929,7 +1117,10 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                 </div>
 
                 {editQuestions.map((q, qIdx) => (
-                  <div key={q.id} className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3">
+                  <div
+                    key={q.id}
+                    className="rounded-2xl border border-border bg-muted/30 p-4 space-y-3"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-black text-gold">سؤال {qIdx + 1}</span>
                       <div className="flex items-center gap-2">
@@ -981,7 +1172,9 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                         <p className="text-[11px] font-bold text-muted-foreground">خيارات الإجابة:</p>
                         {q.options.map((opt, optIdx) => (
                           <div key={optIdx} className="flex items-center gap-2">
-                            <span className="text-[10px] text-muted-foreground w-4">{optIdx + 1}.</span>
+                            <span className="text-[10px] text-muted-foreground w-4">
+                              {optIdx + 1}.
+                            </span>
                             <input
                               type="text"
                               required
@@ -1002,7 +1195,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                                 onClick={() => handleRemoveEditOption(qIdx, optIdx)}
                                 className="text-muted-foreground hover:text-rose-500 p-1"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-3.5 w-3.5" />
                               </button>
                             )}
                           </div>
@@ -1015,6 +1208,33 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                           <Plus className="h-3 w-3" />
                           إضافة خيار
                         </button>
+
+                        {/* مفتاح تفعيل خيار «أخرى» */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/60">
+                          <input
+                            type="checkbox"
+                            id={`allowOther_edit_${qIdx}`}
+                            checked={!!q.allowOther}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setEditQuestions((prev) => {
+                                const copy = [...prev];
+                                copy[qIdx].allowOther = checked;
+                                return copy;
+                              });
+                            }}
+                            className="h-4 w-4 rounded accent-gold"
+                          />
+                          <label
+                            htmlFor={`allowOther_edit_${qIdx}`}
+                            className="text-[11px] font-bold text-foreground cursor-pointer flex items-center gap-1.5"
+                          >
+                            <span>تفعيل خيار «أخرى» لكتابة مقترح مخصص ✍️</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              (يتيح للطالب كتابة مقترح مخصص غير مذكور بالقائمة)
+                            </span>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1042,19 +1262,21 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         </div>
       )}
 
-      {/* ── لوحة تحليلات الاستبيان ومحرك اتخاذ القرار (Analytics & Decision Modal) ── */}
+      {/* ══════════════════════════════════════════════════════════════
+          نافذة التحليلات وكشف المصوتين والمفاضلة الذكية (Analytics Suite)
+      ══════════════════════════════════════════════════════════════ */}
       {selectedAnalytics && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/85 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-4xl rounded-3xl border border-gold/40 bg-card p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[92vh] overflow-y-auto custom-scrollbar">
-            {/* الهيدر */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-2xl space-y-6 my-8 max-h-[92vh] overflow-y-auto custom-scrollbar">
+            {/* ── الرأس والأزرار الرسمية للتصدير ── */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-gold/15 text-gold px-2.5 py-0.5 text-[10px] font-black border border-gold/30">
-                    مركز الاستخبارات والقرارات 🤖💡
+                    مركز الاستخبارات واتخاذ القرار 🤖💡
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {selectedAnalytics.totalResponses} مشارك
+                    {selectedAnalytics.totalResponses} مشارك في الاستبيان
                   </span>
                 </div>
                 <h3 className="text-lg sm:text-xl font-black text-foreground mt-1">
@@ -1062,197 +1284,614 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                 </h3>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {/* زر تحميل إكسيل رسمي (.xlsx) */}
+                <a
+                  href={`/api/admin/surveys/${selectedAnalytics.id}/export`}
+                  download
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-black text-white transition-all shadow-md"
+                  title="تحميل كشف الإكسيل الكامل مع بيانات كل طالب وإجابته"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  تحميل إكسيل (.xlsx) 📊
+                </a>
+
+                {/* زر تصدير CSV كخيار سريع */}
                 <button
                   type="button"
                   onClick={() => exportCSV(selectedAnalytics)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted hover:bg-muted/80 px-3.5 py-2 text-xs font-black text-foreground transition-all shadow-sm"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted hover:bg-muted/80 px-3 py-2 text-xs font-bold text-foreground transition-all shadow-sm"
+                  title="تصدير ملف CSV للبيانات السريعة"
                 >
                   <Download className="h-3.5 w-3.5 text-gold" />
-                  تصدير CSV 📥
+                  CSV
                 </button>
+
+                {/* رابط صفحة الاستبيان المستقلة */}
+                <Link
+                  href={`/surveys/${selectedAnalytics.id}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-gold/30 bg-gold/10 hover:bg-gold/20 px-3 py-2 text-xs font-bold text-gold transition-all"
+                  title="عرض الاستبيان كصفحة مستقلة"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  الرابط
+                </Link>
+
                 <button
                   type="button"
                   onClick={() => setSelectedAnalytics(null)}
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+                  className="rounded-full p-2 text-muted-foreground hover:bg-muted"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            {/* 🤖 محرك التوصيات والقرارات الاستراتيجية التلقائية */}
-            {selectedAnalytics.recommendations.length > 0 && (
-              <div className="rounded-3xl border border-gold/35 bg-gold/[0.05] p-5 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-gold" />
-                  <h4 className="text-sm font-black text-foreground">
-                    محرك التوصيات واتخاذ القرار التلقائي (Decision Engine) 💡
+            {/* ── شريط التبويبات الفاخر ── */}
+            <div className="flex items-center gap-2 border-b border-border/80 pb-1">
+              <button
+                type="button"
+                onClick={() => setAnalyticsTab("SUMMARY")}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all ${
+                  analyticsTab === "SUMMARY"
+                    ? "bg-gold text-night shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+              >
+                <Brain className="h-4 w-4" />
+                ملخص النتائج والتوصيات 📊
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAnalyticsTab("VOTERS")}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all ${
+                  analyticsTab === "VOTERS"
+                    ? "bg-gold text-night shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                كشف المصوتين والمفاضلة 👥 ({filteredVoters.length})
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAnalyticsTab("MATRIX")}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all ${
+                  analyticsTab === "MATRIX"
+                    ? "bg-gold text-night shadow-md"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                }`}
+              >
+                <Layers className="h-4 w-4" />
+                مصفوفة المفاضلة والمقارنة 📐
+              </button>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════════
+                التبويب 1: ملخص النتائج والتوصيات (SUMMARY)
+            ══════════════════════════════════════════════════════════ */}
+            {analyticsTab === "SUMMARY" && (
+              <div className="space-y-6">
+                {/* محرك التوصيات والقرارات الاستراتيجية */}
+                {selectedAnalytics.recommendations.length > 0 && (
+                  <div className="rounded-3xl border border-gold/35 bg-gold/[0.05] p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-gold" />
+                      <h4 className="text-sm font-black text-foreground">
+                        محرك التوصيات واتخاذ القرار التلقائي (Decision Engine) 💡
+                      </h4>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {selectedAnalytics.recommendations.map((rec, i) => (
+                        <div
+                          key={i}
+                          className={`rounded-2xl border p-4 space-y-2 ${
+                            rec.severity === "SUCCESS"
+                              ? "border-emerald-500/30 bg-emerald-500/[0.06]"
+                              : rec.severity === "WARNING"
+                              ? "border-amber-500/30 bg-amber-500/[0.06]"
+                              : "border-blue-500/30 bg-blue-500/[0.06]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {rec.severity === "SUCCESS" && (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                            )}
+                            {rec.severity === "WARNING" && (
+                              <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                            )}
+                            {rec.severity === "INFO" && (
+                              <Lightbulb className="h-4 w-4 text-blue-500 shrink-0" />
+                            )}
+                            <h5 className="text-xs font-black text-foreground">{rec.title}</h5>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            {rec.summary}
+                          </p>
+                          <div className="rounded-xl bg-card/80 p-2.5 border border-border/60 text-[11px] font-bold text-foreground">
+                            <strong className="text-gold">القرار الموصى به: </strong>
+                            {rec.actionableDecision}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* توزيع الأسئلة والنتائج بالأشرطة */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-black text-foreground flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-gold" />
+                    نتائج الأسئلة التفصيلية
                   </h4>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {selectedAnalytics.recommendations.map((rec, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-2xl border p-4 space-y-2 ${
-                        rec.severity === "SUCCESS"
-                          ? "border-emerald-500/30 bg-emerald-500/[0.06]"
-                          : rec.severity === "WARNING"
-                          ? "border-amber-500/30 bg-amber-500/[0.06]"
-                          : "border-blue-500/30 bg-blue-500/[0.06]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {rec.severity === "SUCCESS" && <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />}
-                        {rec.severity === "WARNING" && <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />}
-                        {rec.severity === "INFO" && <Lightbulb className="h-4 w-4 text-blue-500 shrink-0" />}
-                        <h5 className="text-xs font-black text-foreground">{rec.title}</h5>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">{rec.summary}</p>
-                      <div className="rounded-xl bg-card/80 p-2.5 border border-border/60 text-[11px] font-bold text-foreground">
-                        <strong className="text-gold">القرار الموصى به: </strong>
-                        {rec.actionableDecision}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* ── توزيع الأسئلة والنتائج بالأشرطة ── */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-black text-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-gold" />
-                نتائج الأسئلة التفصيلية
-              </h4>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                {selectedAnalytics.questionsAnalytics.map((qa, idx) => (
-                  <div key={qa.id} className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <h5 className="text-xs font-black text-foreground">
-                        {idx + 1}. {qa.question}
-                      </h5>
-                      <span className="text-[10px] text-muted-foreground shrink-0">
-                        {qa.totalAnswers} إجابة
-                      </span>
-                    </div>
-
-                    {qa.optionsStats.length > 0 && (
-                      <div className="space-y-2 pt-1">
-                        {qa.optionsStats.map((opt) => (
-                          <div key={opt.option} className="space-y-1">
-                            <div className="flex items-center justify-between text-[11px] font-bold">
-                              <span className="text-foreground">{opt.option}</span>
-                              <span className="text-gold">{opt.percentage}% ({opt.count})</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-muted overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-gold transition-all duration-500"
-                                style={{ width: `${opt.percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {qa.type === "RATING" && qa.averageRating !== undefined && (
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl font-black text-gold">{qa.averageRating}</span>
-                          <div className="flex items-center text-gold">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`h-4 w-4 ${
-                                  (qa.averageRating || 0) >= s ? "fill-gold text-gold" : "text-muted-foreground/30"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-[11px] text-muted-foreground">من 5 نجوم</span>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {selectedAnalytics.questionsAnalytics.map((qa, idx) => (
+                      <div
+                        key={qa.id}
+                        className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h5 className="text-xs font-black text-foreground">
+                            {idx + 1}. {qa.question}
+                          </h5>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {qa.totalAnswers} إجابة
+                          </span>
                         </div>
 
-                        {qa.ratingBreakdown && (
-                          <div className="space-y-1 pt-2">
-                            {qa.ratingBreakdown.map((rb) => (
-                              <div key={rb.star} className="flex items-center gap-2 text-[10px]">
-                                <span className="w-12 text-muted-foreground">{rb.star} نجوم</span>
-                                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                                  <div className="h-full bg-gold rounded-full" style={{ width: `${rb.percentage}%` }} />
+                        {qa.optionsStats.length > 0 && (
+                          <div className="space-y-2.5 pt-1">
+                            {qa.optionsStats.map((opt) => (
+                              <div key={opt.option} className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px] font-bold">
+                                  <span className="text-foreground flex items-center gap-1.5">
+                                    <span>{opt.option}</span>
+                                    {opt.isOther && (
+                                      <span className="rounded-md bg-gold/15 text-gold border border-gold/30 px-1.5 py-0.2 text-[9px] font-black">
+                                        مقترحات مخصصة
+                                      </span>
+                                    )}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-gold">
+                                      {opt.percentage}% ({opt.count})
+                                    </span>
+                                    {opt.count > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedQuestionFilter(qa.id);
+                                          setSelectedOptionFilter(opt.option);
+                                          setAnalyticsTab("VOTERS");
+                                        }}
+                                        className="text-[10px] text-muted-foreground hover:text-gold underline transition-colors"
+                                      >
+                                        كشف الطلاب 👥
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className="w-8 text-end text-muted-foreground">{rb.count}</span>
+                                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full bg-gold transition-all duration-500"
+                                    style={{ width: `${opt.percentage}%` }}
+                                  />
+                                </div>
                               </div>
                             ))}
                           </div>
                         )}
-                      </div>
-                    )}
 
-                    {qa.type === "TEXT" && qa.textAnswers && (
-                      <div className="space-y-2 pt-1 max-h-48 overflow-y-auto custom-scrollbar">
-                        {qa.textAnswers.length > 0 ? (
-                          qa.textAnswers.map((ta, tIdx) => (
-                            <div key={tIdx} className="rounded-xl border border-border/80 bg-card p-2.5 text-xs">
-                              <p className="text-foreground">{ta.answer}</p>
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                {ta.studentName} ({ta.grade}) · {ta.date}
-                              </p>
+                        {qa.type === "RATING" && qa.averageRating !== undefined && (
+                          <div className="space-y-2 pt-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-black text-gold">
+                                {qa.averageRating}
+                              </span>
+                              <div className="flex items-center text-gold">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    className={`h-4 w-4 ${
+                                      (qa.averageRating || 0) >= s
+                                        ? "fill-gold text-gold"
+                                        : "text-muted-foreground/30"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[11px] text-muted-foreground">من 5 نجوم</span>
                             </div>
-                          ))
-                        ) : (
-                          <p className="text-xs text-muted-foreground italic">لا توجد إجابات نصية بعد.</p>
+
+                            {qa.ratingBreakdown && (
+                              <div className="space-y-1 pt-2">
+                                {qa.ratingBreakdown.map((rb) => (
+                                  <div key={rb.star} className="flex items-center gap-2 text-[10px]">
+                                    <span className="w-12 text-muted-foreground">{rb.star} نجوم</span>
+                                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                      <div
+                                        className="h-full bg-gold rounded-full"
+                                        style={{ width: `${rb.percentage}%` }}
+                                      />
+                                    </div>
+                                    <span className="w-8 text-end text-muted-foreground">
+                                      {rb.count}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {qa.type === "TEXT" && qa.textAnswers && (
+                          <div className="space-y-2 pt-1 max-h-48 overflow-y-auto custom-scrollbar">
+                            {qa.textAnswers.length > 0 ? (
+                              qa.textAnswers.map((ta, tIdx) => (
+                                <div
+                                  key={tIdx}
+                                  className="rounded-xl border border-border/80 bg-card p-2.5 text-xs"
+                                >
+                                  <p className="text-foreground">{ta.answer}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    {ta.voter?.studentName || "طالب"} ({ta.voter?.gradeLabel || "—"}) ·{" "}
+                                    {ta.voter?.submittedAt
+                                      ? new Date(ta.voter.submittedAt).toLocaleDateString("ar-EG")
+                                      : ""}
+                                  </p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">
+                                لا توجد إجابات نصية بعد.
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* التوزيع الديموغرافي */}
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <h4 className="text-sm font-black text-foreground flex items-center gap-2">
+                    <Users className="h-4 w-4 text-gold" />
+                    التوزيع الديموغرافي للمشاركين
+                  </h4>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
+                      <h5 className="text-xs font-bold text-foreground">حسب الفرقة الدراسية</h5>
+                      {selectedAnalytics.demographics.byGrade.map((g) => (
+                        <div key={g.label} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{g.label}</span>
+                          <span className="font-bold text-foreground">
+                            {g.percentage}% ({g.count})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
+                      <h5 className="text-xs font-bold text-foreground">حسب الشعبة</h5>
+                      {selectedAnalytics.demographics.bySection.map((s) => (
+                        <div key={s.label} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{s.label}</span>
+                          <span className="font-bold text-foreground">
+                            {s.percentage}% ({s.count})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
+                      <h5 className="text-xs font-bold text-foreground">حسب النوع</h5>
+                      {selectedAnalytics.demographics.byGender.map((gn) => (
+                        <div key={gn.label} className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">{gn.label}</span>
+                          <span className="font-bold text-foreground">
+                            {gn.percentage}% ({gn.count})
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* ── التوزيع الديموغرافي ── */}
-            <div className="space-y-3 pt-2 border-t border-border">
-              <h4 className="text-sm font-black text-foreground flex items-center gap-2">
-                <Users className="h-4 w-4 text-gold" />
-                التوزيع الديموغرافي للمشاركين
-              </h4>
+            {/* ══════════════════════════════════════════════════════════
+                التبويب 2: كشف وتفاصيل المصوتين (VOTERS DRILLDOWN)
+            ══════════════════════════════════════════════════════════ */}
+            {analyticsTab === "VOTERS" && (
+              <div className="space-y-4">
+                {/* شريط الفلاتر والبحث */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-muted/20 border border-border">
+                  {/* فلتر السؤال */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                      السؤال
+                    </label>
+                    <select
+                      value={selectedQuestionFilter}
+                      onChange={(e) => {
+                        setSelectedQuestionFilter(e.target.value);
+                        setSelectedOptionFilter("ALL");
+                      }}
+                      className="w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-gold"
+                    >
+                      <option value="ALL">جميع الأسئلة</option>
+                      {selectedAnalytics.questionsAnalytics.map((q, idx) => (
+                        <option key={q.id} value={q.id}>
+                          س{idx + 1}: {q.question.slice(0, 35)}...
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="grid gap-3 sm:grid-cols-3">
-                {/* حسب الفرقة */}
-                <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
-                  <h5 className="text-xs font-bold text-foreground">حسب الفرقة الدراسية</h5>
-                  {selectedAnalytics.demographics.byGrade.map((g) => (
-                    <div key={g.label} className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">{g.label}</span>
-                      <span className="font-bold text-foreground">{g.percentage}% ({g.count})</span>
+                  {/* فلتر الخيار */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                      الخيار المختار
+                    </label>
+                    <select
+                      value={selectedOptionFilter}
+                      onChange={(e) => setSelectedOptionFilter(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-gold"
+                    >
+                      <option value="ALL">جميع الخيارات</option>
+                      {availableOptionsForFilter.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* فلتر الفرقة */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                      الفرقة الدراسية
+                    </label>
+                    <select
+                      value={voterGradeFilter}
+                      onChange={(e) => setVoterGradeFilter(e.target.value)}
+                      className="w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-gold"
+                    >
+                      <option value="ALL">جميع الفرق</option>
+                      <option value="GRADE_1">الفرقة الأولى</option>
+                      <option value="GRADE_2">الفرقة الثانية</option>
+                      <option value="GRADE_3">الفرقة الثالثة</option>
+                      <option value="GRADE_4">الفرقة الرابعة</option>
+                    </select>
+                  </div>
+
+                  {/* حقل البحث بالاسم أو الكود */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                      بحث سريع
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={voterSearchQuery}
+                        onChange={(e) => setVoterSearchQuery(e.target.value)}
+                        placeholder="اسم الطالب، الكود، الهاتف..."
+                        className="w-full rounded-xl border border-border bg-card pe-8 ps-2.5 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
+                      />
+                      <Search className="absolute end-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                {/* حسب الشعبة */}
-                <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
-                  <h5 className="text-xs font-bold text-foreground">حسب الشعبة</h5>
-                  {selectedAnalytics.demographics.bySection.map((s) => (
-                    <div key={s.label} className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">{s.label}</span>
-                      <span className="font-bold text-foreground">{s.percentage}% ({s.count})</span>
-                    </div>
-                  ))}
-                </div>
+                {/* كشف الطلاب */}
+                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                  <div className="p-3 bg-muted/30 border-b border-border flex items-center justify-between text-xs font-bold text-foreground">
+                    <span>قائمة المصوتين ({filteredVoters.length} صوت مطابق)</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      اضغط على رقم الهاتف لفتح محادثة واتساب مباشرة 💬
+                    </span>
+                  </div>
 
-                {/* حسب النوع */}
-                <div className="rounded-2xl border border-border bg-card p-3.5 space-y-2">
-                  <h5 className="text-xs font-bold text-foreground">حسب النوع</h5>
-                  {selectedAnalytics.demographics.byGender.map((gn) => (
-                    <div key={gn.label} className="flex items-center justify-between text-[11px]">
-                      <span className="text-muted-foreground">{gn.label}</span>
-                      <span className="font-bold text-foreground">{gn.percentage}% ({gn.count})</span>
+                  {filteredVoters.length > 0 ? (
+                    <div className="divide-y divide-border/60 max-h-[500px] overflow-y-auto custom-scrollbar">
+                      {filteredVoters.map((v, i) => {
+                        const cleanPhone = v.phone ? v.phone.replace(/^0+/, "") : "";
+                        return (
+                          <div
+                            key={`${v.userId}_${v.questionId}_${i}`}
+                            className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/15 transition-colors"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs sm:text-sm font-black text-foreground">
+                                  {v.studentName}
+                                </span>
+                                {v.studentCode && (
+                                  <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] font-bold text-muted-foreground border border-border">
+                                    كود: {v.studentCode}
+                                  </span>
+                                )}
+                                <span className="rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 text-[10px] font-black border border-blue-500/20">
+                                  {v.gradeLabel || "—"}
+                                </span>
+                                {v.sectionLabel && (
+                                  <span className="rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 text-[10px] font-bold border border-purple-500/20">
+                                    {v.sectionLabel}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                                <span className="font-bold text-gold">السؤال:</span>
+                                <span>{v.questionTitle}</span>
+                              </div>
+
+                              {/* المقترح المكتوب إن وُجد */}
+                              {v.customText && (
+                                <div className="rounded-xl bg-gold/10 border border-gold/30 p-2 text-xs text-foreground mt-1">
+                                  <span className="font-black text-gold">المقترح المكتوب: </span>
+                                  <span>{v.customText}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                              {/* الخيار المختار */}
+                              <span className="rounded-xl bg-gold/15 text-gold border border-gold/30 px-3 py-1 text-xs font-black">
+                                {v.optionChosen}
+                              </span>
+
+                              {/* رقم الهاتف وزر الواتساب */}
+                              {v.phone ? (
+                                <a
+                                  href={`https://wa.me/20${cleanPhone}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 text-xs font-mono font-bold transition-all border border-emerald-500/30"
+                                  title="محادثة واتساب مباشرة مع الطالب"
+                                >
+                                  <MessageCircle className="h-3.5 w-3.5" />
+                                  <span>{v.phone}</span>
+                                </a>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+
+                              {/* وقت التصويت */}
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(v.submittedAt).toLocaleDateString("ar-EG", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  ) : (
+                    <div className="p-8 text-center text-xs text-muted-foreground">
+                      لا يوجد مصوتون يطابقون خيارات الفلترة المحددة.
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                التبويب 3: مصفوفة المفاضلة والمقارنة (MATRIX)
+            ══════════════════════════════════════════════════════════ */}
+            {analyticsTab === "MATRIX" && (
+              <div className="space-y-6">
+                <p className="text-xs text-muted-foreground">
+                  مصفوفة تفصيلية تقارن كيفية توزيع أصوات كل خيار بين الفرق الدراسية المختلفة لمساعدة
+                  الإدارة في اتخاذ القرار الأمثل لكل فرقة.
+                </p>
+
+                {selectedAnalytics.questionsAnalytics
+                  .filter((qa) => qa.optionsStats.length > 0)
+                  .map((qa, qIndex) => {
+                    const grades = [
+                      { key: "GRADE_1", label: "الفرقة الأولى" },
+                      { key: "GRADE_2", label: "الفرقة الثانية" },
+                      { key: "GRADE_3", label: "الفرقة الثالثة" },
+                      { key: "GRADE_4", label: "الفرقة الرابعة" },
+                    ];
+
+                    return (
+                      <div
+                        key={qa.id}
+                        className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm space-y-2"
+                      >
+                        <div className="p-3.5 bg-muted/30 border-b border-border">
+                          <h5 className="text-xs font-black text-foreground">
+                            سؤال {qIndex + 1}: {qa.question} ({qa.totalAnswers} صوت)
+                          </h5>
+                        </div>
+
+                        <div className="overflow-x-auto p-2">
+                          <table className="w-full text-xs text-start">
+                            <thead>
+                              <tr className="border-b border-border text-muted-foreground font-black text-[11px]">
+                                <th className="p-2.5 text-start">الخيار</th>
+                                {grades.map((g) => (
+                                  <th key={g.key} className="p-2.5 text-center">
+                                    {g.label}
+                                  </th>
+                                ))}
+                                <th className="p-2.5 text-center">أخرى / غير محدد</th>
+                                <th className="p-2.5 text-center text-gold">إجمالي الأصوات</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/60">
+                              {qa.optionsStats.map((opt) => {
+                                const voters = opt.voters || [];
+                                const countByGrade: Record<string, number> = {};
+                                let otherCount = 0;
+
+                                voters.forEach((v) => {
+                                  if (
+                                    v.grade === "GRADE_1" ||
+                                    v.grade === "GRADE_2" ||
+                                    v.grade === "GRADE_3" ||
+                                    v.grade === "GRADE_4"
+                                  ) {
+                                    countByGrade[v.grade] = (countByGrade[v.grade] || 0) + 1;
+                                  } else {
+                                    otherCount++;
+                                  }
+                                });
+
+                                return (
+                                  <tr key={opt.option} className="hover:bg-muted/20">
+                                    <td className="p-2.5 font-bold text-foreground">
+                                      {opt.option}
+                                      {opt.isOther && (
+                                        <span className="ms-1.5 rounded-md bg-gold/15 text-gold border border-gold/30 px-1 py-0.5 text-[9px]">
+                                          مقترح
+                                        </span>
+                                      )}
+                                    </td>
+                                    {grades.map((g) => {
+                                      const cnt = countByGrade[g.key] || 0;
+                                      const pct =
+                                        opt.count > 0 ? Math.round((cnt / opt.count) * 100) : 0;
+                                      return (
+                                        <td key={g.key} className="p-2.5 text-center">
+                                          <span className="font-bold text-foreground">{cnt}</span>
+                                          {cnt > 0 && (
+                                            <span className="text-[10px] text-muted-foreground ms-1">
+                                              ({pct}%)
+                                            </span>
+                                          )}
+                                        </td>
+                                      );
+                                    })}
+                                    <td className="p-2.5 text-center text-muted-foreground">
+                                      {otherCount}
+                                    </td>
+                                    <td className="p-2.5 text-center font-black text-gold">
+                                      {opt.count} ({opt.percentage}%)
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         </div>
       )}

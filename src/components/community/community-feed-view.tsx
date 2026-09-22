@@ -237,17 +237,20 @@ export function CommunityFeedView({
                     </div>
                   )}
 
-                  <PostEngagement
-                    postId={p.id}
-                    initialLiked={p.liked}
-                    likeCount={p.likesCount}
-                    commentCount={p.commentsForStudent?.length || 0}
-                    locked={p.lockedComments}
-                    autoApproveComments={p.autoApproveComments}
-                    canComment={isStudent}
-                    comments={p.commentsForStudent || []}
-                    heartsVisible={heartsVisible}
-                  />
+                  {/* إخفاء شريط التعليقات والإعجاب العادي عن منشورات الاستبيانات ليصبح استبياناً حقيقياً خالصاً */}
+                  {!p.surveyData && p.type !== "SURVEY" && (
+                    <PostEngagement
+                      postId={p.id}
+                      initialLiked={p.liked}
+                      likeCount={p.likesCount}
+                      commentCount={p.commentsForStudent?.length || 0}
+                      locked={p.lockedComments}
+                      autoApproveComments={p.autoApproveComments}
+                      canComment={isStudent}
+                      comments={p.commentsForStudent || []}
+                      heartsVisible={heartsVisible}
+                    />
+                  )}
                 </article>
               );
             })}

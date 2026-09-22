@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   BarChart3,
   CheckCircle2,
@@ -12,6 +13,10 @@ import {
   Users,
   AlertCircle,
   Edit3,
+  ExternalLink,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { submitSurveyVote } from "@/actions/surveys";
 import { toast } from "sonner";
@@ -20,6 +25,7 @@ export interface PollQuestionOption {
   option: string;
   count: number;
   percentage: number;
+  isOther?: boolean;
 }
 
 export interface PollQuestionData {
@@ -28,6 +34,7 @@ export interface PollQuestionData {
   question: string;
   description?: string;
   options: string[];
+  allowOther?: boolean;
   optionsStats: PollQuestionOption[];
   averageRating?: number;
   userAnswer?: string | string[];
@@ -60,13 +67,47 @@ export function CommunityPollCard({
   const [isEditingVote, setIsEditingVote] = useState(false);
   const [totalVotes, setTotalVotes] = useState(initialTotalVotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // نصوص المقترحات المكتوبة في خيار أخرى
+  const [otherTexts, setOtherTexts] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    questions.forEach((q) => {
+      const val = q.userAnswer;
+      if (typeof val === "string") {
+        if (val.startsWith("أخرى: ")) {
+          initial[q.id] = val.replace("أخرى: ", "");
+        } else if (val.startsWith("__OTHER__: ")) {
+          initial[q.id] = val.replace("__OTHER__: ", "");
+        }
+      } else if (Array.isArray(val)) {
+        const item = val.find((v) => v.startsWith("أخرى: ") || v.startsWith("__OTHER__: "));
+        if (item) {
+          initial[q.id] = item.replace(/^(أخرى: |__OTHER__: )/, "");
+        }
+      }
+    });
+    return initial;
+  });
 
   // تخزين الإجابات المختارة
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, any>>(() => {
     const initial: Record<string, any> = {};
     questions.forEach((q) => {
-      if (q.userAnswer) {
-        initial[q.id] = q.userAnswer;
+      if (q.userAnswer !== undefined && q.userAnswer !== null) {
+        if (typeof q.userAnswer === "string") {
+          if (q.userAnswer.startsWith("أخرى:") || q.userAnswer.startsWith("__OTHER__:")) {
+            initial[q.id] = "أخرى";
+          } else {
+            initial[q.id] = q.userAnswer;
+          }
+        } else if (Array.isArray(q.userAnswer)) {
+          initial[q.id] = q.userAnswer.map((v) =>
+            v.startsWith("أخرى:") || v.startsWith("__OTHER__:") ? "أخرى" : v
+          );
+        } else {
+          initial[q.id] = q.userAnswer;
+        }
       }
     });
     return initial;
@@ -74,6 +115,16 @@ export function CommunityPollCard({
 
   const isClosed = status !== "OPEN" || (deadline && new Date(deadline) < new Date());
   const isAnswered = (hasVoted && !isEditingVote) || isClosed;
+
+  const handleCopySurveyLink = () => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}/surveys/${surveyId}`;
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      toast.success("تم نسخ رابط الاستبيان المستقل بنجاح! 📋");
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
 
   const handleSingleSelect = (qId: string, option: string) => {
     if (isClosed) return;
@@ -108,11 +159,38 @@ export function CommunityPollCard({
       return;
     }
 
-    // تحقق من الإجابة على سؤال واحد على الأقل
-    const answeredCount = Object.keys(selectedAnswers).filter(
-      (k) => selectedAnswers[k] !== undefined && selectedAnswers[k] !== ""
-    ).length;
+    // تجهيز البايلود مع كتابة المقترح إن وجد
+    const payload: Record<string, any> = {};
 
+    questions.forEach((q) => {
+      const rawAns = selectedAnswers[q.id];
+      if (rawAns === undefined || rawAns === null || rawAns === "") return;
+
+      if (q.type === "POLL_SINGLE") {
+        if (rawAns === "أخرى") {
+          const txt = (otherTexts[q.id] || "").trim();
+          payload[q.id] = txt ? `أخرى: ${txt}` : "أخرى";
+        } else {
+          payload[q.id] = rawAns;
+        }
+      } else if (q.type === "POLL_MULTI") {
+        if (Array.isArray(rawAns)) {
+          payload[q.id] = rawAns.map((item) => {
+            if (item === "أخرى") {
+              const txt = (otherTexts[q.id] || "").trim();
+              return txt ? `أخرى: ${txt}` : "أخرى";
+            }
+            return item;
+          });
+        } else {
+          payload[q.id] = rawAns;
+        }
+      } else {
+        payload[q.id] = rawAns;
+      }
+    });
+
+    const answeredCount = Object.keys(payload).length;
     if (answeredCount === 0) {
       toast.error("يرجى اختيار إجابة واحدة على الأقل قبل الإرسال");
       return;
@@ -120,7 +198,7 @@ export function CommunityPollCard({
 
     setIsSubmitting(true);
     try {
-      const res = await submitSurveyVote(surveyId, selectedAnswers);
+      const res = await submitSurveyVote(surveyId, payload);
       if (res.ok) {
         if (!hasVoted) {
           setTotalVotes((v) => v + 1);
@@ -143,8 +221,8 @@ export function CommunityPollCard({
   };
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-gold/25 bg-card/90 dark:bg-card/75 p-4 sm:p-6 shadow-md space-y-5 my-3">
-      {/* الرأس: شارات الحالة ومجموع الأصوات */}
+    <div className="overflow-hidden rounded-3xl border border-gold/30 bg-card/90 dark:bg-card/80 p-4 sm:p-6 shadow-md space-y-5 my-3 relative">
+      {/* شريط علوي مميز */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3.5">
         <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gold/15 text-gold border border-gold/30">
@@ -152,7 +230,7 @@ export function CommunityPollCard({
           </div>
           <div>
             <span className="text-[10px] font-black uppercase tracking-wider text-gold-deep dark:text-gold-light flex items-center gap-1">
-              <Sparkles className="h-3 w-3" /> استطلاع رأي المجتمع
+              <Sparkles className="h-3 w-3" /> استطلاع رأي المجتمع الرسمي
             </span>
             <h3 className="text-sm sm:text-base font-black text-foreground">
               {title}
@@ -160,7 +238,36 @@ export function CommunityPollCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* رابط فتح كصفحة مستقلة ومشاركة الرابط */}
+          <Link
+            href={`/surveys/${surveyId}`}
+            title="فتح كصفحة مستقلة مخصصة للمشاركة والتصويت"
+            className="inline-flex items-center gap-1 rounded-xl bg-gold/10 hover:bg-gold/20 border border-gold/25 px-2.5 py-1 text-[10px] font-black text-gold transition-all"
+          >
+            <ExternalLink className="h-3 w-3" />
+            <span className="hidden xs:inline">صفحة مستقلة ↗</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={handleCopySurveyLink}
+            title="نسخ رابط الاستبيان للمشاركة في واتساب وتليجرام"
+            className="inline-flex items-center gap-1 rounded-xl bg-muted/70 hover:bg-muted border border-border px-2.5 py-1 text-[10px] font-bold text-muted-foreground transition-all"
+          >
+            {copiedLink ? (
+              <>
+                <Check className="h-3 w-3 text-emerald-500" />
+                <span className="text-emerald-500">تم النسخ</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3 w-3 text-gold" />
+                <span>مشاركة</span>
+              </>
+            )}
+          </button>
+
           {hasVoted && (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-[10px] font-black text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-3 w-3" />
@@ -208,6 +315,7 @@ export function CommunityPollCard({
       <div className="space-y-5">
         {questions.map((q, qIndex) => {
           const isQuestionAnswered = (hasVoted && !isEditingVote) || isClosed;
+          const currentSelected = selectedAnswers[q.id];
 
           return (
             <div
@@ -238,9 +346,18 @@ export function CommunityPollCard({
                   {q.optionsStats.map((opt) => {
                     const isSelectedByUser =
                       q.type === "POLL_SINGLE"
-                        ? selectedAnswers[q.id] === opt.option
-                        : Array.isArray(selectedAnswers[q.id]) &&
-                          selectedAnswers[q.id].includes(opt.option);
+                        ? currentSelected === opt.option ||
+                          (opt.isOther &&
+                            typeof currentSelected === "string" &&
+                            (currentSelected.startsWith("أخرى:") ||
+                              currentSelected.startsWith("__OTHER__:")))
+                        : Array.isArray(currentSelected) &&
+                          (currentSelected.includes(opt.option) ||
+                            (opt.isOther &&
+                              currentSelected.some(
+                                (v: string) =>
+                                  v.startsWith("أخرى:") || v.startsWith("__OTHER__:")
+                              )));
 
                     return (
                       <div
@@ -279,6 +396,14 @@ export function CommunityPollCard({
                             </span>
                           </div>
                         </div>
+
+                        {/* لو كان هناك مقترح مخصص كتبه المستخدم في خيار أخرى */}
+                        {opt.isOther && isSelectedByUser && otherTexts[q.id] && (
+                          <div className="relative mt-2 rounded-xl bg-gold/10 border border-gold/25 p-2 text-[10px] text-foreground">
+                            <span className="font-black text-gold">مقترحك المكتوب: </span>
+                            {otherTexts[q.id]}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -291,9 +416,8 @@ export function CommunityPollCard({
                   {q.options.map((opt) => {
                     const isSelected =
                       q.type === "POLL_SINGLE"
-                        ? selectedAnswers[q.id] === opt
-                        : Array.isArray(selectedAnswers[q.id]) &&
-                          selectedAnswers[q.id].includes(opt);
+                        ? currentSelected === opt
+                        : Array.isArray(currentSelected) && currentSelected.includes(opt);
 
                     return (
                       <button
@@ -323,6 +447,66 @@ export function CommunityPollCard({
                       </button>
                     );
                   })}
+
+                  {/* خيار «أخرى» لكتابة مقترح غير مذكور */}
+                  {q.allowOther && (
+                    <div className="space-y-2 pt-1">
+                      {(() => {
+                        const isOtherSelected =
+                          q.type === "POLL_SINGLE"
+                            ? currentSelected === "أخرى"
+                            : Array.isArray(currentSelected) && currentSelected.includes("أخرى");
+
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                q.type === "POLL_SINGLE"
+                                  ? handleSingleSelect(q.id, "أخرى")
+                                  : handleMultiSelect(q.id, "أخرى")
+                              }
+                              className={`w-full flex items-center justify-between gap-3 rounded-2xl border p-3.5 text-start transition-all ${
+                                isOtherSelected
+                                  ? "border-gold bg-gold/15 text-gold-deep dark:text-gold shadow-sm"
+                                  : "border-border/80 bg-card/80 text-foreground hover:border-gold/40 hover:bg-muted/40"
+                              }`}
+                            >
+                              <span className="text-xs sm:text-sm font-extrabold flex items-center gap-1.5">
+                                خيار آخر غير مذكور (أخرى) ✍️
+                              </span>
+                              <div
+                                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-all ${
+                                  isOtherSelected
+                                    ? "border-gold bg-gold text-night"
+                                    : "border-muted-foreground/40 bg-transparent"
+                                }`}
+                              >
+                                {isOtherSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
+                              </div>
+                            </button>
+
+                            {isOtherSelected && (
+                              <div className="ps-2 pe-1 pt-1">
+                                <input
+                                  type="text"
+                                  value={otherTexts[q.id] || ""}
+                                  onChange={(e) =>
+                                    setOtherTexts((prev) => ({
+                                      ...prev,
+                                      [q.id]: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="اكتب مقترحك هنا..."
+                                  className="w-full rounded-xl border border-gold/40 bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
+                                />
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : null}
 
@@ -350,7 +534,7 @@ export function CommunityPollCard({
                   ) : (
                     <div className="flex items-center gap-2 p-2">
                       {[1, 2, 3, 4, 5].map((star) => {
-                        const active = (selectedAnswers[q.id] || 0) >= star;
+                        const active = (Number(currentSelected) || 0) >= star;
                         return (
                           <button
                             key={star}
@@ -367,7 +551,7 @@ export function CommunityPollCard({
                         );
                       })}
                       <span className="text-xs font-bold text-muted-foreground ms-2">
-                        {selectedAnswers[q.id] ? `${selectedAnswers[q.id]} نجوم` : "حدد تقييمك"}
+                        {currentSelected ? `${currentSelected} نجوم` : "حدد تقييمك"}
                       </span>
                     </div>
                   )}
@@ -375,17 +559,23 @@ export function CommunityPollCard({
               )}
 
               {/* سؤال نصي (TEXT) */}
-              {q.type === "TEXT" && !isQuestionAnswered && (
+              {q.type === "TEXT" && (
                 <div className="pt-1">
-                  <textarea
-                    rows={2}
-                    value={selectedAnswers[q.id] || ""}
-                    onChange={(e) =>
-                      setSelectedAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
-                    }
-                    placeholder="اكتب إجابتك أو ملاحظاتك هنا..."
-                    className="w-full rounded-2xl border border-border bg-card p-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
-                  />
+                  {isQuestionAnswered ? (
+                    <div className="rounded-xl border border-border bg-card p-3 text-xs text-foreground">
+                      {currentSelected || "لم يتم كتابة إجابة."}
+                    </div>
+                  ) : (
+                    <textarea
+                      rows={2}
+                      value={currentSelected || ""}
+                      onChange={(e) =>
+                        setSelectedAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                      }
+                      placeholder="اكتب إجابتك أو ملاحظاتك هنا..."
+                      className="w-full rounded-2xl border border-border bg-card p-3 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-gold focus:outline-none"
+                    />
+                  )}
                 </div>
               )}
             </div>

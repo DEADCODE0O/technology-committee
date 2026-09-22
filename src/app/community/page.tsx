@@ -202,9 +202,11 @@ export default async function CommunityPage() {
         const qId = f.id;
         const qType = f.type || "POLL_SINGLE";
         const options: string[] = f.options || [];
+        const allowOther = !!f.allowOther;
 
         const optionCounts: Record<string, number> = {};
         options.forEach((o) => (optionCounts[o] = 0));
+        if (allowOther) optionCounts["أخرى"] = 0;
 
         let ratingSum = 0;
         let ratingCount = 0;
@@ -217,15 +219,22 @@ export default async function CommunityPage() {
           const val = ans[qId];
           if (val === undefined || val === null || val === "") return;
 
+          const recordVote = (v: string) => {
+            const str = String(v).trim();
+            if (str.startsWith("أخرى:") || str.startsWith("__OTHER__:") || str === "أخرى") {
+              optionCounts["أخرى"] = (optionCounts["أخرى"] || 0) + 1;
+            } else if (optionCounts[str] !== undefined) {
+              optionCounts[str] = (optionCounts[str] || 0) + 1;
+            } else {
+              optionCounts[str] = (optionCounts[str] || 0) + 1;
+            }
+          };
+
           if (qType === "POLL_SINGLE") {
-            const strVal = String(val).trim();
-            optionCounts[strVal] = (optionCounts[strVal] || 0) + 1;
+            recordVote(val);
           } else if (qType === "POLL_MULTI") {
             const arr = Array.isArray(val) ? val : [val];
-            arr.forEach((item: string) => {
-              const strItem = String(item).trim();
-              optionCounts[strItem] = (optionCounts[strItem] || 0) + 1;
-            });
+            arr.forEach(recordVote);
           } else if (qType === "RATING") {
             const num = Number(val);
             if (!isNaN(num) && num >= 1 && num <= 5) {
@@ -235,10 +244,16 @@ export default async function CommunityPage() {
           }
         });
 
-        const optionsStats = options.map((opt) => ({
+        const allOptionsToDisplay = [...options];
+        if (allowOther && !allOptionsToDisplay.includes("أخرى")) {
+          allOptionsToDisplay.push("أخرى");
+        }
+
+        const optionsStats = allOptionsToDisplay.map((opt) => ({
           option: opt,
           count: optionCounts[opt] || 0,
           percentage: totalVotes > 0 ? Math.round(((optionCounts[opt] || 0) / totalVotes) * 100) : 0,
+          isOther: opt === "أخرى",
         }));
 
         return {
@@ -247,6 +262,7 @@ export default async function CommunityPage() {
           question: f.label || f.question || "سؤال",
           description: f.description,
           options,
+          allowOther,
           optionsStats,
           averageRating: ratingCount > 0 ? Math.round((ratingSum / ratingCount) * 10) / 10 : undefined,
           userAnswer: userAnswers[qId],

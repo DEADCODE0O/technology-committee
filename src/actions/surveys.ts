@@ -17,6 +17,7 @@ export interface SurveyQuestion {
   question: string;
   description?: string;
   options?: string[];
+  allowOther?: boolean;
   required?: boolean;
 }
 
@@ -145,6 +146,7 @@ export async function createSurvey(
       label: q.question.trim(),
       description: q.description?.trim() || null,
       options: q.options ? q.options.filter((o) => o.trim().length > 0) : [],
+      allowOther: q.allowOther ?? false,
       required: q.required ?? true,
     }));
 
@@ -176,6 +178,7 @@ export async function createSurvey(
           links: JSON.stringify([{ label: "DATA_REQUEST", url: request.id }]),
           status: "PUBLISHED",
           pinned: input.pinned ?? false,
+          lockedComments: true, // الاستبيان الرسمي تصويت فقط بدون تعليقات
           createdById: admin.id,
         },
       });
@@ -220,6 +223,7 @@ export async function updateSurvey(
       label: q.question.trim(),
       description: q.description?.trim() || null,
       options: q.options ? q.options.filter((o) => o.trim().length > 0) : [],
+      allowOther: q.allowOther ?? false,
       required: true,
     }));
 
@@ -310,21 +314,42 @@ export async function toggleSurveyPin(
 }
 
 // ─── 3. تحليلات الاستبيان واتخاذ القرارات الذكية ─────────────────
+export interface VoterInfo {
+  userId: string;
+  studentName: string;
+  email: string;
+  phone: string;
+  studentCode: string;
+  grade: string;
+  gradeLabel: string;
+  section: string;
+  sectionLabel: string;
+  gender: string;
+  genderLabel: string;
+  submittedAt: string;
+  customText?: string;
+}
+
 export interface OptionStat {
   option: string;
   count: number;
   percentage: number;
+  voters: VoterInfo[];
+  isOther?: boolean;
 }
 
 export interface QuestionAnalytics {
   id: string;
   type: SurveyQuestionType;
   question: string;
+  description?: string | null;
+  allowOther?: boolean;
   totalAnswers: number;
   optionsStats: OptionStat[];
+  otherAnswers?: { text: string; voter: VoterInfo }[];
   averageRating?: number;
-  ratingBreakdown?: { star: number; count: number; percentage: number }[];
-  textAnswers?: { answer: string; studentName: string; grade?: string; date: string }[];
+  ratingBreakdown?: { star: number; count: number; percentage: number; voters: VoterInfo[] }[];
+  textAnswers?: { answer: string; voter: VoterInfo }[];
   leadingOption?: string;
 }
 
@@ -342,6 +367,19 @@ export interface StrategicDecisionRecommendation {
   actionableDecision: string;
 }
 
+export interface FullSurveyResponseRow {
+  userId: string;
+  studentName: string;
+  email: string;
+  phone: string;
+  studentCode: string;
+  grade: string;
+  section: string;
+  gender: string;
+  submittedAt: string;
+  answers: Record<string, any>;
+}
+
 export interface SurveyAnalyticsResult {
   id: string;
   title: string;
@@ -357,6 +395,7 @@ export interface SurveyAnalyticsResult {
     byGender: DemographicBreakdown[];
   };
   recommendations: StrategicDecisionRecommendation[];
+  rawResponses: FullSurveyResponseRow[];
 }
 
 export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyticsResult | null> {
@@ -387,7 +426,7 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
 
   const totalResponses = survey.responses.length;
 
-  // تفكيك الإجابات
+  // تفكيك الإجابات وبيانات الطلاب
   const parsedResponses = survey.responses.map((r) => {
     let answers: Record<string, any> = {};
     try {
@@ -395,32 +434,51 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
     } catch {
       answers = {};
     }
+
+    const prof = r.user.profile;
+    const gradeKey = prof?.grade || "UNKNOWN";
+    const sectionKey = prof?.section || "UNKNOWN";
+    const genderKey = prof?.gender || "UNKNOWN";
+
     return {
       userId: r.userId,
-      studentName: r.user.profile?.fullName || r.user.displayName || "طالب",
-      grade: r.user.profile?.grade || "UNKNOWN",
-      section: r.user.profile?.section || "UNKNOWN",
-      gender: r.user.profile?.gender || "UNKNOWN",
+      studentName: prof?.fullName || r.user.displayName || r.user.email,
+      email: r.user.email,
+      phone: prof?.phone || "غير مسجل",
+      studentCode: prof?.studentCode || "—",
+      grade: gradeKey,
+      gradeLabel: GRADE_LABELS[gradeKey] || (gradeKey === "UNKNOWN" ? "غير محدد" : gradeKey),
+      section: sectionKey,
+      sectionLabel: SECTION_LABELS[sectionKey] || (sectionKey === "UNKNOWN" ? "غير محدد" : sectionKey),
+      gender: genderKey,
+      genderLabel: GENDER_LABELS[genderKey] || (genderKey === "UNKNOWN" ? "غير محدد" : genderKey),
       submittedAt: r.submittedAt,
       answers,
     };
   });
 
-  // 1. تحليلات كل سؤال
+  // 1. تحليلات كل سؤال مع كشف دقيق لكل من صوّت
   const questionsAnalytics: QuestionAnalytics[] = fields.map((field) => {
     const qId = field.id;
     const qType: SurveyQuestionType = field.type || "POLL_SINGLE";
     const qTitle = field.label || field.question || "سؤال";
     const options: string[] = field.options || [];
+    const allowOther = !!field.allowOther;
 
     let totalAnswers = 0;
     const optionCounts: Record<string, number> = {};
-    options.forEach((opt) => (optionCounts[opt] = 0));
+    const optionVoters: Record<string, VoterInfo[]> = {};
+    options.forEach((opt) => {
+      optionCounts[opt] = 0;
+      optionVoters[opt] = [];
+    });
 
+    const otherAnswersList: { text: string; voter: VoterInfo }[] = [];
     let ratingSum = 0;
     let ratingCount = 0;
     const ratingDistribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    const textAnswersList: { answer: string; studentName: string; grade?: string; date: string }[] = [];
+    const ratingVoters: Record<number, VoterInfo[]> = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+    const textAnswersList: { answer: string; voter: VoterInfo }[] = [];
 
     parsedResponses.forEach((resp) => {
       const val = resp.answers[qId];
@@ -428,42 +486,85 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
 
       totalAnswers++;
 
+      const voter: VoterInfo = {
+        userId: resp.userId,
+        studentName: resp.studentName,
+        email: resp.email,
+        phone: resp.phone,
+        studentCode: resp.studentCode,
+        grade: resp.grade,
+        gradeLabel: resp.gradeLabel,
+        section: resp.section,
+        sectionLabel: resp.sectionLabel,
+        gender: resp.gender,
+        genderLabel: resp.genderLabel,
+        submittedAt: resp.submittedAt.toISOString(),
+      };
+
+      const recordChoice = (v: string) => {
+        const str = String(v).trim();
+        if (str.startsWith("أخرى:") || str.startsWith("__OTHER__:") || str === "أخرى") {
+          const custom = str.replace(/^(__OTHER__:|أخرى:\s*)/, "").trim();
+          otherAnswersList.push({
+            text: custom || "أخرى",
+            voter: { ...voter, customText: custom || undefined },
+          });
+        } else if (optionCounts[str] !== undefined) {
+          optionCounts[str] = (optionCounts[str] || 0) + 1;
+          optionVoters[str].push(voter);
+        } else {
+          otherAnswersList.push({
+            text: str,
+            voter: { ...voter, customText: str },
+          });
+        }
+      };
+
       if (qType === "POLL_SINGLE") {
-        const strVal = String(val).trim();
-        optionCounts[strVal] = (optionCounts[strVal] || 0) + 1;
+        recordChoice(String(val));
       } else if (qType === "POLL_MULTI") {
         const arr = Array.isArray(val) ? val : [val];
-        arr.forEach((item: string) => {
-          const strItem = String(item).trim();
-          optionCounts[strItem] = (optionCounts[strItem] || 0) + 1;
-        });
+        arr.forEach(recordChoice);
       } else if (qType === "RATING") {
         const num = Number(val);
         if (!isNaN(num) && num >= 1 && num <= 5) {
           ratingSum += num;
           ratingCount++;
           ratingDistribution[num] = (ratingDistribution[num] || 0) + 1;
+          ratingVoters[num].push(voter);
         }
       } else if (qType === "TEXT") {
         textAnswersList.push({
           answer: String(val),
-          studentName: resp.studentName,
-          grade: GRADE_LABELS[resp.grade] || resp.grade,
-          date: new Intl.DateTimeFormat("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(resp.submittedAt),
+          voter,
         });
       }
     });
 
-    const optionsStats: OptionStat[] = Object.entries(optionCounts).map(([opt, cnt]) => ({
+    const optionsStats: OptionStat[] = options.map((opt) => ({
       option: opt,
-      count: cnt,
-      percentage: totalAnswers > 0 ? Math.round((cnt / totalAnswers) * 100) : 0,
-    })).sort((a, b) => b.count - a.count);
+      count: optionCounts[opt] || 0,
+      percentage: totalAnswers > 0 ? Math.round(((optionCounts[opt] || 0) / totalAnswers) * 100) : 0,
+      voters: optionVoters[opt] || [],
+      isOther: false,
+    }));
+
+    if (otherAnswersList.length > 0) {
+      optionsStats.push({
+        option: "أخرى (مقترحات مخصصة)",
+        count: otherAnswersList.length,
+        percentage: totalAnswers > 0 ? Math.round((otherAnswersList.length / totalAnswers) * 100) : 0,
+        voters: otherAnswersList.map((oa) => oa.voter),
+        isOther: true,
+      });
+    }
+
+    optionsStats.sort((a, b) => b.count - a.count);
 
     const leadingOption = optionsStats.length > 0 && optionsStats[0].count > 0 ? optionsStats[0].option : undefined;
 
     let averageRating: number | undefined = undefined;
-    let ratingBreakdown: { star: number; count: number; percentage: number }[] | undefined = undefined;
+    let ratingBreakdown: { star: number; count: number; percentage: number; voters: VoterInfo[] }[] | undefined = undefined;
 
     if (qType === "RATING") {
       averageRating = ratingCount > 0 ? Math.round((ratingSum / ratingCount) * 10) / 10 : 0;
@@ -471,6 +572,7 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
         star,
         count: ratingDistribution[star] || 0,
         percentage: ratingCount > 0 ? Math.round(((ratingDistribution[star] || 0) / ratingCount) * 100) : 0,
+        voters: ratingVoters[star] || [],
       }));
     }
 
@@ -478,11 +580,14 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
       id: qId,
       type: qType,
       question: qTitle,
+      description: field.description || null,
+      allowOther,
       totalAnswers,
       optionsStats,
+      otherAnswers: otherAnswersList,
       averageRating,
       ratingBreakdown,
-      textAnswers: textAnswersList.slice(0, 30),
+      textAnswers: textAnswersList,
       leadingOption,
     };
   });
@@ -576,6 +681,20 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
     });
   }
 
+  // كشف الاستجابات الكامل للإكسيل والجداول
+  const rawResponses: FullSurveyResponseRow[] = parsedResponses.map((r) => ({
+    userId: r.userId,
+    studentName: r.studentName,
+    email: r.email,
+    phone: r.phone,
+    studentCode: r.studentCode,
+    grade: r.gradeLabel,
+    section: r.sectionLabel,
+    gender: r.genderLabel,
+    submittedAt: r.submittedAt.toISOString(),
+    answers: r.answers,
+  }));
+
   return {
     id: survey.id,
     title: survey.title,
@@ -591,7 +710,130 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
       byGender,
     },
     recommendations,
+    rawResponses,
   };
+}
+
+// ─── 3.1 جلب تفاصيل الاستبيان للصفحة المستقلة (/surveys/[id]) ───
+export async function getSurveyDetails(surveyId: string) {
+  try {
+    const user = await getCurrentUser();
+    const survey = await db.dataRequest.findUnique({
+      where: { id: surveyId },
+      include: {
+        _count: { select: { responses: true } },
+      },
+    });
+
+    if (!survey) return null;
+
+    let fields: any[] = [];
+    try {
+      fields = JSON.parse(survey.fields);
+    } catch {
+      fields = [];
+    }
+
+    let userResponse: Record<string, any> | null = null;
+    if (user) {
+      const resp = await db.dataResponse.findUnique({
+        where: {
+          requestId_userId: {
+            requestId: surveyId,
+            userId: user.id,
+          },
+        },
+      });
+      if (resp) {
+        try {
+          userResponse = JSON.parse(resp.answers);
+        } catch {
+          userResponse = {};
+        }
+      }
+    }
+
+    // جلب الإحصائيات لعرض نتائج التصويت الفورية
+    const allResponses = await db.dataResponse.findMany({
+      where: { requestId: surveyId },
+      select: { answers: true },
+    });
+
+    const questionsWithStats = fields.map((f, idx) => {
+      const qId = f.id || `q_${idx + 1}`;
+      const qType: SurveyQuestionType = f.type || "POLL_SINGLE";
+      const options: string[] = Array.isArray(f.options) ? f.options : [];
+      const allowOther = !!f.allowOther;
+
+      const counts: Record<string, number> = {};
+      options.forEach((opt) => (counts[opt] = 0));
+      if (allowOther) counts["أخرى"] = 0;
+
+      let totalAnswers = 0;
+
+      allResponses.forEach((r) => {
+        try {
+          const ans = JSON.parse(r.answers);
+          const val = ans[qId];
+          if (val === undefined || val === null || val === "") return;
+          totalAnswers++;
+
+          const checkVal = (v: string) => {
+            const trimmed = String(v).trim();
+            if (trimmed.startsWith("أخرى:") || trimmed.startsWith("__OTHER__:") || trimmed === "أخرى") {
+              counts["أخرى"] = (counts["أخرى"] || 0) + 1;
+            } else if (counts[trimmed] !== undefined) {
+              counts[trimmed] = (counts[trimmed] || 0) + 1;
+            } else {
+              counts[trimmed] = (counts[trimmed] || 0) + 1;
+            }
+          };
+
+          if (Array.isArray(val)) {
+            val.forEach(checkVal);
+          } else {
+            checkVal(val);
+          }
+        } catch {}
+      });
+
+      const optionsStats = Object.entries(counts).map(([opt, cnt]) => ({
+        option: opt,
+        count: cnt,
+        percentage: totalAnswers > 0 ? Math.round((cnt / totalAnswers) * 100) : 0,
+        isOther: opt === "أخرى",
+      }));
+
+      return {
+        id: qId,
+        type: qType,
+        question: f.label || f.question || "",
+        description: f.description || null,
+        options,
+        allowOther,
+        optionsStats,
+        userAnswer: userResponse ? userResponse[qId] : undefined,
+      };
+    });
+
+    return {
+      id: survey.id,
+      title: survey.title,
+      description: survey.description,
+      status: survey.status,
+      deadline: survey.deadline ? survey.deadline.toISOString() : null,
+      createdAt: survey.createdAt.toISOString(),
+      totalVotes: survey._count.responses,
+      hasVoted: !!userResponse,
+      userResponse,
+      questions: questionsWithStats,
+      isLoggedIn: !!user,
+      currentUserId: user?.id,
+    };
+  } catch (err) {
+    console.error("getSurveyDetails error:", err);
+    return null;
+  }
 }
 
 // ─── 4. تبديل حالة الاستبيان (فتح / إغلاق) ───────────────────────

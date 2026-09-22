@@ -60,6 +60,7 @@ export default async function AdminSurveysPage() {
         type: f.type || "POLL_SINGLE",
         question: f.label || "",
         options: Array.isArray(f.options) ? f.options : [],
+        allowOther: !!f.allowOther,
       })),
     };
   });
