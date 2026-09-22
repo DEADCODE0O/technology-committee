@@ -35,6 +35,8 @@ export function StudentShell({
   unreadCount = 0,
   openTaskCount = 0,
   unreadMessagesCount = 0,
+  hideBottomNav = false,
+  chatMode = false,
 }: {
   user: {
     name: string;
@@ -53,6 +55,10 @@ export function StudentShell({
   openTaskCount?: number;
   /** رسائل خاصة غير مقروءة */
   unreadMessagesCount?: number;
+  /** إخفاء شريط التنقل السفلي على الموبايل */
+  hideBottomNav?: boolean;
+  /** وضع الشات الخاص والمجموعات بملء الشاشة الديناميكية */
+  chatMode?: boolean;
 }) {
   return (
     <div className="relative flex min-h-svh flex-col bg-background">
@@ -148,64 +154,72 @@ export function StudentShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:py-8 lg:px-8 lg:pb-8">
+      <main
+        className={
+          chatMode
+            ? "mx-auto w-full max-w-5xl flex-1 px-0 sm:px-4 lg:px-6 pt-0 sm:pt-3 pb-0 flex flex-col h-[calc(100dvh-4rem)] overflow-hidden"
+            : "mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:py-8 lg:px-8 lg:pb-8"
+        }
+      >
         {children}
       </main>
 
       {/* ── شريط التنقل السفلي (الموبايل: 6 أقسام احترافية وسلسة) ── */}
-      <nav
-        aria-label="تنقل الطالب السفلي"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-2xl lg:hidden shadow-[0_-4px_25px_-5px_rgba(24,24,27,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <ul className="grid grid-cols-5 items-center px-1">
-          {NAV.filter((n) => n.bottom).map((n) => {
-            const isActive = active === n.key;
-            return (
-              <li key={n.key} className="relative">
-                <Link
-                  href={n.href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-all duration-200 ${
-                    isActive ? "text-gold-deep dark:text-gold-light scale-[1.04]" : "text-muted-foreground hover:text-foreground active:text-foreground"
-                  }`}
-                >
-                  <span
-                    className={`relative flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
-                      isActive
-                        ? "bg-gold/[0.16] shadow-[0_0_14px_rgba(201,164,92,0.3)] text-gold-deep dark:text-gold-light"
-                        : "hover:bg-muted/50"
+      {!(hideBottomNav || chatMode) && (
+        <nav
+          aria-label="تنقل الطالب السفلي"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-2xl lg:hidden shadow-[0_-4px_25px_-5px_rgba(24,24,27,0.08)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.6)]"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
+          <ul className="grid grid-cols-5 items-center px-1">
+            {NAV.filter((n) => n.bottom).map((n) => {
+              const isActive = active === n.key;
+              return (
+                <li key={n.key} className="relative">
+                  <Link
+                    href={n.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-all duration-200 ${
+                      isActive ? "text-gold-deep dark:text-gold-light scale-[1.04]" : "text-muted-foreground hover:text-foreground active:text-foreground"
                     }`}
                   >
-                    <n.icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? "scale-110 text-gold-deep dark:text-gold-light" : ""}`} />
-                    {n.key === "tasks" && openTaskCount > 0 && (
-                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[8px] font-black text-night ring-1 ring-night">
-                        {openTaskCount > 9 ? "9+" : openTaskCount}
-                      </span>
+                    <span
+                      className={`relative flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
+                        isActive
+                          ? "bg-gold/[0.16] shadow-[0_0_14px_rgba(201,164,92,0.3)] text-gold-deep dark:text-gold-light"
+                          : "hover:bg-muted/50"
+                      }`}
+                    >
+                      <n.icon className={`h-5 w-5 transition-transform duration-200 ${isActive ? "scale-110 text-gold-deep dark:text-gold-light" : ""}`} />
+                      {n.key === "tasks" && openTaskCount > 0 && (
+                        <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[8px] font-black text-night ring-1 ring-night">
+                          {openTaskCount > 9 ? "9+" : openTaskCount}
+                        </span>
+                      )}
+                      {n.key === "messages" && unreadMessagesCount > 0 && (
+                        <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-white px-1 text-[8px] font-black shadow-sm ring-1 ring-background animate-pulse">
+                          {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                        </span>
+                      )}
+                      {n.key === "dashboard" && pendingCount > 0 && (
+                        <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black text-night ring-1 ring-night">
+                          {pendingCount > 9 ? "9+" : pendingCount}
+                        </span>
+                      )}
+                    </span>
+                    <span className="truncate max-w-[72px] text-center leading-tight tracking-tight">
+                      {n.label}
+                    </span>
+                    {isActive && (
+                      <span className="absolute top-0 inset-x-2 h-0.5 rounded-full bg-gradient-to-r from-transparent via-gold to-transparent shadow-[0_0_8px_rgba(201,164,92,0.9)]" />
                     )}
-                    {n.key === "messages" && unreadMessagesCount > 0 && (
-                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-white px-1 text-[8px] font-black shadow-sm ring-1 ring-background animate-pulse">
-                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
-                      </span>
-                    )}
-                    {n.key === "dashboard" && pendingCount > 0 && (
-                      <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[8px] font-black text-night ring-1 ring-night">
-                        {pendingCount > 9 ? "9+" : pendingCount}
-                      </span>
-                    )}
-                  </span>
-                  <span className="truncate max-w-[72px] text-center leading-tight tracking-tight">
-                    {n.label}
-                  </span>
-                  {isActive && (
-                    <span className="absolute top-0 inset-x-2 h-0.5 rounded-full bg-gradient-to-r from-transparent via-gold to-transparent shadow-[0_0_8px_rgba(201,164,92,0.9)]" />
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

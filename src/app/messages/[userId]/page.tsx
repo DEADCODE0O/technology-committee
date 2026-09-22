@@ -32,10 +32,11 @@ export default async function ConversationPage(props: {
       }}
       active="messages"
       unreadMessagesCount={socialCounters.totalSocialAlerts}
+      chatMode={true}
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full flex-1 flex flex-col h-full min-h-0">
         {!conversationData.ok || !conversationData.otherUser ? (
-          <div className="rounded-3xl border border-border p-10 text-center bg-card">
+          <div className="rounded-3xl border border-border p-10 text-center bg-card my-auto max-w-md mx-auto">
             <UserX className="mx-auto h-12 w-12 text-muted-foreground/60 mb-3" />
             <h3 className="text-base font-extrabold text-foreground">
               {conversationData.error || "تعذر فتح هذه المحادثة"}

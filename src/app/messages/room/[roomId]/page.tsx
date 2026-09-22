@@ -77,8 +77,9 @@ export default async function ChatRoomPage(props: RoomPageProps) {
       }}
       active="messages"
       unreadMessagesCount={socialCounters.totalSocialAlerts}
+      chatMode={true}
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full flex-1 flex flex-col h-full min-h-0">
         <GroupChatRoom
           room={{
             id: room.id,

@@ -147,20 +147,20 @@ export function MessagingHub({
         </div>
 
         {/* التبويبات الثلاثة الموحدة */}
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-muted/60 border border-border shrink-0 self-start sm:self-auto">
+        <div className="w-full sm:w-auto grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-2xl bg-muted/60 border border-border shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab("conversations")}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-extrabold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-2 text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === "conversations"
                 ? "bg-gold text-night shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <MessageCircle className="h-4 w-4" />
-            <span>المحادثات</span>
+            <MessageCircle className="h-4 w-4 shrink-0" />
+            <span className="truncate">المحادثات</span>
             {conversations.length > 0 && (
-              <span className="rounded-full bg-black/15 px-1.5 py-0.2 text-[10px]">
+              <span className="rounded-full bg-black/15 px-1.5 py-0.2 text-[10px] shrink-0 font-bold">
                 {conversations.length}
               </span>
             )}
@@ -169,16 +169,16 @@ export function MessagingHub({
           <button
             type="button"
             onClick={() => setActiveTab("requests")}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-extrabold transition-all relative ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-2 text-xs font-extrabold transition-all relative cursor-pointer ${
               activeTab === "requests"
                 ? "bg-gold text-night shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <UserCheck className="h-4 w-4" />
-            <span>الطلبات</span>
+            <UserCheck className="h-4 w-4 shrink-0" />
+            <span className="truncate">الطلبات</span>
             {pendingRequests.length > 0 && (
-              <span className="rounded-full bg-emerald-500 text-white px-1.5 py-0.2 text-[10px] font-black animate-pulse">
+              <span className="rounded-full bg-emerald-500 text-white px-1.5 py-0.2 text-[10px] font-black animate-pulse shrink-0">
                 {pendingRequests.length}
               </span>
             )}
@@ -187,14 +187,14 @@ export function MessagingHub({
           <button
             type="button"
             onClick={() => setActiveTab("search")}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-extrabold transition-all ${
+            className={`flex items-center justify-center gap-1.5 rounded-xl px-2.5 sm:px-3.5 py-2 text-xs font-extrabold transition-all cursor-pointer ${
               activeTab === "search"
                 ? "bg-gold text-night shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Search className="h-4 w-4" />
-            <span>بحث عن زملاء</span>
+            <Search className="h-4 w-4 shrink-0" />
+            <span className="truncate">بحث عن زملاء</span>
           </button>
         </div>
       </div>

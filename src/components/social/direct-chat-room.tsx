@@ -10,7 +10,6 @@ import {
   Check,
   CheckCheck,
   ArrowRight,
-  ShieldAlert,
   Sparkles,
   ExternalLink,
   MoreVertical,
@@ -18,6 +17,8 @@ import {
   Ban,
   Flag,
   AlertTriangle,
+  Copy,
+  Smile,
 } from "lucide-react";
 import {
   sendDirectMessage,
@@ -65,6 +66,30 @@ interface DirectChatRoomProps {
   currentUserId: string;
 }
 
+function formatDateHeader(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday =
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear();
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const isYesterday =
+    d.getDate() === yesterday.getDate() &&
+    d.getMonth() === yesterday.getMonth() &&
+    d.getFullYear() === yesterday.getFullYear();
+
+  if (isToday) return "اليوم";
+  if (isYesterday) return "أمس";
+  return d.toLocaleDateString("ar-EG", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function DirectChatRoom({
   otherUser,
   initialMessages,
@@ -79,17 +104,23 @@ export function DirectChatRoom({
   const [reportReason, setReportReason] = useState<"INAPPROPRIATE" | "SPAM" | "HARASSMENT" | "OTHER">("INAPPROPRIATE");
   const [reportDetails, setReportDetails] = useState("");
   const [isPending, startTransition] = useTransition();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom("auto");
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom("smooth");
   }, [messages.length]);
 
-  // ── Smart Polling: كل 4 ثوان لجلب الرسائل الجديدة ──
+  // ── Smart Polling: جلب الرسائل الجديدة كل 3.5 ثوان ──
   useEffect(() => {
     let isMounted = true;
     const interval = setInterval(async () => {
@@ -107,15 +138,24 @@ export function DirectChatRoom({
           });
         }
       } catch {
-        // Silent catch for polling
+        // Silent catch
       }
-    }, 4000);
+    }, 3500);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
   }, [otherUser.id]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    // التمدد التلقائي لحقل الإدخال
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  };
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -124,6 +164,9 @@ export function DirectChatRoom({
 
     setIsSending(true);
     setText("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: MessageItem = {
@@ -164,6 +207,11 @@ export function DirectChatRoom({
         toast.error(res.error || "تعذر حذف الرسالة");
       }
     });
+  };
+
+  const handleCopyText = (msgBody: string) => {
+    navigator.clipboard.writeText(msgBody);
+    toast.success("تم نسخ نص الرسالة 📋");
   };
 
   const handleClearChat = () => {
@@ -222,48 +270,55 @@ export function DirectChatRoom({
   };
 
   return (
-    <div className="flex flex-col h-[82vh] rounded-3xl border border-border bg-card overflow-hidden shadow-xl">
-      {/* رأس المحادثة */}
-      <div className="flex items-center justify-between border-b border-border p-3.5 sm:p-4 bg-muted/40">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-full w-full rounded-none sm:rounded-3xl border-0 sm:border border-border bg-card overflow-hidden shadow-2xl">
+      {/* ── 1. رأس المحادثة بأسلوب واتساب (Sticky Mobile Header) ── */}
+      <div className="flex items-center justify-between border-b border-border px-3 py-2.5 sm:px-4 sm:py-3 bg-muted/40 backdrop-blur-xl shrink-0 z-10">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <Link
             href="/messages"
-            className="rounded-xl p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors shrink-0 active:scale-95"
             title="العودة لصندوق الرسائل"
+            aria-label="الرجوع"
           >
             <ArrowRight className="h-5 w-5" />
           </Link>
 
-          <AvatarWithFrame
-            avatarUrl={otherUser.avatarUrl}
-            name={otherUser.displayName}
-            frameId={otherUser.avatarFrameId}
-            size="md"
-            level={otherUser.level}
-            showLevel
-          />
+          <Link
+            href={otherUser.username ? `/p/${otherUser.username}` : `/p/${otherUser.id}`}
+            className="shrink-0 transition-transform active:scale-95"
+            title={`زيارة ملف ${otherUser.displayName}`}
+          >
+            <AvatarWithFrame
+              avatarUrl={otherUser.avatarUrl}
+              name={otherUser.displayName}
+              frameId={otherUser.avatarFrameId}
+              size="md"
+              level={otherUser.level}
+              showLevel
+            />
+          </Link>
 
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <Link
                 href={otherUser.username ? `/p/${otherUser.username}` : `/p/${otherUser.id}`}
-                className="text-xs sm:text-sm font-extrabold text-foreground hover:text-gold transition-colors"
+                className="text-sm font-black text-foreground hover:text-gold transition-colors truncate"
               >
                 {otherUser.displayName}
               </Link>
-              <span className="text-[10px] rounded-full bg-gold/15 text-gold px-2 py-0.2 font-black">
-                مستوى {otherUser.level}
+              <span className="text-[9px] rounded-full bg-gold/15 text-gold border border-gold/30 px-1.5 py-0.2 font-black shrink-0">
+                Lv.{otherUser.level}
               </span>
             </div>
-            {otherUser.username && (
-              <p className="text-[11px] font-mono text-muted-foreground" dir="ltr">
-                @{otherUser.username}
-              </p>
-            )}
+
+            <p className="text-[11px] text-muted-foreground truncate">
+              {otherUser.username ? `@${otherUser.username}` : "طالب بالكلية"}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        {/* أدوات المحادثة */}
+        <div className="flex items-center gap-1 shrink-0">
           <Link
             href={otherUser.username ? `/p/${otherUser.username}` : `/p/${otherUser.id}`}
             className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-all"
@@ -272,12 +327,11 @@ export function DirectChatRoom({
             الملف
           </Link>
 
-          {/* قائمة خيارات المحادثة (حظر، مسح، إبلاغ) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="rounded-xl p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
                 title="خيارات المحادثة"
               >
                 <MoreVertical className="h-4 w-4" />
@@ -317,77 +371,115 @@ export function DirectChatRoom({
         </div>
       </div>
 
-      {/* منطقة الرسائل */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 custom-scrollbar bg-background/50">
+      {/* ── 2. مساحة الرسائل بأسلوب واتساب المريح ── */}
+      <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 custom-scrollbar bg-background/40">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8 text-muted-foreground">
-            <Sparkles className="h-10 w-10 text-gold/60 mb-2" />
-            <h4 className="text-sm font-extrabold text-foreground">
+            <div className="h-16 w-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mb-3">
+              <Sparkles className="h-8 w-8 text-gold" />
+            </div>
+            <h4 className="text-sm sm:text-base font-black text-foreground">
               بداية المحادثة مع «{otherUser.displayName}»
             </h4>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              أرسل رسالتك الأولى لبدء الدردشة والنقاش حول أنشطة ومشاريع اللجنة التكنولوجية.
+            <p className="text-xs text-muted-foreground mt-1.5 max-w-xs leading-relaxed">
+              أرسل رسالتك الأولى لبدء الدردشة وتبادل المعرفة والتنسيق في أنشطة ومشاريع اللجنة التكنولوجية.
             </p>
           </div>
         ) : (
-          messages.map((msg) => {
+          messages.map((msg, idx) => {
             const timeStr = new Date(msg.createdAt).toLocaleTimeString("ar-EG", {
               hour: "2-digit",
               minute: "2-digit",
             });
 
+            // هل نحتاج فاصل زمني لليوم؟
+            const prevMsg = messages[idx - 1];
+            const showDateHeader =
+              !prevMsg ||
+              new Date(prevMsg.createdAt).toDateString() !==
+                new Date(msg.createdAt).toDateString();
+
             return (
-              <div
-                key={msg.id}
-                className={`flex group items-center gap-1.5 ${msg.mine ? "justify-start" : "justify-end"}`}
-              >
-                {/* زر حذف أو إبلاغ عند التمرير */}
-                {msg.mine ? (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMessage(msg.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-red-500 transition-opacity"
-                    title="حذف من عندي"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReportTarget({ type: "MESSAGE", id: msg.id });
-                      setReportModalOpen(true);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-orange-500 transition-opacity"
-                    title="إبلاغ عن الرسالة"
-                  >
-                    <Flag className="h-3.5 w-3.5" />
-                  </button>
+              <div key={msg.id} className="space-y-2">
+                {showDateHeader && (
+                  <div className="flex items-center justify-center my-2">
+                    <span className="rounded-full bg-muted/80 border border-border/70 px-3 py-0.5 text-[10px] font-extrabold text-muted-foreground shadow-xs">
+                      {formatDateHeader(msg.createdAt)}
+                    </span>
+                  </div>
                 )}
 
                 <div
-                  className={`max-w-[82%] sm:max-w-[70%] rounded-2xl p-3.5 shadow-sm text-xs leading-5 whitespace-pre-wrap break-words ${
-                    msg.mine
-                      ? "bg-gold text-night rounded-tr-none font-bold"
-                      : "bg-muted border border-border text-foreground rounded-tl-none font-medium"
+                  className={`flex group items-end gap-1.5 ${
+                    msg.mine ? "justify-start" : "justify-end"
                   }`}
                 >
-                  <p>{msg.body}</p>
+                  {/* قائمة الإجراءات السريعة (تعمل باللمس على الهاتف وبالـ Hover على الكمبيوتر) */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="opacity-60 sm:opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-foreground transition-opacity cursor-pointer rounded-lg hover:bg-muted/60"
+                        title="خيارات الرسالة"
+                        aria-label="خيارات الرسالة"
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align={msg.mine ? "start" : "end"} className="w-40 rounded-2xl p-1">
+                      <DropdownMenuItem
+                        onClick={() => handleCopyText(msg.body)}
+                        className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-muted-foreground hover:text-foreground"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        نسخ النص
+                      </DropdownMenuItem>
+
+                      {msg.mine ? (
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteMessage(msg.id)}
+                          className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-red-500 hover:text-red-400"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          حذف من عندي
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setReportTarget({ type: "MESSAGE", id: msg.id });
+                            setReportModalOpen(true);
+                          }}
+                          className="flex items-center gap-2 rounded-xl text-xs font-bold cursor-pointer text-orange-500 hover:text-orange-400"
+                        >
+                          <Flag className="h-3.5 w-3.5" />
+                          إبلاغ عن الرسالة
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* فقاعة الرسالة */}
                   <div
-                    className={`mt-1 flex items-center justify-end gap-1 text-[10px] ${
-                      msg.mine ? "text-night/70" : "text-muted-foreground"
+                    className={`max-w-[85%] sm:max-w-[72%] rounded-2xl p-3 sm:p-3.5 shadow-sm text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                      msg.mine
+                        ? "bg-gold/15 dark:bg-gold/20 text-foreground border border-gold/30 rounded-tr-xs"
+                        : "bg-card border border-border text-foreground rounded-tl-xs"
                     }`}
                   >
-                    <span>{timeStr}</span>
-                    {msg.mine && (
-                      <span>
-                        {msg.readAt ? (
-                          <CheckCheck className="h-3.5 w-3.5 text-blue-700" />
-                        ) : (
-                          <Check className="h-3.5 w-3.5" />
-                        )}
-                      </span>
-                    )}
+                    <p>{msg.body}</p>
+
+                    <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-muted-foreground select-none">
+                      <span>{timeStr}</span>
+                      {msg.mine && (
+                        <span>
+                          {msg.readAt ? (
+                            <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -397,44 +489,49 @@ export function DirectChatRoom({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* حقل الإرسال */}
-      <form onSubmit={handleSend} className="border-t border-border p-3 sm:p-4 bg-muted/30">
+      {/* ── 3. حقل إدخال الرسالة بأسلوب واتساب المتمدد ── */}
+      <form
+        onSubmit={handleSend}
+        className="border-t border-border p-2.5 sm:p-3 bg-muted/30 backdrop-blur-md shrink-0 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
+      >
         <div className="relative flex items-end gap-2">
           <textarea
+            ref={textareaRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             onKeyDown={handleKeyDown}
-            placeholder="اكتب رسالتك هنا... (Enter للإرسال، Shift+Enter لسطر جديد)"
+            placeholder="اكتب رسالتك... (Enter للإرسال)"
             rows={1}
             maxLength={1000}
-            className="flex-1 max-h-32 min-h-[44px] rounded-2xl border border-border bg-card py-2.5 pe-4 ps-4 text-xs text-foreground placeholder:text-muted-foreground focus:border-gold focus:outline-none resize-none"
+            className="flex-1 max-h-28 min-h-[44px] rounded-2xl border border-border bg-card py-2.5 pe-4 ps-4 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:border-gold focus:outline-none resize-none transition-all"
           />
 
           <button
             type="submit"
             disabled={!text.trim() || isSending}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold text-night hover:bg-gold-light transition-all disabled:opacity-40 shadow-md"
-            title="إرسال"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-night hover:bg-gold-light active:scale-95 transition-all disabled:opacity-40 shadow-md cursor-pointer"
+            title="إرسال الرسالة"
+            aria-label="إرسال"
           >
             {isSending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4 -rotate-90" />
+              <Send className="h-4 w-4 -rotate-90 text-night" />
             )}
           </button>
         </div>
       </form>
 
-      {/* ── مودال الإبلاغ ── */}
+      {/* ── 4. نافذة الإبلاغ المنبثقة ── */}
       {reportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-2.5 text-orange-500 font-extrabold text-sm">
               <AlertTriangle className="h-5 w-5" />
               <span>إبلاغ عن محتوى أو سلوك مخالف</span>
             </div>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               تلتزم اللجنة التكنولوجية بتوفير بيئة طلابية آمنة ومحترمة. سيتم فحص بلاغك بسرية تامة من قِبل إدارة اللجنة.
             </p>
 
