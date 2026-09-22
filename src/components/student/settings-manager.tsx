@@ -18,12 +18,14 @@ import {
   Sun,
   Moon,
   Laptop,
+  Camera,
 } from "lucide-react";
 import { updateStudentGeneralSettings, changeStudentPassword } from "@/actions/settings";
 import { restoreAccountAvatarAction } from "@/actions/profile";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { FrameWardrobeModal } from "@/components/profile/frame-wardrobe-modal";
+import { WhatsappAvatarModal } from "@/components/profile/whatsapp-avatar-modal";
 import { useTheme } from "next-themes";
 
 interface SettingsManagerProps {
@@ -82,6 +84,8 @@ export function SettingsManager({ user }: SettingsManagerProps) {
 
   // Avatar & Frame state
   const [wardrobeOpen, setWardrobeOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl);
   const [isPendingAvatar, startAvatarTransition] = useTransition();
   const [avatarFeedback, setAvatarFeedback] = useState<string | null>(null);
 
@@ -143,18 +147,35 @@ export function SettingsManager({ user }: SettingsManagerProps) {
       {/* ── الرأس التعريفي ── */}
       <div className="rounded-3xl border border-border bg-card/70 p-6 sm:p-7 shadow-sm backdrop-blur-md">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-start">
-          <div className="relative group cursor-pointer" onClick={() => setWardrobeOpen(true)}>
-            <AvatarWithFrame
-              avatarUrl={user.avatarUrl}
-              name={displayName || user.profile?.fullName || user.email}
-              frameId={user.avatarFrameId}
-              size="xl"
-              level={user.level}
-              showLevel={true}
-            />
-            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-bold text-white">
-              تغيير الإطار
+          <div className="flex flex-col items-center gap-2 shrink-0">
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => setPhotoModalOpen(true)}
+              title="انقر لتغيير أو استعادة صورتك الشخصية"
+            >
+              <AvatarWithFrame
+                avatarUrl={currentAvatarUrl}
+                name={displayName || user.profile?.fullName || user.email}
+                frameId={user.avatarFrameId}
+                size="xl"
+                level={user.level}
+                showLevel={true}
+              />
+              <span
+                className="absolute bottom-0 end-0 flex h-7 w-7 items-center justify-center rounded-full bg-[#121b22] text-gold border border-gold/70 shadow-lg group-hover:scale-110 group-hover:bg-gold group-hover:text-night transition-all"
+                title="تغيير الصورة الشخصية"
+              >
+                <Camera className="h-3.5 w-3.5" />
+              </span>
             </div>
+            <button
+              type="button"
+              onClick={() => setWardrobeOpen(true)}
+              className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2.5 py-0.5 text-[10px] font-bold text-gold hover:bg-gold/20 transition-colors"
+            >
+              <Sparkles className="h-3 w-3" />
+              <span>إطار التميز</span>
+            </button>
           </div>
 
           <div className="flex-1 min-w-0">
@@ -571,15 +592,30 @@ export function SettingsManager({ user }: SettingsManagerProps) {
         </div>
       )}
 
-      {/* نافذة خزانة الإطارات المنبثقة */}
+      {/* محرر الصورة الشخصية بنمط واتساب */}
+      <WhatsappAvatarModal
+        user={{
+          fullName: displayName || user.profile?.fullName || user.email,
+          avatarUrl: currentAvatarUrl,
+          accountAvatarUrl: user.avatarUrl,
+          provider: user.provider,
+        }}
+        isOpen={photoModalOpen}
+        onOpenChange={setPhotoModalOpen}
+        onAvatarUpdated={(newUrl) => {
+          setCurrentAvatarUrl(newUrl);
+          router.refresh();
+        }}
+      />
+
+      {/* نافذة خزانة الإطارات المنبثقة المستقلة */}
       <FrameWardrobeModal
         user={{
           fullName: displayName || user.profile?.fullName || "طالب",
-          avatarUrl: user.avatarUrl,
+          avatarUrl: currentAvatarUrl,
           avatarFrameId: user.avatarFrameId,
           level: user.level,
           points: 0,
-          provider: user.provider,
         }}
         externalOpen={wardrobeOpen}
         onExternalOpenChange={(open) => {
