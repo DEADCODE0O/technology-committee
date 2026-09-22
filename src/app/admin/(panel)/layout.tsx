@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
-  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy, Eye, TrendingUp,
+  LayoutDashboard, FolderKanban, Users, Zap, Medal, Palette, Settings, ScrollText, LogOut, ShieldCheck, Globe, ClipboardList, Bell, FolderOpen, Sparkles as Sparkles2, ClipboardCheck, MessagesSquare, Swords, Trophy, Eye, TrendingUp, BarChart3,
 } from "lucide-react";
 import { requireAdmin, getCurrentUser } from "@/lib/auth";
 import { canUser, isAdminRole, MODULES, type Module } from "@/lib/permissions";
@@ -30,6 +30,7 @@ const MENU: { key: string; label: string; href: string; icon: React.ReactNode; m
   { key: "teams", label: "الفرق", href: "/admin/teams", icon: <Swords className="h-5 w-5" />, module: MODULES.POINTS },
   { key: "badges", label: "الشارات", href: "/admin/badges", icon: <Medal className="h-5 w-5" />, module: MODULES.BADGES },
   { key: "community", label: "المجتمع", href: "/admin/community", icon: <MessagesSquare className="h-5 w-5" />, module: MODULES.NEWS },
+  { key: "surveys", label: "الاستبيانات والقرارات", href: "/admin/surveys", icon: <BarChart3 className="h-5 w-5" />, module: MODULES.DATA_REQUESTS },
   { key: "talents", label: "المواهب", href: "/admin/talents", icon: <Palette className="h-5 w-5" />, module: MODULES.TALENTS },
   { key: "notifications", label: "الإشعارات", href: "/admin/notifications", icon: <Bell className="h-5 w-5" />, module: MODULES.NOTIFICATIONS },
   { key: "drive", label: "مكتبة درايف", href: "/admin/drive", icon: <FolderOpen className="h-5 w-5" />, module: MODULES.DRIVE },

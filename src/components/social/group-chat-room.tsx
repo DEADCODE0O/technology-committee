@@ -443,7 +443,8 @@ export function GroupChatRoom({
     setIsSending(true);
     try {
       const formData = new FormData();
-      formData.append("file", blob, "group_voice.webm");
+      const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
+      formData.append("file", blob, `group_voice.${ext}`);
       formData.append("type", "AUDIO");
 
       const res = await fetch("/api/chat/upload", {

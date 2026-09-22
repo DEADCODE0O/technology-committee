@@ -155,9 +155,131 @@ export default async function CommunityPage() {
     myPendingByPost.set(c.postId, list);
   }
 
+  // استخراج الاستبيانات المرتبطة بالمنشورات إن وُجدت
+  const surveyIds: string[] = [];
+  posts.forEach((p) => {
+    if (p.type === "SURVEY" || (p.links && p.links.includes("DATA_REQUEST"))) {
+      try {
+        const parsedLinks = JSON.parse(p.links || "[]");
+        const found = parsedLinks.find((l: any) => l.label === "DATA_REQUEST");
+        if (found?.url) surveyIds.push(found.url);
+      } catch {}
+    }
+  });
+
+  const surveyDataMap = new Map<string, any>();
+  if (surveyIds.length > 0) {
+    const surveys = await db.dataRequest.findMany({
+      where: { id: { in: surveyIds } },
+      include: {
+        responses: {
+          select: {
+            userId: true,
+            answers: true,
+          },
+        },
+      },
+    });
+
+    surveys.forEach((s) => {
+      let fields: any[] = [];
+      try {
+        fields = JSON.parse(s.fields);
+      } catch {
+        fields = [];
+      }
+
+      const totalVotes = s.responses.length;
+      const userResp = user ? s.responses.find((r) => r.userId === user.id) : null;
+      let userAnswers: Record<string, any> = {};
+      if (userResp?.answers) {
+        try {
+          userAnswers = JSON.parse(userResp.answers);
+        } catch {}
+      }
+
+      const questions = fields.map((f) => {
+        const qId = f.id;
+        const qType = f.type || "POLL_SINGLE";
+        const options: string[] = f.options || [];
+
+        const optionCounts: Record<string, number> = {};
+        options.forEach((o) => (optionCounts[o] = 0));
+
+        let ratingSum = 0;
+        let ratingCount = 0;
+
+        s.responses.forEach((resp) => {
+          let ans: Record<string, any> = {};
+          try {
+            ans = JSON.parse(resp.answers);
+          } catch {}
+          const val = ans[qId];
+          if (val === undefined || val === null || val === "") return;
+
+          if (qType === "POLL_SINGLE") {
+            const strVal = String(val).trim();
+            optionCounts[strVal] = (optionCounts[strVal] || 0) + 1;
+          } else if (qType === "POLL_MULTI") {
+            const arr = Array.isArray(val) ? val : [val];
+            arr.forEach((item: string) => {
+              const strItem = String(item).trim();
+              optionCounts[strItem] = (optionCounts[strItem] || 0) + 1;
+            });
+          } else if (qType === "RATING") {
+            const num = Number(val);
+            if (!isNaN(num) && num >= 1 && num <= 5) {
+              ratingSum += num;
+              ratingCount++;
+            }
+          }
+        });
+
+        const optionsStats = options.map((opt) => ({
+          option: opt,
+          count: optionCounts[opt] || 0,
+          percentage: totalVotes > 0 ? Math.round(((optionCounts[opt] || 0) / totalVotes) * 100) : 0,
+        }));
+
+        return {
+          id: qId,
+          type: qType,
+          question: f.label || f.question || "سؤال",
+          description: f.description,
+          options,
+          optionsStats,
+          averageRating: ratingCount > 0 ? Math.round((ratingSum / ratingCount) * 10) / 10 : undefined,
+          userAnswer: userAnswers[qId],
+        };
+      });
+
+      surveyDataMap.set(s.id, {
+        surveyId: s.id,
+        title: s.title,
+        description: s.description,
+        status: s.status,
+        deadline: s.deadline ? s.deadline.toISOString() : null,
+        totalVotes,
+        hasVoted: !!userResp,
+        questions,
+      });
+    });
+  }
+
   const formattedCommitteePosts = visible.map((p) => {
     const authorPoints = p.createdBy?.pointEvents?.reduce((acc, e) => acc + e.points, 0) ?? 0;
     const authorLevel = levelFromPoints(authorPoints);
+
+    let surveyData = null;
+    if (p.type === "SURVEY" || (p.links && p.links.includes("DATA_REQUEST"))) {
+      try {
+        const parsed = JSON.parse(p.links || "[]");
+        const found = parsed.find((l: any) => l.label === "DATA_REQUEST");
+        if (found?.url) {
+          surveyData = surveyDataMap.get(found.url) || null;
+        }
+      } catch {}
+    }
 
     const commentsForStudent = p.comments.map((c) => {
       const commentUserPoints = c.user.pointEvents.reduce((acc, e) => acc + e.points, 0);
@@ -215,6 +337,7 @@ export default async function CommunityPage() {
       createdBy: p.createdBy,
       creatorLevel: authorLevel,
       commentsForStudent: allComments,
+      surveyData,
     };
   });
 

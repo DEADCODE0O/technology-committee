@@ -14,6 +14,7 @@ import {
 } from "@/lib/constants";
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
 import { ImageWithPreview } from "@/components/admin/image-preview-modal";
+import { ActivityDecisionAnalytics } from "@/components/admin/activity-decision-analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,21 @@ export default async function AdminActivityDetailPage({
       sessions: {
         orderBy: { startsAt: "asc" },
         include: {
-          registrations: { where: { status: "REGISTERED" }, select: { id: true } },
+          registrations: {
+            where: { status: "REGISTERED" },
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              email: true,
+              grade: true,
+              section: true,
+              gender: true,
+              status: true,
+              userId: true,
+              attendance: { select: { present: true } },
+            },
+          },
           attendance: { where: { present: true }, select: { id: true, sessionId: true } },
         },
       },
@@ -139,6 +154,7 @@ export default async function AdminActivityDetailPage({
 
   const TABS = [
     { key: "sessions", label: isCourse ? `المحاضرات (${sessions.length})` : `المواعيد (${sessions.length})` },
+    { key: "analytics", label: "تحليلات واتخاذ القرار 📊💡" },
     { key: "form", label: `أسئلة التسجيل (${activity.formFields.length})` },
     { key: "runs", label: isCourse ? `الدفعات (${runs.length})` : `التنفيذات (${runs.length})` },
     { key: "data", label: "بيانات النشاط" },
@@ -238,6 +254,24 @@ export default async function AdminActivityDetailPage({
         ) : (
           <p className="rounded-2xl border border-white/[0.07] bg-surface p-6 text-center text-sm text-zinc-500">صلاحية العرض فقط</p>
         )
+      )}
+
+      {activeTab === "analytics" && (
+        <ActivityDecisionAnalytics
+          activity={{
+            id: activity.id,
+            title: activity.title,
+            type: activity.type,
+            sessions: activity.sessions.map((s) => ({
+              id: s.id,
+              title: s.title,
+              startsAt: s.startsAt.toISOString(),
+              seats: s.seats,
+              registrations: s.registrations,
+              attendance: s.attendance,
+            })),
+          }}
+        />
       )}
 
       {activeTab === "form" && (

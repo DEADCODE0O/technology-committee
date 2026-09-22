@@ -429,8 +429,9 @@ export function DirectChatRoom({
   const uploadAndSendAudio = async (blob: Blob, durationSec: number) => {
     setIsSending(true);
     try {
+      const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
       const formData = new FormData();
-      formData.append("file", blob, "voice_message.webm");
+      formData.append("file", blob, `voice_message.${ext}`);
       formData.append("type", "AUDIO");
 
       const res = await fetch("/api/chat/upload", {

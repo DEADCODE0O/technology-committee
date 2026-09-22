@@ -489,6 +489,7 @@ export const REWARD_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 export const COMMUNITY_POST_TYPES = [
   { value: "NEWS", label: "خبر", icon: "📰", color: "#c9a45c" },
   { value: "ANNOUNCEMENT", label: "إعلان", icon: "📢", color: "#e6cb8b" },
+  { value: "SURVEY", label: "استبيان واستطلاع", icon: "📊", color: "#38bdf8" },
   { value: "HIGHLIGHT", label: "لقطة مميزة", icon: "✨", color: "#f2e5c4" },
   { value: "ACHIEVEMENT", label: "إنجاز", icon: "🏆", color: "#ffd700" },
   { value: "ACTIVITY_UPDATE", label: "مستجدات نشاط", icon: "🔔", color: "#a3a099" },

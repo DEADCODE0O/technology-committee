@@ -20,6 +20,7 @@ import { COMMUNITY_POST_TYPE_ICONS, COMMUNITY_POST_TYPE_LABELS, ROLE_LABELS } fr
 import { safeExternalUrl } from "@/lib/links";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { LeveledName } from "@/components/ui/leveled-name";
+import { CommunityPollCard } from "./community-poll-card";
 
 interface CommunityFeedViewProps {
   studentPosts: StudentPostFeedItem[];
@@ -46,6 +47,7 @@ export function CommunityFeedView({
   // تصفية المنشورات الرسمية للجنة
   const filteredCommitteePosts = committeePosts.filter((p) => {
     if (filter === "ALL") return true;
+    if (filter === "SURVEY") return p.type === "SURVEY" || p.surveyData != null;
     if (filter === "NEWS") return p.type === "NEWS" || p.type === "ANNOUNCEMENT" || p.type === "GENERAL";
     if (filter === "WORKSHOP") return p.type === "WORKSHOP" || p.type === "EVENT";
     if (filter === "RECOGNITION") return p.type === "RECOGNITION" || p.type === "ACHIEVEMENT";
@@ -86,6 +88,7 @@ export function CommunityFeedView({
       <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
         {[
           { key: "ALL", label: `الكل (${committeePosts.length}) 📢` },
+          { key: "SURVEY", label: "استبيانات واستطلاعات 📊" },
           { key: "NEWS", label: "أخبار وإعلانات ⚡" },
           { key: "WORKSHOP", label: "ورش وكورسات 🧭" },
           { key: "RECOGNITION", label: "إنجازات وتكريمات 🏆" },
@@ -170,6 +173,20 @@ export function CommunityFeedView({
                   <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-foreground/90 dark:text-zinc-200">
                     {p.body}
                   </p>
+
+                  {p.surveyData && (
+                    <CommunityPollCard
+                      surveyId={p.surveyData.surveyId}
+                      title={p.surveyData.title}
+                      description={p.surveyData.description}
+                      status={p.surveyData.status}
+                      deadline={p.surveyData.deadline}
+                      totalVotes={p.surveyData.totalVotes}
+                      hasVoted={p.surveyData.hasVoted}
+                      questions={p.surveyData.questions}
+                      canVote={isStudent}
+                    />
+                  )}
 
                   {p.media && (
                     <div className="mt-4">
