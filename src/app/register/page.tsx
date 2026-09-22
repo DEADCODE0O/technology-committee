@@ -68,6 +68,20 @@ export default async function RegisterPage({
           </div>
           <RegisterWizard codeConfig={codeConfig} returnTo={returnTo} />
         </div>
+
+        <div className="mt-6 flex items-center justify-center gap-4 text-xs text-zinc-500">
+          <Link href="/privacy" className="hover:text-gold transition-colors">
+            سياسة الخصوصية
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-gold transition-colors">
+            شروط الاستخدام
+          </Link>
+          <span>•</span>
+          <Link href="/data-deletion" className="hover:text-gold transition-colors">
+            حذف البيانات
+          </Link>
+        </div>
       </div>
     </div>
   );
