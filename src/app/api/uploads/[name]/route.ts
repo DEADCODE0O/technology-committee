@@ -17,6 +17,12 @@ const CONTENT_TYPES: Record<string, string> = {
   avif: "image/avif",
   pdf: "application/pdf",
   zip: "application/zip",
+  webm: "audio/webm",
+  ogg: "audio/ogg",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  m4a: "audio/mp4",
+  mp4: "audio/mp4",
 };
 
 export async function GET(_req: NextRequest, ctx: { params: Promise<{ name: string }> }) {

@@ -65,7 +65,11 @@ export function StudentShell({
       <div className="noise-overlay" aria-hidden="true" />
 
       {/* ── الشريط العلوي ── */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
+      <header
+        className={`sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl ${
+          chatMode ? "hidden sm:block" : ""
+        }`}
+      >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/panel" className="flex items-center gap-2.5" aria-label="لوحة الطالب">
             <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-9 w-9" />
@@ -157,7 +161,7 @@ export function StudentShell({
       <main
         className={
           chatMode
-            ? "mx-auto w-full max-w-5xl flex-1 px-0 sm:px-4 lg:px-6 pt-0 sm:pt-3 pb-0 flex flex-col h-[calc(100dvh-4rem)] overflow-hidden"
+            ? "mx-auto w-full max-w-5xl flex-1 px-0 sm:px-4 lg:px-6 pt-0 sm:pt-3 pb-0 flex flex-col fixed inset-0 sm:relative sm:h-[calc(100dvh-4rem)] z-30 sm:z-auto overflow-hidden bg-background sm:bg-transparent"
             : "mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-6 sm:px-6 sm:py-8 lg:px-8 lg:pb-8"
         }
       >

@@ -72,28 +72,83 @@ export async function sendDirectMessage(
 }
 
 /**
- * حذف رسالة خاصة من جانب المستخدم فقط
+ * تعديل رسالة خاصة (لصاحب الرسالة فقط)
  */
-export async function deleteDirectMessage(messageId: string): Promise<{ ok: boolean; error?: string }> {
+export async function editDirectMessage(
+  messageId: string,
+  rawBody: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    const text = rawBody?.trim();
+    if (!text) return { ok: false, error: "نص الرسالة فارغ" };
+    if (text.length > 1000) return { ok: false, error: "الرسالة طويلة جداً (الحد الأقصى 1000 حرف)" };
+
+    const message = await db.directMessage.findUnique({ where: { id: messageId } });
+    if (!message) return { ok: false, error: "الرسالة غير موجودة" };
+
+    if (message.senderId !== user.id) {
+      return { ok: false, error: "غير مصرح لك بتعديل هذه الرسالة" };
+    }
+
+    const cleanBody = await maskBannedWords(text);
+
+    await db.directMessage.update({
+      where: { id: messageId },
+      data: { body: cleanBody },
+    });
+
+    revalidatePath(`/messages/${message.receiverId}`);
+    revalidatePath("/messages");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "تعذر تعديل الرسالة" };
+  }
+}
+
+/**
+ * حذف رسالة خاصة (لدي فقط أو لدى الطرفين)
+ */
+export async function deleteDirectMessage(
+  messageId: string,
+  forEveryone: boolean = false
+): Promise<{ ok: boolean; error?: string }> {
   try {
     const user = await requireStudentAction();
     const message = await db.directMessage.findUnique({ where: { id: messageId } });
     if (!message) return { ok: false, error: "الرسالة غير موجودة" };
 
-    if (message.senderId === user.id) {
-      await db.directMessage.update({
-        where: { id: messageId },
-        data: { deletedBySender: true },
-      });
-    } else if (message.receiverId === user.id) {
-      await db.directMessage.update({
-        where: { id: messageId },
-        data: { deletedByReceiver: true },
-      });
-    } else {
+    const isSender = message.senderId === user.id;
+    const isReceiver = message.receiverId === user.id;
+
+    if (!isSender && !isReceiver) {
       return { ok: false, error: "غير مصرح لك بحذف هذه الرسالة" };
     }
 
+    if (forEveryone) {
+      if (!isSender) {
+        return { ok: false, error: "الحذف لدى الجميع متاح فقط لمرسل الرسالة" };
+      }
+      // حذف الرسالة كلياً من قاعدة البيانات
+      await db.directMessage.delete({
+        where: { id: messageId },
+      });
+    } else {
+      // حذف محلي من جهة المستخدم فقط
+      if (isSender) {
+        await db.directMessage.update({
+          where: { id: messageId },
+          data: { deletedBySender: true },
+        });
+      } else {
+        await db.directMessage.update({
+          where: { id: messageId },
+          data: { deletedByReceiver: true },
+        });
+      }
+    }
+
+    revalidatePath(`/messages/${isSender ? message.receiverId : message.senderId}`);
     revalidatePath("/messages");
     return { ok: true };
   } catch (err) {
