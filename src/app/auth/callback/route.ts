@@ -23,48 +23,55 @@ export async function GET(req: NextRequest) {
   const fail = (reason: string) =>
     NextResponse.redirect(new URL(`/login?error=${reason}`, req.url));
 
-  if (oauthError) return fail("google_failed");
-  if (!code) return fail("google_failed");
+  if (oauthError) {
+    console.warn("OAuth callback received error:", oauthError);
+    return fail("oauth_failed");
+  }
+  if (!code) return fail("oauth_failed");
 
   try {
     const supabase = await createSupabaseServerClient();
-    if (!supabase) return fail("google_failed");
+    if (!supabase) return fail("oauth_failed");
 
     // 1) استبدال الكود بجلسة (PKCE — verifier في الكوكيز)
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
     if (exchangeError) {
       console.error("auth callback exchange error:", exchangeError);
-      return fail("google_failed");
+      return fail("oauth_failed");
     }
 
     const {
       data: { user: authUser },
     } = await supabase.auth.getUser();
-    if (!authUser) return fail("google_failed");
+    if (!authUser) return fail("oauth_failed");
+
+    const isFacebook =
+      authUser.app_metadata?.provider === "facebook" ||
+      Boolean(authUser.identities?.some((id: { provider?: string }) => id.provider?.toLowerCase() === "facebook"));
 
     // 2) ربط الهوية بحساب التطبيق (مع إنشاء صف جديد عند أول دخول)
     const appUser = await resolveSupabaseAppUser(authUser);
-    if (!appUser) return fail("google_failed");
+    if (!appUser) return fail(isFacebook ? "facebook_failed" : "google_failed");
 
-    // حسابات الإدارة لا تدخل بـ Google — أمان إضافي
+    // حسابات الإدارة لا تدخل بـ Google أو Facebook — أمان إضافي
     if (isAdminRole(appUser.role)) {
       await supabase.auth.signOut().catch(() => {});
-      return fail("google_admin");
+      return fail(isFacebook ? "facebook_admin" : "google_admin");
     }
     if (appUser.status === "SUSPENDED") {
       await supabase.auth.signOut().catch(() => {});
-      return fail("google_suspended");
+      return fail(isFacebook ? "facebook_suspended" : "google_suspended");
     }
 
     // إنشاء جلسة محلية متطابقة للضمان
     await createSession(appUser.id);
 
-    // 3) التوجيه — مستخدم Google جديد بلا ملف؟ إكمال البيانات
+    // 3) التوجيه — مستخدم جديد بلا ملف؟ إكمال البيانات
     const profile = await db.studentProfile.findUnique({ where: { userId: appUser.id } });
     const target = profile ? returnTo : "/profile/complete";
     return NextResponse.redirect(new URL(target, req.url));
   } catch (err) {
     console.error("auth callback error:", err);
-    return fail("google_failed");
+    return fail("oauth_failed");
   }
 }

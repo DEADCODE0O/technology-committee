@@ -317,6 +317,12 @@ export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   google_email: "بريد Google غير موثق — استخدم بريدًا موثقًا",
   google_admin: "حسابات الإدارة تسجل بالبريد وكلمة السر فقط من بوابة الإدارة",
   google_suspended: "هذا الحساب معلق — تواصل مع إدارة اللجنة",
+  facebook_not_configured: "الدخول بـ Facebook غير مفعّل حاليًا",
+  facebook_failed: "تعذر إكمال الدخول بـ Facebook — حاول مرة أخرى",
+  facebook_email: "بريد Facebook غير موثق أو غير متوفر — استخدم طريقة أخرى",
+  facebook_admin: "حسابات الإدارة تسجل بالبريد وكلمة السر فقط من بوابة الإدارة",
+  facebook_suspended: "هذا الحساب معلق — تواصل مع إدارة اللجنة",
+  oauth_failed: "تعذر إكمال تسجيل الدخول بالحساب الخارجي — حاول مرة أخرى",
 };
 
 export const REGISTRATION_STATUS_LABELS: Record<string, string> = {

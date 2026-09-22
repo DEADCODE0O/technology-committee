@@ -62,6 +62,7 @@ export function LoginForm({
 
       <div className="space-y-2.5 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
         <GoogleButton returnTo={returnTo} enabled={googleEnabled} label="تسجيل الدخول بحساب Google" />
+        <FacebookButton returnTo={returnTo} label="تسجيل الدخول بحساب Facebook" />
         <p className="mt-1 text-center text-[11px] leading-5 text-zinc-500">
           تسجيل دخول فوري وآمن بنقرة واحدة بدون الحاجة لانتظار كود البريد
         </p>
