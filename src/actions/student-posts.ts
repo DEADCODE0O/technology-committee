@@ -8,8 +8,9 @@ import { maskBannedWords } from "@/lib/content-filter";
 import { levelFromPoints } from "@/lib/constants";
 import { createNotificationForUsers } from "@/lib/notifications";
 import { DEFAULT_TARGET } from "@/lib/targeting";
+import { EndorsementKey, normalizeEndorsement, ENDORSEMENTS } from "@/lib/endorsements";
 
-export type ReactionType = "LIKE" | "LOVE" | "HAHA" | "WOW" | "SAD" | "ANGRY";
+export type ReactionType = EndorsementKey | "LIKE" | "LOVE" | "HAHA" | "WOW" | "SAD" | "ANGRY";
 
 export interface StudentPostFeedItem {
   id: string;
@@ -30,8 +31,8 @@ export interface StudentPostFeedItem {
     level: number;
   };
   reactionsSummary: {
-    counts: Record<ReactionType, number>;
-    myReaction: ReactionType | null;
+    counts: Record<EndorsementKey, number>;
+    myReaction: EndorsementKey | null;
     total: number;
   };
   comments: {
@@ -150,22 +151,21 @@ export async function getStudentFeed(options?: {
     return posts.map((post) => {
       const authorPoints = post.user.pointEvents.reduce((acc, e) => acc + e.points, 0);
 
-      // حساب التفاعلات الـ 6
-      const counts: Record<ReactionType, number> = {
-        LIKE: 0,
-        LOVE: 0,
-        HAHA: 0,
-        WOW: 0,
-        SAD: 0,
-        ANGRY: 0,
+      // حساب التقديرات الأكاديمية والتقنية الخمسة
+      const counts: Record<EndorsementKey, number> = {
+        ROCKET: 0,
+        IDEA: 0,
+        APPLAUSE: 0,
+        ENERGY: 0,
+        GEM: 0,
       };
 
-      let myReaction: ReactionType | null = null;
+      let myReaction: EndorsementKey | null = null;
       for (const r of post.reactions) {
-        const type = (r.type as ReactionType) || "LIKE";
-        counts[type] = (counts[type] || 0) + 1;
+        const norm = normalizeEndorsement(r.type);
+        counts[norm] = (counts[norm] || 0) + 1;
         if (currentUserId && r.userId === currentUserId) {
-          myReaction = type;
+          myReaction = norm;
         }
       }
 
@@ -328,23 +328,17 @@ export async function reactToStudentPost(
 
     // إرسال إشعار لصاحب المنشور إذا كان شخصاً آخر
     if (shouldNotify && post && post.userId !== user.id) {
-      const REACTION_LABELS: Record<ReactionType, string> = {
-        LIKE: "إعجاب 👍",
-        LOVE: "أحببته ❤️",
-        HAHA: "أضحكني 😂",
-        WOW: "واو 😮",
-        SAD: "أحزنني 😢",
-        ANGRY: "أغضبني 😡",
-      };
+      const norm = normalizeEndorsement(type);
+      const meta = ENDORSEMENTS[norm];
       const actorName = user.displayName || "طالب";
-      const reactionText = REACTION_LABELS[type] || "إعجاب";
+      const reactionText = `${meta.title} ${meta.emoji}`;
       const snippet = post.body.slice(0, 50);
       try {
         await createNotificationForUsers({
           type: "COMMUNITY",
-          title: "تفاعل جديد على منشورك",
-          body: `تفاعل ${actorName} بـ (${reactionText}) مع منشورك: "${snippet}..."`,
-          linkUrl: `/community#post-${postId}`,
+          title: "تقدير جديد على منشورك",
+          body: `منحك ${actorName} تقدير (${reactionText}) على منشورك: "${snippet}..."`,
+          linkUrl: `/panel#post-${postId}`,
           linkLabel: "عرض المنشور",
           target: { ...DEFAULT_TARGET, userIds: [post.userId] },
           createdById: user.id,
@@ -354,7 +348,9 @@ export async function reactToStudentPost(
       }
     }
 
+    revalidatePath("/panel");
     revalidatePath("/community");
+    revalidatePath("/");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "تعذر تسجيل التفاعل" };

@@ -186,7 +186,7 @@ export async function PlatformTeasers() {
             {posts.map((p) => (
               <Link
                 key={p.id}
-                href="/community"
+                href="/panel"
                 className="group rounded-2xl border border-white/[0.06] bg-surface px-4 py-3.5 transition-colors hover:border-gold/25"
               >
                 <p className="text-lg">{COMMUNITY_POST_TYPE_ICONS[p.type]}</p>

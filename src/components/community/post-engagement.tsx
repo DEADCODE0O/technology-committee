@@ -9,6 +9,12 @@ import { togglePostReaction, addComment, deleteMyComment, editComment } from "@/
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { UserCharmHeart } from "@/components/ui/user-charm-heart";
 import { LeveledName } from "@/components/ui/leveled-name";
+import {
+  EndorsementKey,
+  ENDORSEMENTS,
+  ENDORSEMENT_KEYS,
+  normalizeEndorsement,
+} from "@/lib/endorsements";
 
 // ═══════════════════════════════════════════════════════════════
 //  تفاعلات منشور متقدمة: قلب + تعليقات متداخلة (Threaded Replies)
@@ -37,8 +43,10 @@ export type CommentItem = {
 
 export function PostEngagement({
   postId,
-  initialLiked,
-  likeCount,
+  initialLiked = false,
+  likeCount = 0,
+  initialMyReaction,
+  initialReactionCounts,
   commentCount,
   locked,
   autoApproveComments = false,
@@ -51,8 +59,10 @@ export function PostEngagement({
   heartsVisible = true,
 }: {
   postId: string;
-  initialLiked: boolean;
-  likeCount: number;
+  initialLiked?: boolean;
+  likeCount?: number;
+  initialMyReaction?: string | null;
+  initialReactionCounts?: Record<string, number>;
   commentCount: number;
   locked: boolean;
   autoApproveComments?: boolean;
@@ -64,8 +74,38 @@ export function PostEngagement({
   currentUserBadges?: BadgeItem[];
   heartsVisible?: boolean;
 }) {
-  const [liked, setLiked] = useState(initialLiked);
-  const [count, setCount] = useState(likeCount);
+  const [myReaction, setMyReaction] = useState<EndorsementKey | null>(() => {
+    if (initialMyReaction) return normalizeEndorsement(initialMyReaction);
+    if (initialLiked) return "ROCKET";
+    return null;
+  });
+
+  const [reactionCounts, setReactionCounts] = useState<Record<EndorsementKey, number>>(() => {
+    const base: Record<EndorsementKey, number> = {
+      ROCKET: 0,
+      IDEA: 0,
+      APPLAUSE: 0,
+      ENERGY: 0,
+      GEM: 0,
+    };
+    if (initialReactionCounts) {
+      for (const k of ENDORSEMENT_KEYS) {
+        if (initialReactionCounts[k]) base[k] = initialReactionCounts[k];
+      }
+    }
+    const sum = Object.values(base).reduce((a, b) => a + b, 0);
+    if (sum === 0 && likeCount > 0) {
+      base.ROCKET = likeCount;
+    }
+    return base;
+  });
+
+  const [count, setCount] = useState(() => {
+    const sum = Object.values(reactionCounts).reduce((a, b) => a + b, 0);
+    return Math.max(sum, likeCount);
+  });
+
+  const [isReactionHovered, setIsReactionHovered] = useState(false);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -80,16 +120,37 @@ export function PostEngagement({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  function onLike() {
-    const next = !liked;
-    setLiked(next);
-    setCount((c) => c + (next ? 1 : -1));
+  function onEndorse(kind: EndorsementKey) {
+    const prevReaction = myReaction;
+    const prevCounts = { ...reactionCounts };
+    const prevTotal = count;
+    const hadSame = myReaction === kind;
+
+    const newCounts = { ...reactionCounts };
+    if (hadSame) {
+      newCounts[kind] = Math.max(0, (newCounts[kind] || 1) - 1);
+      setMyReaction(null);
+      setReactionCounts(newCounts);
+      setCount((c) => Math.max(0, c - 1));
+    } else {
+      if (myReaction) {
+        newCounts[myReaction] = Math.max(0, (newCounts[myReaction] || 1) - 1);
+      } else {
+        setCount((c) => c + 1);
+      }
+      newCounts[kind] = (newCounts[kind] || 0) + 1;
+      setMyReaction(kind);
+      setReactionCounts(newCounts);
+    }
+    setIsReactionHovered(false);
+
     startTransition(async () => {
-      const res = await togglePostReaction(postId);
+      const res = await togglePostReaction(postId, kind);
       if (!res.ok) {
-        setLiked(!next);
-        setCount((c) => c + (next ? -1 : 1));
-        setMsg(res.error ?? "تعذر التفاعل");
+        setMyReaction(prevReaction);
+        setReactionCounts(prevCounts);
+        setCount(prevTotal);
+        setMsg(res.error ?? "تعذر تسجيل التقدير");
       }
     });
   }
@@ -180,23 +241,99 @@ export function PostEngagement({
   const getReplies = (parentId: string) => localComments.filter((c) => c.parentId === parentId);
 
   return (
-    <div className="mt-4 border-t border-white/[0.06] pt-4">
+    <div className="mt-4 border-t border-white/[0.06] pt-4 space-y-3">
+      {/* شريط حبوب التقديرات الأكاديمية والتقنية */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {ENDORSEMENT_KEYS.map((k) => {
+          const cnt = reactionCounts[k] || 0;
+          if (cnt <= 0) return null;
+          const meta = ENDORSEMENTS[k];
+          const isMine = myReaction === k;
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => onEndorse(k)}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs transition-all border ${
+                isMine
+                  ? meta.activeRing
+                  : "border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-gold/30 hover:text-gold-light"
+              }`}
+              title={`${meta.title} — ${cnt} طالب`}
+            >
+              <span>{meta.emoji}</span>
+              <span className="font-extrabold">{cnt}</span>
+              <span className="text-[10px] hidden sm:inline text-zinc-400">{meta.label}</span>
+            </button>
+          );
+        })}
+        {count > 0 && (
+          <span className="text-[11px] font-bold text-zinc-500 ms-1">
+            ({count} تقدير)
+          </span>
+        )}
+      </div>
+
+      {/* أزرار التفاعل الرئيسية */}
       <div className="flex items-center gap-3">
-        <button
-          onClick={onLike}
-          aria-pressed={liked}
-          className={`inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-extrabold transition-all active:scale-95 ${
-            liked
-              ? "border-gold/50 bg-gold/[0.12] text-gold-light"
-              : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-gold/25 hover:text-gold-light"
-          }`}
+        {/* زر التقدير وقائمة التقديرات العائمة الراقية */}
+        <div
+          className="relative"
+          onMouseEnter={() => setIsReactionHovered(true)}
+          onMouseLeave={() => setIsReactionHovered(false)}
         >
-          <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-          {count > 0 ? count : "أعجبني"}
-        </button>
+          {isReactionHovered && (
+            <div className="absolute -top-14 start-0 z-30 flex items-center gap-1.5 rounded-2xl border border-white/15 bg-night/95 backdrop-blur-md p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              {ENDORSEMENT_KEYS.map((rKey) => {
+                const conf = ENDORSEMENTS[rKey];
+                const isSelected = myReaction === rKey;
+                return (
+                  <button
+                    key={rKey}
+                    type="button"
+                    onClick={() => onEndorse(rKey)}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
+                      isSelected
+                        ? conf.activeRing
+                        : "text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.08]"
+                    }`}
+                    title={`${conf.title} — ${conf.description}`}
+                  >
+                    <span className="text-base">{conf.emoji}</span>
+                    <span className="text-[11px] hidden sm:inline">{conf.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {myReaction ? (
+            <button
+              type="button"
+              onClick={() => onEndorse(myReaction)}
+              className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-xs sm:text-sm font-extrabold transition-all border ${
+                ENDORSEMENTS[myReaction].activeRing
+              } hover:brightness-110 active:scale-95`}
+              title="انقر لإلغاء التقدير أو مرر لاختيار تقدير آخر"
+            >
+              <span>{ENDORSEMENTS[myReaction].emoji}</span>
+              <span>{ENDORSEMENTS[myReaction].title}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onEndorse("ROCKET")}
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-xs sm:text-sm font-bold text-zinc-400 hover:border-gold/25 hover:text-gold-light transition-all active:scale-95"
+            >
+              <span>✨</span>
+              <span>منح تقدير</span>
+            </button>
+          )}
+        </div>
+
         <button
           onClick={() => setOpen((o) => !o)}
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-sm font-bold text-zinc-400 transition-colors hover:text-zinc-200"
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 text-xs sm:text-sm font-bold text-zinc-400 transition-colors hover:text-zinc-200"
         >
           <MessageCircle className="h-4 w-4" />
           {commentCount > 0 ? `${commentCount} تعليقًا` : "التعليقات"}

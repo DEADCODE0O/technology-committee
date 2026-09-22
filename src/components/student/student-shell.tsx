@@ -20,7 +20,6 @@ const NAV = [
   { key: "dashboard", label: "الرئيسية", href: "/panel", icon: LayoutDashboard, bottom: true },
   { key: "activities", label: "استكشف", href: "/activities", icon: Compass, bottom: true },
   { key: "messages", label: "الرسائل", href: "/messages", icon: MessageCircle, bottom: true },
-  { key: "community", label: "المجتمع", href: "/community", icon: Globe, bottom: false },
   { key: "tasks", label: "مهامي", href: "/tasks", icon: ClipboardList, bottom: true },
   { key: "settings", label: "الإعدادات", href: "/settings", icon: Settings, bottom: true },
   { key: "profile", label: "حسابي", href: "/profile", icon: Users, bottom: false },

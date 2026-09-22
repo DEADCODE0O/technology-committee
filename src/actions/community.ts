@@ -188,28 +188,47 @@ export async function deleteCommunityPost(postId: string): Promise<{ ok: boolean
   }
 }
 
-// ─── تفاعل الطالب (قلب) ────────────────────────────────────
+// ─── تفاعل الطالب (منظومة التقديرات الاحترافية) ──────────────
 
-export async function togglePostReaction(postId: string): Promise<{ ok: boolean; liked?: boolean; error?: string }> {
+export async function togglePostReaction(
+  postId: string,
+  kind: string = "ROCKET"
+): Promise<{ ok: boolean; liked?: boolean; kind?: string | null; error?: string }> {
   try {
     const user = await requireStudentAction();
     const post = await db.communityPost.findUnique({ where: { id: postId }, select: { id: true, status: true } });
     if (!post || post.status !== "PUBLISHED") return { ok: false, error: "المنشور غير متاح" };
 
+    const cleanKind = kind?.trim() || "ROCKET";
+
     const existing = await db.postReaction.findUnique({
       where: { postId_userId: { postId, userId: user.id } },
     });
+
     if (existing) {
-      await db.postReaction.delete({ where: { postId_userId: { postId, userId: user.id } } });
-      revalidatePath("/community");
-      return { ok: true, liked: false };
+      if (existing.kind === cleanKind) {
+        // إذا ضغط نفس التقدير يُلغى
+        await db.postReaction.delete({ where: { postId_userId: { postId, userId: user.id } } });
+        refreshCommunity(postId);
+        return { ok: true, liked: false, kind: null };
+      } else {
+        // إذا ضغط تقديراً مختلفاً يتم تغييره للجديد فوراً
+        await db.postReaction.update({
+          where: { postId_userId: { postId, userId: user.id } },
+          data: { kind: cleanKind },
+        });
+        refreshCommunity(postId);
+        return { ok: true, liked: true, kind: cleanKind };
+      }
     }
+
     // حد معدل التفاعل: 60/ساعة (ضد السبام الآلي)
     const rl = rateLimit(`react:${user.id}`, 60, 60 * 1000);
     if (!rl.ok) return { ok: false, error: "استرح قليلًا ثم تفاعل من جديد" };
-    await db.postReaction.create({ data: { postId, userId: user.id } });
-    revalidatePath("/community");
-    return { ok: true, liked: true };
+
+    await db.postReaction.create({ data: { postId, userId: user.id, kind: cleanKind } });
+    refreshCommunity(postId);
+    return { ok: true, liked: true, kind: cleanKind };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
   }
@@ -492,18 +511,27 @@ export async function getCommunityPostForEdit(postId: string): Promise<{ ok: boo
 }
 
 // المستخدم الحالي (لعرض حالة تفاعله)
-export async function getMyReactionState(postIds: string[]): Promise<{ ok: boolean; liked?: Record<string, boolean>; error?: string }> {
+export async function getMyReactionState(postIds: string[]): Promise<{
+  ok: boolean;
+  liked?: Record<string, boolean>;
+  myReaction?: Record<string, string>;
+  error?: string;
+}> {
   try {
     const user = await getCurrentUser();
-    if (!user) return { ok: true, liked: {} };
+    if (!user) return { ok: true, liked: {}, myReaction: {} };
     const rows = await db.postReaction.findMany({
       where: { userId: user.id, postId: { in: postIds } },
-      select: { postId: true },
+      select: { postId: true, kind: true },
     });
     const liked: Record<string, boolean> = {};
-    for (const r of rows) liked[r.postId] = true;
-    return { ok: true, liked };
+    const myReaction: Record<string, string> = {};
+    for (const r of rows) {
+      liked[r.postId] = true;
+      myReaction[r.postId] = r.kind;
+    }
+    return { ok: true, liked, myReaction };
   } catch {
-    return { ok: true, liked: {} };
+    return { ok: true, liked: {}, myReaction: {} };
   }
 }

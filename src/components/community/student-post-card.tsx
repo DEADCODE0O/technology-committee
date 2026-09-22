@@ -36,15 +36,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-export const REACTION_CONFIG: Record<ReactionType, { label: string; emoji: string; color: string }> = {
-  LIKE: { label: "إعجاب", emoji: "👍", color: "text-blue-500" },
-  LOVE: { label: "أحببته", emoji: "❤️", color: "text-red-500" },
-  HAHA: { label: "هاها", emoji: "😂", color: "text-amber-500" },
-  WOW: { label: "واو", emoji: "😮", color: "text-amber-500" },
-  SAD: { label: "أحزنني", emoji: "😢", color: "text-amber-500" },
-  ANGRY: { label: "أغضبني", emoji: "😡", color: "text-orange-600" },
-};
+import {
+  EndorsementKey,
+  ENDORSEMENTS,
+  ENDORSEMENT_KEYS,
+  normalizeEndorsement,
+} from "@/lib/endorsements";
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
   GENERAL: { label: "عام", color: "bg-muted text-muted-foreground" },
@@ -80,7 +77,7 @@ export function StudentPostCard({
     ? `/p/${post.author.username}`
     : `/p/${post.author.id}`;
 
-  const handleReaction = (type: ReactionType) => {
+  const handleReaction = (type: EndorsementKey) => {
     // Optimistic update
     const prev = { ...reactionsSummary };
     const hadSame = reactionsSummary.myReaction === type;
@@ -376,20 +373,35 @@ export function StudentPostCard({
         </div>
       )}
 
-      {/* إحصائيات التفاعل السريعة */}
-      <div className="flex items-center justify-between border-y border-border/50 py-2 text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-1.5">
+      {/* شريط التقديرات الأكاديمية والتقنية */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-y border-border/50 py-2.5 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {ENDORSEMENT_KEYS.map((k) => {
+            const count = reactionsSummary.counts[k] || 0;
+            if (count <= 0) return null;
+            const meta = ENDORSEMENTS[k];
+            const isMine = reactionsSummary.myReaction === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => handleReaction(k)}
+                className={`inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs transition-all border ${
+                  isMine
+                    ? meta.activeRing
+                    : "border-border/60 bg-muted/40 text-muted-foreground hover:border-gold/40 hover:text-foreground"
+                }`}
+                title={`${meta.title} — ${count} طالب`}
+              >
+                <span>{meta.emoji}</span>
+                <span className="font-extrabold">{count}</span>
+                <span className="text-[10px] hidden sm:inline text-muted-foreground">{meta.label}</span>
+              </button>
+            );
+          })}
           {reactionsSummary.total > 0 && (
-            <span className="flex items-center gap-1">
-              <span>
-                {reactionsSummary.counts.LOVE > 0 && "❤️"}
-                {reactionsSummary.counts.LIKE > 0 && "👍"}
-                {reactionsSummary.counts.HAHA > 0 && "😂"}
-                {reactionsSummary.counts.WOW > 0 && "😮"}
-                {reactionsSummary.counts.SAD > 0 && "😢"}
-                {reactionsSummary.counts.ANGRY > 0 && "😡"}
-              </span>
-              <span className="font-bold">{reactionsSummary.total} تفاعل</span>
+            <span className="text-[11px] font-bold text-muted-foreground ms-1">
+              ({reactionsSummary.total} تقدير)
             </span>
           )}
         </div>
@@ -397,60 +409,68 @@ export function StudentPostCard({
         <button
           type="button"
           onClick={() => setShowComments(!showComments)}
-          className="hover:underline"
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline font-bold"
         >
           {comments.length} تعليق
         </button>
       </div>
 
-      {/* أزرار التفاعل (مثل فيسبوك بـ 6 مشاعر) */}
+      {/* أزرار التفاعل الراقية */}
       <div className="relative flex items-center justify-between pt-1">
-        {/* زر التفاعل مع شريط المشاعر المنبثق */}
+        {/* زر التقدير وقائمة التقديرات الراقية */}
         <div
           className="relative"
           onMouseEnter={() => setIsReactionHovered(true)}
           onMouseLeave={() => setIsReactionHovered(false)}
         >
-          {/* شريط المشاعر الستة */}
+          {/* شريط التقديرات الخمسة التقنية */}
           {isReactionHovered && (
-            <div className="absolute -top-12 start-0 z-20 flex items-center gap-1 rounded-full border border-border bg-card p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-              {(Object.keys(REACTION_CONFIG) as ReactionType[]).map((rKey) => {
-                const conf = REACTION_CONFIG[rKey];
+            <div className="absolute -top-14 start-0 z-30 flex items-center gap-1 rounded-2xl border border-border bg-card/95 backdrop-blur-md p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              {ENDORSEMENT_KEYS.map((rKey) => {
+                const conf = ENDORSEMENTS[rKey];
+                const isSelected = reactionsSummary.myReaction === rKey;
                 return (
                   <button
                     key={rKey}
                     type="button"
                     onClick={() => handleReaction(rKey)}
-                    className="p-1.5 rounded-full hover:scale-125 transition-transform text-lg"
-                    title={conf.label}
+                    className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all hover:scale-105 active:scale-95 ${
+                      isSelected
+                        ? conf.activeRing
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                    title={`${conf.title} — ${conf.description}`}
                   >
-                    {conf.emoji}
+                    <span className="text-base">{conf.emoji}</span>
+                    <span className="text-[11px] hidden sm:inline">{conf.label}</span>
                   </button>
                 );
               })}
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => handleReaction(reactionsSummary.myReaction || "LIKE")}
-            className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-extrabold transition-all hover:bg-muted ${
-              reactionsSummary.myReaction
-                ? REACTION_CONFIG[reactionsSummary.myReaction].color
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span>
-              {reactionsSummary.myReaction
-                ? REACTION_CONFIG[reactionsSummary.myReaction].emoji
-                : "👍"}
-            </span>
-            <span>
-              {reactionsSummary.myReaction
-                ? REACTION_CONFIG[reactionsSummary.myReaction].label
-                : "أعجبني"}
-            </span>
-          </button>
+          {reactionsSummary.myReaction ? (
+            <button
+              type="button"
+              onClick={() => handleReaction(reactionsSummary.myReaction!)}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition-all border ${
+                ENDORSEMENTS[reactionsSummary.myReaction].activeRing
+              } hover:brightness-105`}
+              title="انقر لإلغاء التقدير أو مرر لاختيار تقدير آخر"
+            >
+              <span>{ENDORSEMENTS[reactionsSummary.myReaction].emoji}</span>
+              <span>{ENDORSEMENTS[reactionsSummary.myReaction].title}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleReaction("ROCKET")}
+              className="flex items-center gap-2 rounded-xl border border-border/70 bg-card px-3.5 py-2 text-xs font-bold text-muted-foreground hover:border-gold/40 hover:text-foreground transition-all hover:bg-muted/40"
+            >
+              <span>✨</span>
+              <span>منح تقدير</span>
+            </button>
+          )}
         </div>
 
         {/* زر التعليقات */}

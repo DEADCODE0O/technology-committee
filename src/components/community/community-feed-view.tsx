@@ -85,11 +85,11 @@ export function CommunityFeedView({
               <Users className="h-5 w-5" />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-foreground">
-              مجتمع اللجنة التكنولوجية
+              الخلاصة التفاعلية والاستبيانات
             </h1>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            أحدث الإعلانات والورش والأخبار الرسمية من إدارة اللجنة التكنولوجية.
+            أحدث الإعلانات والورش والاستبيانات الرسمية من إدارة اللجنة ومشاركات الطلاب.
           </p>
         </div>
 
@@ -108,11 +108,12 @@ export function CommunityFeedView({
       {/* شريط الفلاتر والتبويبات */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
         {[
-          { key: "ALL", label: `الكل (${committeePosts.length}) 📢` },
+          { key: "ALL", label: `الكل (${committeePosts.length + (studentPosts?.length || 0)}) 📢` },
           { key: "SURVEY", label: "استبيانات واستطلاعات 📊" },
           { key: "NEWS", label: "أخبار وإعلانات ⚡" },
           { key: "WORKSHOP", label: "ورش وكورسات 🧭" },
           { key: "RECOGNITION", label: "إنجازات وتكريمات 🏆" },
+          { key: "STUDENT_POSTS", label: `مشاركات الطلاب (${studentPosts?.length || 0}) 💬` },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -131,146 +132,194 @@ export function CommunityFeedView({
 
       {/* خلاصة المنشورات */}
       <div className="space-y-6">
-        {filteredCommitteePosts.length > 0 ? (
-          <div className="space-y-4">
-            {filteredCommitteePosts.map((p) => {
-              const typeIcon = COMMUNITY_POST_TYPE_ICONS[p.type] ?? "📢";
-              const typeLabel = COMMUNITY_POST_TYPE_LABELS[p.type] ?? "خبر";
+        {filter === "STUDENT_POSTS" ? (
+          studentPosts && studentPosts.length > 0 ? (
+            <div className="space-y-4">
+              {studentPosts.map((sp) => (
+                <StudentPostCard
+                  key={sp.id}
+                  post={sp}
+                  currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-border p-12 text-center bg-card">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
+              <h3 className="text-base font-extrabold text-foreground">
+                لا توجد مشاركات طلابية حالياً
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                شارك زملاءك منشوراً مفيداً أو استفساراً تقنياً.
+              </p>
+            </div>
+          )
+        ) : filteredCommitteePosts.length > 0 || (filter === "ALL" && studentPosts && studentPosts.length > 0) ? (
+          <div className="space-y-6">
+            {filteredCommitteePosts.length > 0 && (
+              <div className="space-y-4">
+                {filteredCommitteePosts.map((p) => {
+                  const typeIcon = COMMUNITY_POST_TYPE_ICONS[p.type] ?? "📢";
+                  const typeLabel = COMMUNITY_POST_TYPE_LABELS[p.type] ?? "خبر";
 
-              return (
-                <article
-                  key={p.id}
-                  className="overflow-hidden rounded-3xl border border-white/[0.08] bg-card p-5 sm:p-7 shadow-sm space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      {p.createdBy ? (
-                        <AvatarWithFrame
-                          avatarUrl={p.createdBy.avatarUrl}
-                          name={p.createdBy.displayName || p.createdBy.profile?.fullName || "مشرف"}
-                          frameId={p.createdBy.avatarFrameId}
-                          size="md"
-                          level={p.creatorLevel}
-                          showLevel={false}
+                  return (
+                    <article
+                      key={p.id}
+                      className="overflow-hidden rounded-3xl border border-white/[0.08] bg-card p-5 sm:p-7 shadow-sm space-y-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {p.createdBy ? (
+                            <AvatarWithFrame
+                              avatarUrl={p.createdBy.avatarUrl}
+                              name={p.createdBy.displayName || p.createdBy.profile?.fullName || "مشرف"}
+                              frameId={p.createdBy.avatarFrameId}
+                              size="md"
+                              level={p.creatorLevel}
+                              showLevel={false}
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gold/30 bg-gold/15 text-xl">
+                              📢
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs sm:text-sm font-extrabold text-foreground">
+                                {p.createdBy?.displayName || p.createdBy?.profile?.fullName || "إدارة اللجنة التكنولوجية"}
+                              </span>
+                              <span className="rounded-full bg-gold/15 text-gold px-2 py-0.2 text-[9px] font-black border border-gold/30">
+                                رسمي
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {p.formattedDate}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePin(p.id, !!p.pinned)}
+                              disabled={pinningId === p.id}
+                              className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black border transition-all ${
+                                p.pinned
+                                  ? "bg-gold/20 border-gold/50 text-gold shadow-sm"
+                                  : "bg-muted/40 border-border text-muted-foreground hover:border-gold/50 hover:text-gold"
+                              }`}
+                              title={p.pinned ? "إلغاء تثبيت المنشور" : "تثبيت المنشور في أعلى المجتمع"}
+                            >
+                              <Pin className={`h-3 w-3 ${p.pinned ? "fill-current" : ""}`} />
+                              {p.pinned ? "مثبت 📌" : "تثبيت"}
+                            </button>
+                          ) : (
+                            p.pinned && (
+                              <span className="flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 text-gold px-2.5 py-0.5 text-[10px] font-black">
+                                <Pin className="h-3 w-3 fill-current" />
+                                مثبت
+                              </span>
+                            )
+                          )}
+                          <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[10px] font-extrabold text-muted-foreground border border-border">
+                            {typeIcon} {typeLabel}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h2 className="text-base sm:text-lg font-black text-foreground">
+                        {p.title}
+                      </h2>
+
+                      <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-foreground/90 dark:text-zinc-200">
+                        {p.body}
+                      </p>
+
+                      {p.surveyData ? (
+                        <CommunityPollCard
+                          surveyId={p.surveyData.surveyId}
+                          title={p.surveyData.title}
+                          description={p.surveyData.description}
+                          status={p.surveyData.status}
+                          deadline={p.surveyData.deadline}
+                          totalVotes={p.surveyData.totalVotes}
+                          hasVoted={p.surveyData.hasVoted}
+                          questions={p.surveyData.questions}
+                          canVote={!!currentUserId}
                         />
-                      ) : (
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gold/30 bg-gold/15 text-xl">
-                          📢
+                      ) : p.type === "SURVEY" ? (
+                        <div className="overflow-hidden rounded-3xl border border-gold/40 bg-gold/5 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm my-3">
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-gold flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" /> استطلاع رأي واستبيان رسمي 📊
+                            </span>
+                            <h3 className="text-sm font-bold text-foreground mt-0.5">{p.title}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">شارك برأيك وصوّت في هذا الاستبيان للمساهمة في اتخاذ القرار.</p>
+                          </div>
+                          <Link
+                            href="/surveys"
+                            className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow-md shrink-0"
+                          >
+                            المشاركة في الاستبيان ↗
+                          </Link>
+                        </div>
+                      ) : null}
+
+                      {p.media && (
+                        <div className="mt-4">
+                          <MediaFrame plan={p.media} title={p.title} />
                         </div>
                       )}
 
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-extrabold text-foreground">
-                            {p.createdBy?.displayName || p.createdBy?.profile?.fullName || "إدارة اللجنة التكنولوجية"}
-                          </span>
-                          <span className="rounded-full bg-gold/15 text-gold px-2 py-0.2 text-[9px] font-black border border-gold/30">
-                            رسمي
-                          </span>
+                      {p.imageUrl && !p.media && (
+                        <div className="mt-4">
+                          <PostImage url={p.imageUrl} alt={p.title} />
                         </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {p.formattedDate}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {isAdmin ? (
-                        <button
-                          type="button"
-                          onClick={() => handleTogglePin(p.id, !!p.pinned)}
-                          disabled={pinningId === p.id}
-                          className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-black border transition-all ${
-                            p.pinned
-                              ? "bg-gold/20 border-gold/50 text-gold shadow-sm"
-                              : "bg-muted/40 border-border text-muted-foreground hover:border-gold/50 hover:text-gold"
-                          }`}
-                          title={p.pinned ? "إلغاء تثبيت المنشور" : "تثبيت المنشور في أعلى المجتمع"}
-                        >
-                          <Pin className={`h-3 w-3 ${p.pinned ? "fill-current" : ""}`} />
-                          {p.pinned ? "مثبت 📌" : "تثبيت"}
-                        </button>
-                      ) : (
-                        p.pinned && (
-                          <span className="flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 text-gold px-2.5 py-0.5 text-[10px] font-black">
-                            <Pin className="h-3 w-3 fill-current" />
-                            مثبت
-                          </span>
-                        )
                       )}
-                      <span className="rounded-full bg-muted/60 px-2.5 py-0.5 text-[10px] font-extrabold text-muted-foreground border border-border">
-                        {typeIcon} {typeLabel}
-                      </span>
-                    </div>
-                  </div>
 
-                  <h2 className="text-base sm:text-lg font-black text-foreground">
-                    {p.title}
-                  </h2>
+                      {/* إخفاء شريط التعليقات والإعجاب العادي عن منشورات الاستبيانات ليصبح استبياناً حقيقياً خالصاً */}
+                      {!p.surveyData && p.type !== "SURVEY" && (
+                        <PostEngagement
+                          postId={p.id}
+                          initialLiked={p.liked}
+                          likeCount={p.likesCount}
+                          initialMyReaction={p.myReactionKind}
+                          initialReactionCounts={p.reactionCounts}
+                          commentCount={p.commentsForStudent?.length || 0}
+                          locked={p.lockedComments}
+                          autoApproveComments={p.autoApproveComments}
+                          canComment={isStudent}
+                          comments={p.commentsForStudent || []}
+                          heartsVisible={heartsVisible}
+                        />
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
 
-                  <p className="whitespace-pre-line text-xs sm:text-sm leading-relaxed text-foreground/90 dark:text-zinc-200">
-                    {p.body}
-                  </p>
-
-                  {p.surveyData ? (
-                    <CommunityPollCard
-                      surveyId={p.surveyData.surveyId}
-                      title={p.surveyData.title}
-                      description={p.surveyData.description}
-                      status={p.surveyData.status}
-                      deadline={p.surveyData.deadline}
-                      totalVotes={p.surveyData.totalVotes}
-                      hasVoted={p.surveyData.hasVoted}
-                      questions={p.surveyData.questions}
-                      canVote={!!currentUserId}
-                    />
-                  ) : p.type === "SURVEY" ? (
-                    <div className="overflow-hidden rounded-3xl border border-gold/40 bg-gold/5 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm my-3">
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-gold flex items-center gap-1">
-                          <Sparkles className="h-3 w-3" /> استطلاع رأي واستبيان رسمي 📊
-                        </span>
-                        <h3 className="text-sm font-bold text-foreground mt-0.5">{p.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">شارك برأيك وصوّت في هذا الاستبيان للمساهمة في اتخاذ القرار.</p>
-                      </div>
-                      <Link
-                        href="/surveys"
-                        className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow-md shrink-0"
-                      >
-                        المشاركة في الاستبيان ↗
-                      </Link>
-                    </div>
-                  ) : null}
-
-                  {p.media && (
-                    <div className="mt-4">
-                      <MediaFrame plan={p.media} title={p.title} />
-                    </div>
-                  )}
-
-                  {p.imageUrl && !p.media && (
-                    <div className="mt-4">
-                      <PostImage url={p.imageUrl} alt={p.title} />
-                    </div>
-                  )}
-
-                  {/* إخفاء شريط التعليقات والإعجاب العادي عن منشورات الاستبيانات ليصبح استبياناً حقيقياً خالصاً */}
-                  {!p.surveyData && p.type !== "SURVEY" && (
-                    <PostEngagement
-                      postId={p.id}
-                      initialLiked={p.liked}
-                      likeCount={p.likesCount}
-                      commentCount={p.commentsForStudent?.length || 0}
-                      locked={p.lockedComments}
-                      autoApproveComments={p.autoApproveComments}
-                      canComment={isStudent}
-                      comments={p.commentsForStudent || []}
-                      heartsVisible={heartsVisible}
-                    />
-                  )}
-                </article>
-              );
-            })}
+            {/* مشاركات الطلاب التفاعلية في قسم الكل */}
+            {filter === "ALL" && studentPosts && studentPosts.length > 0 && (
+              <div className="space-y-4 pt-4 border-t border-border/60">
+                <div className="flex items-center gap-2 px-1">
+                  <MessageSquare className="h-4 w-4 text-gold" />
+                  <h3 className="text-sm font-black text-foreground">مشاركات وتفاعلات الطلاب</h3>
+                  <span className="text-[10px] font-bold text-muted-foreground">({studentPosts.length})</span>
+                </div>
+                {studentPosts.map((sp) => (
+                  <StudentPostCard
+                    key={sp.id}
+                    post={sp}
+                    currentUserId={currentUserId}
+                    currentUserRole={currentUserRole}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="rounded-3xl border border-dashed border-border p-12 text-center bg-card">

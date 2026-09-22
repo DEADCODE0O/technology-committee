@@ -269,11 +269,11 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
         {/* ── شريط التنقل العلوي ── */}
         <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-4">
           <Link
-            href="/community"
+            href="/panel"
             className="inline-flex items-center gap-2 text-xs font-black text-muted-foreground hover:text-gold transition-colors"
           >
             <ArrowRight className="h-4 w-4" />
-            العودة لمجتمع الكلية
+            العودة للرئيسية
           </Link>
 
           <div className="flex items-center gap-1.5">
