@@ -70,7 +70,7 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
   }, [items, searchQuery]);
 
   return (
-    <aside className="sticky top-0 hidden h-svh w-68 shrink-0 flex-col border-e border-border bg-card/95 backdrop-blur-md lg:flex select-none">
+    <aside className="sticky top-0 hidden h-svh w-72 shrink-0 flex-col border-e border-border bg-card/95 backdrop-blur-md lg:flex">
       {/* ── هيدر القائمة الجانبية ── */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-gold/30 bg-gold/10 shadow-xs">
