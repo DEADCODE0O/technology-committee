@@ -247,6 +247,7 @@ export function CommunityFeedView({
                           deadline={p.surveyData.deadline}
                           totalVotes={p.surveyData.totalVotes}
                           hasVoted={p.surveyData.hasVoted}
+                          xpReward={p.surveyData.xpReward}
                           questions={p.surveyData.questions}
                           canVote={!!currentUserId}
                         />

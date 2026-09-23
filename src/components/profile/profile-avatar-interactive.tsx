@@ -8,9 +8,8 @@
 
 import { useState, useRef, useTransition } from "react";
 import { toast } from "sonner";
-import { Camera, Sparkles, RotateCcw, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Camera, RotateCcw, Trash2, Loader2 } from "lucide-react";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
-import { FrameWardrobeInline } from "./frame-wardrobe-inline";
 import { restoreAccountAvatarAction, setAvatarUrlAction } from "@/actions/profile";
 
 interface ProfileAvatarInteractiveProps {
@@ -30,7 +29,6 @@ export function ProfileAvatarInteractive({
   user,
   framesVisible = true,
 }: ProfileAvatarInteractiveProps) {
-  const [showInlineFrames, setShowInlineFrames] = useState(false);
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(user.avatarUrl ?? null);
   const [currentFrameId, setCurrentFrameId] = useState<string | null>(user.avatarFrameId ?? null);
   const [isUploading, setIsUploading] = useState(false);
@@ -236,57 +234,7 @@ export function ProfileAvatarInteractive({
             <span>إزالة</span>
           </button>
         )}
-
-        {/* زر إظهار/إخفاء خزانة الإطارات بشكل مدمج في الصفحة */}
-        {framesVisible && (
-          <button
-            type="button"
-            onClick={() => setShowInlineFrames((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black transition-all shadow-sm active:scale-95 cursor-pointer ${
-              showInlineFrames
-                ? "bg-gold text-night border border-gold"
-                : "border border-gold/40 bg-gold/10 hover:bg-gold/20 text-gold"
-            }`}
-            title="إظهار/إخفاء خزانة إطارات التميز للمستويات"
-          >
-            <Sparkles className="h-3 w-3" />
-            <span>{currentFrameId ? "تغيير الإطار 👑" : "إطار التميز 👑"}</span>
-            {showInlineFrames ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )}
-          </button>
-        )}
       </div>
-
-      {/* ── 3. خزانة الإطارات المدمجة مباشرة داخل الصفحة (بدون أي نافذة منبثقة أو شاشة معتمة) ── */}
-      {framesVisible && showInlineFrames && (
-        <div className="w-full mt-4 rounded-3xl border border-gold/35 bg-card/95 p-4 sm:p-6 shadow-2xl backdrop-blur-md animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-border/70 pb-3 mb-4">
-            <span className="text-sm font-black text-gold flex items-center gap-2">
-              <Sparkles className="h-4 w-4" /> خزانة إطارات التميز والرتب الملكية 👑
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowInlineFrames(false)}
-              className="rounded-xl px-3 py-1 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer border border-border/60"
-            >
-              ✕ إغلاق الخزانة
-            </button>
-          </div>
-          <FrameWardrobeInline
-            user={{
-              fullName: user.fullName,
-              avatarUrl: currentAvatarUrl,
-              avatarFrameId: currentFrameId,
-              level: user.level,
-              points: user.points,
-            }}
-            onFrameChanged={(newId) => setCurrentFrameId(newId)}
-          />
-        </div>
-      )}
     </div>
   );
 }

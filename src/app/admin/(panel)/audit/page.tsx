@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { isUndoableAction } from "@/lib/undo-registry";
 import { UndoButton } from "@/components/admin/undo-button";
+import { AuditExportDropdown } from "@/components/admin/audit-export-dropdown";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ const ACTION_LABELS: Record<string, string> = {
   WORKSHOP_CREATED: "إنشاء ورشة",
   WORKSHOP_UPDATED: "تعديل ورشة",
   WORKSHOP_STATUS_CHANGED: "تغيير حالة ورشة",
-  WORKSHOP_DELETED: "حذف مسودة",
+  WORKSHOP_DELETED: "حذف مسودة ورشة",
   ACTIVITY_CREATED: "إنشاء نشاط",
   ACTIVITY_UPDATED: "تعديل نشاط",
   ACTIVITY_DELETED: "حذف نشاط",
@@ -54,6 +55,15 @@ const ACTION_LABELS: Record<string, string> = {
   TASK_EVALUATED: "تقييم تسليم",
   TASK_RETURNED: "إعادة تسليم",
   TASK_DELETED: "حذف مهمة",
+  SURVEY_CREATED: "إنشاء استبيان",
+  SURVEY_UPDATED: "تعديل استبيان",
+  SURVEY_VOTED: "تصويت في استبيان",
+  SURVEY_STATUS_UPDATED: "تغيير حالة استبيان",
+  SURVEY_PIN_TOGGLED: "تثبيت/إلغاء استبيان",
+  STUDENT_POST_CREATED: "منشور طالب جديد",
+  STUDENT_POST_DELETED: "حذف منشور طالب",
+  POST_ENDORSED: "إشادة تقنية بمنشور",
+  POST_ENDORSEMENT_REMOVED: "إلغاء إشادة تقنية",
   SEASON_CREATED: "إنشاء موسم",
   SEASON_UPDATED: "تعديل موسم",
   SEASON_ENDED: "إنهاء موسم",
@@ -76,13 +86,11 @@ const ACTION_LABELS: Record<string, string> = {
   COMMUNITY_POST_CREATED: "منشور جديد",
   COMMUNITY_POST_UPDATED: "تعديل منشور",
   COMMUNITY_POST_STATE: "تغيير حالة منشور",
+  COMMUNITY_POST_PIN_TOGGLED: "تثبيت/إلغاء منشور",
   COMMUNITY_POST_DELETED: "حذف منشور",
   COMMENT_APPROVED: "اعتماد تعليق",
   COMMENT_HIDED: "إخفاء تعليق",
   COMMENT_DELETED: "حذف تعليق",
-  GATE_REGISTRATION_ADDED: "إضافة عند البوابة",
-  GATE_ATTENDANCE_SET: "حضور بوابة",
-  MANIFEST_UPDATED: "تحديث كشف النادي",
   FORM_FIELDS_SAVED: "حفظ أسئلة التسجيل",
   WORKSHOP_REGISTERED: "تسجيل في ورشة",
   WAITLIST_JOINED: "انضمام لقائمة انتظار",
@@ -93,7 +101,7 @@ const ACTION_LABELS: Record<string, string> = {
   MANUAL_REGISTRATION: "تسجيل يدوي",
   ATTENDANCE_SET: "تحديد حضور",
   ATTENDANCE_ALL_PRESENT: "حضور الجميع",
-  QR_CHECKIN: "حضور QR",
+  QR_CHECKIN: "حضور عبر QR الذكي",
   EXCEL_EXPORTED: "تصدير Excel",
   POINT_RULE_SAVED: "حفظ قاعدة نقاط",
   POINT_RULE_TOGGLED: "تبديل قاعدة نقاط",
@@ -113,20 +121,21 @@ const ACTION_LABELS: Record<string, string> = {
   PASSWORD_RESET: "إعادة تعيين كلمة سر",
   PASSWORD_CHANGED: "تغيير كلمة سر",
   SETTINGS_SAVED: "حفظ إعدادات",
-  STAFF_ROLE_SET: "تعيين مشرف",
-  STAFF_DEMOTED: "تنزيل مشرف",
-  STAFF_STATUS: "حالة مشرف",
-  DATA_REQUEST_CREATED: "إنشاء طلب بيانات",
-  DATA_REQUEST_STATUS: "حالة طلب بيانات",
-  DATA_REQUEST_DELETED: "حذف طلب بيانات",
-  DATA_RESPONSE_SUBMITTED: "إجابة طالب على طلب",
+  STAFF_ROLE_SET: "تعيين/تعديل مشرف",
+  STAFF_DEMOTED: "تنزيل مشرف إلى طالب",
+  STAFF_STATUS_TOGGLED: "تنشيط/تعليق حساب مشرف",
+  STAFF_PASSWORD_RESET: "إعادة تعيين كلمة سر مشرف",
+  DATA_REQUEST_CREATED: "إنشاء استبيان/طلب بيانات",
+  DATA_REQUEST_STATUS: "حالة استبيان/طلب",
+  DATA_REQUEST_DELETED: "حذف استبيان/طلب",
+  DATA_RESPONSE_SUBMITTED: "إجابة طالب على استبيان",
   NOTIFICATION_CREATED: "إرسال إشعار",
   NOTIFICATION_UPDATED: "تعديل إشعار",
   NOTIFICATION_DELETED: "حذف إشعار",
   ACTION_UNDONE: "تراجع عن عملية",
 };
 
-const FILTER_ENTITIES = ["", "STUDENT", "ACTIVITY", "RUN", "SESSION", "TASK", "COMMUNITY_POST", "TEAM", "SEASON", "POINT_EVENT", "TALENT", "NOTIFICATION", "SETTING", "REGISTRATION"];
+const FILTER_ENTITIES = ["", "DATA_REQUEST", "STUDENT", "ACTIVITY", "RUN", "SESSION", "TASK", "COMMUNITY_POST", "TEAM", "SEASON", "POINT_EVENT", "TALENT", "NOTIFICATION", "SETTING", "REGISTRATION"];
 
 type Filters = {
   q?: string; actor?: string; action?: string; entity?: string; entityId?: string;
@@ -215,17 +224,68 @@ export default async function AdminAuditPage({
 
   const hasFilters = !!(f.q || f.actor || f.action || f.entity || f.entityId || f.from || f.to || f.success);
 
+  const currentLogsForExport = logs.map((l) => ({
+    id: l.id,
+    createdAt: l.createdAt.toISOString(),
+    actorEmail: l.actorEmail,
+    action: l.action,
+    entity: l.entity,
+    entityId: l.entityId,
+    success: l.success,
+    summary: l.summary,
+  }));
+
+  const queryParams = new URLSearchParams();
+  for (const [k, v] of Object.entries(f)) {
+    if (v && k !== "page") queryParams.set(k, String(v));
+  }
+  const queryString = queryParams.toString();
+
+  const CATEGORIES = [
+    { label: "الكل", entity: "" },
+    { label: "الاستبيانات", entity: "DATA_REQUEST" },
+    { label: "ورش العمل والأنشطة", entity: "ACTIVITY" },
+    { label: "المهام والتقييمات", entity: "TASK" },
+    { label: "المجتمع والمنشورات", entity: "COMMUNITY_POST" },
+    { label: "النقاط والمكافآت", entity: "POINT_EVENT" },
+    { label: "الحضور والغياب", entity: "REGISTRATION" },
+    { label: "المشرفون والحوكمة", entity: "USER" },
+  ];
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-zinc-50">
-          <ScrollText className="h-6 w-6 text-gold" />
-          مركز التدقيق
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          مين عمل إيه، إمتى، وعلى مين — {total.toLocaleString("ar-EG")} عملية مطابقة
-          {hasFilters ? " لفلاترك" : " مسجلة"}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-foreground">
+            <ScrollText className="h-6 w-6 text-gold" />
+            مركز التدقيق
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            مين عمل إيه، إمتى، وعلى مين — {total.toLocaleString("ar-EG")} عملية مطابقة
+            {hasFilters ? " لفلاترك" : " مسجلة"}
+          </p>
+        </div>
+        <AuditExportDropdown currentLogs={currentLogsForExport} queryString={queryString} />
+      </div>
+
+      {/* ── أزرار التصنيفات السريعة ── */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-3">
+        {CATEGORIES.map((cat) => {
+          const isActive = (f.entity ?? "") === cat.entity;
+          return (
+            <a
+              key={cat.label}
+              href={keep({ entity: cat.entity, page: "1" })}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                isActive
+                  ? "bg-gold text-night shadow-sm font-extrabold"
+                  : "border border-border/60 bg-card/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {cat.label}
+            </a>
+          );
+        })}
       </div>
 
       {/* ── الفلاتر ── */}

@@ -1,25 +1,20 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { StudentShell } from "@/components/student/student-shell";
 import { NotificationsList, type CenterNotification } from "@/components/platform/notifications-list";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?returnTo=/notifications");
-  if (user.role !== "STUDENT") redirect("/admin");
+  if (user.role !== "STUDENT" && !user.profile) redirect("/admin");
   if (!user.profile) redirect("/profile/complete");
 
-  const [{ notifications, unreadCount }, socialCounters] = await Promise.all([
-    getStudentNotifications(user),
-    getSocialCounters(user.id),
-  ]);
+  const badges = await getStudentBadges(user);
 
-  const items: CenterNotification[] = notifications.map((n) => ({
+  const items: CenterNotification[] = badges.notifications.map((n) => ({
     id: n.id,
     type: n.type,
     pinned: n.pinned,
@@ -35,25 +30,20 @@ export default async function NotificationsPage() {
     readAt: n.readAt?.toISOString() ?? null,
   }));
 
-  // عدد طلبات البيانات المعلقة (شارة القائمة)
-  const pendingCount = await db.dataResponse.count({
-    where: {
-      userId: user.id,
-      request: { status: "OPEN", mandatory: true },
-    },
-  }).catch(() => 0);
-
   return (
     <StudentShell
       user={{
         name: user.profile.fullName,
         email: user.email,
+        role: user.role,
         avatarUrl: user.avatarUrl,
+        avatarFrameId: user.avatarFrameId,
       }}
       active="notifications"
-      pendingCount={pendingCount}
-      unreadCount={unreadCount}
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      pendingCount={badges.pendingCount}
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
     >
       <div className="mx-auto max-w-3xl">
         <header className="mb-6">

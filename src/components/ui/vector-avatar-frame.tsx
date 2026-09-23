@@ -23,7 +23,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_1':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`brz1_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f59e0b" />
@@ -63,7 +63,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_2':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`slv2_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -101,7 +101,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_3':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`tt3_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fef08a" />
@@ -145,7 +145,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_4':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`gld4_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -180,7 +180,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_5':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`gld5_crest_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -226,7 +226,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_6':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`plt6_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -261,7 +261,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_7':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`emr7_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#a7f3d0" />
@@ -299,7 +299,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_8':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`rby8_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#fecaca" />
@@ -342,7 +342,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_9':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`ldr9_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -379,7 +379,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_10':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`pnr10_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -420,7 +420,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_11':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`elt11_body_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#f5d0fe" />
@@ -457,7 +457,7 @@ export function VectorAvatarFrame({ frameId, className = '' }: VectorAvatarFrame
     // ═══════════════════════════════════════════════════════════════
     case 'frame_lvl_12':
       return (
-        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none ${className}`} fill="none">
+        <svg viewBox="0 0 100 100" className={`w-full h-full pointer-events-none select-none overflow-visible ${className}`} style={{ overflow: 'visible' }} fill="none">
           <defs>
             <linearGradient id={`smt12_gold_${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#ffffff" />

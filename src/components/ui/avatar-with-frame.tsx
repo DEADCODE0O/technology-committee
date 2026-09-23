@@ -3,7 +3,7 @@ import { cleanAvatarUrl } from "@/lib/utils";
 import { getAvatarFrame } from "@/lib/avatar-frames";
 import { VectorAvatarFrame } from "@/components/ui/vector-avatar-frame";
 
-type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 
 interface AvatarWithFrameProps {
   avatarUrl?: string | null;
@@ -61,6 +61,12 @@ const SIZE_MAP: Record<
     initialsText: "text-xl",
     badgeText: "text-xs px-3 py-1 -bottom-3",
   },
+  "3xl": {
+    container: "w-28 h-28 sm:w-32 sm:h-32",
+    px: 128,
+    initialsText: "text-2xl",
+    badgeText: "text-xs px-3.5 py-1 -bottom-3.5",
+  },
 };
 
 function getInitials(name: string): string {
@@ -116,8 +122,8 @@ export function AvatarWithFrame({
       {/* ── طبقة الإطار الزخرفي (3D Game Asset WebP or Vector Bezel) ── */}
       {frame && framesVisible !== false && (
         <div
-          className={`avatar-frame-layer pointer-events-none absolute z-10 flex items-center justify-center select-none ${
-            frame.imageSrc ? "inset-[-36%]" : "inset-[-22%]"
+          className={`avatar-frame-layer pointer-events-none absolute z-10 flex items-center justify-center select-none overflow-visible ${
+            frame.imageSrc ? "inset-[-36%]" : "inset-[-18%]"
           }`}
           aria-hidden="true"
         >

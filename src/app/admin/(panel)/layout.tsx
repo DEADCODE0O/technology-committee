@@ -24,6 +24,7 @@ import {
   Eye,
   TrendingUp,
   BarChart3,
+  GraduationCap,
 } from "lucide-react";
 import { requireAdmin, getCurrentUser } from "@/lib/auth";
 import { canUser, isAdminRole, MODULES, type Module } from "@/lib/permissions";
@@ -328,8 +329,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           })}
         </nav>
 
-        {/* زيارة الموقع العام */}
-        <div className="border-t border-border px-3 py-3">
+        {/* التنقل بين منصة الطالب والموقع العام */}
+        <div className="border-t border-border px-3 py-2.5 space-y-1">
+          <Link
+            href="/panel"
+            className="flex h-10 items-center gap-3 rounded-xl px-3.5 text-xs font-bold text-gold-deep dark:text-gold-light transition-colors hover:bg-gold/10"
+            title="الانتقال إلى منصة الطالب وحسابي"
+          >
+            <GraduationCap className="h-4 w-4 text-gold shrink-0" />
+            <span>منصة الطالب (حسابي)</span>
+          </Link>
           <Link
             href="/welcome"
             className="flex h-10 items-center gap-3 rounded-xl px-3.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-gold-deep dark:hover:text-gold-light"
@@ -362,7 +371,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
 
           {/* بيانات المشرف وأدوات الهيدر */}
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+            <Link
+              href="/panel"
+              className="hidden sm:inline-flex h-9 items-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-3 text-xs font-bold text-gold-deep dark:text-gold-light transition-colors hover:bg-gold/20 shadow-sm"
+              title="الانتقال إلى منصة الطالب"
+            >
+              <GraduationCap className="h-4 w-4 text-gold" />
+              <span>منصة الطالب</span>
+            </Link>
             <ThemeToggle />
             <div className="hidden text-end sm:block">
               <p className="max-w-[160px] truncate text-xs font-bold text-foreground/80" dir="ltr">
@@ -378,12 +395,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               frameId={user.avatarFrameId}
               size="xs"
             />
-            <form action={logoutAction}>
+            <form action={logoutAction} className="hidden sm:block">
               <button
                 type="submit"
                 aria-label="تسجيل الخروج"
                 title="تسجيل الخروج"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:border-red-400/40 hover:text-red-500 dark:hover:text-red-300"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:border-red-400/40 hover:text-red-500 dark:hover:text-red-300 cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
               </button>

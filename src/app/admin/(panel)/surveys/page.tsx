@@ -45,6 +45,12 @@ export default async function AdminSurveysPage() {
 
     const linkedPost = surveyPosts.find((p) => p.links?.includes(s.id));
 
+    let xpReward = 0;
+    try {
+      const parsedTarget = JSON.parse(s.target || "{}");
+      xpReward = typeof parsedTarget.xpReward === "number" ? Math.max(0, parsedTarget.xpReward) : 0;
+    } catch {}
+
     return {
       id: s.id,
       title: s.title,
@@ -55,6 +61,7 @@ export default async function AdminSurveysPage() {
       responsesCount: s._count.responses,
       questionsCount,
       pinned: linkedPost?.pinned ?? false,
+      xpReward,
       questions: parsedFields.map((f, idx) => ({
         id: f.id || `q_${idx + 1}`,
         type: f.type || "POLL_SINGLE",

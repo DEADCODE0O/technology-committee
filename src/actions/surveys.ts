@@ -30,6 +30,7 @@ export interface CreateSurveyInput {
   postToCommunity?: boolean;
   bannerUrl?: string | null;
   pinned?: boolean;
+  xpReward?: number;
 }
 
 export interface UpdateSurveyInput {
@@ -40,6 +41,7 @@ export interface UpdateSurveyInput {
   deadline?: string | null;
   status?: string;
   pinned?: boolean;
+  xpReward?: number;
 }
 
 // ─── 1. تصويت المستخدم في الاستبيان ───────────────────────────────
@@ -55,7 +57,7 @@ export async function submitSurveyVote(
 
     const survey = await db.dataRequest.findUnique({
       where: { id: surveyId },
-      select: { id: true, title: true, status: true, deadline: true },
+      select: { id: true, title: true, status: true, deadline: true, target: true },
     });
 
     if (!survey) {
@@ -68,6 +70,15 @@ export async function submitSurveyVote(
 
     if (survey.deadline && new Date() > new Date(survey.deadline)) {
       return { ok: false, error: "انتهى الموعد النهائي للمشاركة في هذا الاستبيان" };
+    }
+
+    // فحص مقدار نقاط الـ XP المحددة للاستبيان (الافتراضي 0 بدون XP)
+    let xpReward = 0;
+    try {
+      const parsedTarget = JSON.parse(survey.target || "{}");
+      xpReward = typeof parsedTarget.xpReward === "number" ? Math.max(0, parsedTarget.xpReward) : 0;
+    } catch {
+      xpReward = 0;
     }
 
     // فحص ما إذا كان قد صوت من قبل
@@ -98,22 +109,31 @@ export async function submitSurveyVote(
     });
 
     let awardedPoints = 0;
-    if (!existing && user.role === "STUDENT") {
-      // منح 15 نقطة تشجيعية للطلاب عند المشاركة لأول مرة
+    // منح نقاط الـ XP فقط إذا اختار المشرف تحديد قيمة أكبر من صفر
+    if (!existing && (user.role === "STUDENT" || user.profile) && xpReward > 0) {
       const seasonId = await stampSeasonId();
       await db.pointEvent.create({
         data: {
           userId: user.id,
-          points: 15,
+          points: xpReward,
           reason: `المشاركة في استبيان: ${survey.title}`,
           ruleAction: "COMMUNITY_SURVEY",
           seasonId,
         },
       });
-      awardedPoints = 15;
+      awardedPoints = xpReward;
     }
 
+    await logAudit({
+      actor: user,
+      action: "SURVEY_VOTED",
+      entity: "DATA_REQUEST",
+      entityId: surveyId,
+      summary: `مشاركة في استبيان: ${survey.title}${awardedPoints > 0 ? ` (+${awardedPoints} XP)` : ""}`,
+    });
+
     revalidatePath("/community");
+    revalidatePath("/panel");
     revalidatePath("/admin/surveys");
     revalidatePath(`/admin/surveys/${surveyId}`);
 
@@ -152,6 +172,14 @@ export async function createSurvey(
 
     const deadlineDate = input.deadline ? new Date(input.deadline) : null;
 
+    let targetObj: Record<string, any> = {};
+    try {
+      targetObj = JSON.parse(input.target || "{}");
+    } catch {
+      targetObj = {};
+    }
+    targetObj.xpReward = typeof input.xpReward === "number" && input.xpReward > 0 ? Math.floor(input.xpReward) : 0;
+
     const request = await db.dataRequest.create({
       data: {
         title: input.title.trim(),
@@ -159,7 +187,7 @@ export async function createSurvey(
         fields: JSON.stringify(formattedFields),
         mandatory: false,
         status: "OPEN",
-        target: input.target || "{}",
+        target: JSON.stringify(targetObj),
         deadline: deadlineDate,
         createdById: admin.id,
       },
@@ -189,11 +217,12 @@ export async function createSurvey(
       action: "SURVEY_CREATED",
       entity: "DATA_REQUEST",
       entityId: request.id,
-      summary: `إنشاء استبيان: ${request.title}`,
-      after: { title: request.title, questionsCount: formattedFields.length, pinned: input.pinned },
+      summary: `إنشاء استبيان: ${request.title}${targetObj.xpReward > 0 ? ` (+${targetObj.xpReward} XP)` : " (بدون XP)"}`,
+      after: { title: request.title, questionsCount: formattedFields.length, pinned: input.pinned, xpReward: targetObj.xpReward },
     });
 
     revalidatePath("/community");
+    revalidatePath("/panel");
     revalidatePath("/admin/surveys");
     return { ok: true, surveyId: request.id };
   } catch (err: any) {
@@ -229,15 +258,27 @@ export async function updateSurvey(
 
     const deadlineDate = input.deadline ? new Date(input.deadline) : null;
 
+    const updateData: Record<string, any> = {
+      title: input.title.trim(),
+      description: input.description?.trim() || null,
+      fields: JSON.stringify(formattedFields),
+      deadline: deadlineDate,
+      ...(input.status ? { status: input.status } : {}),
+    };
+
+    if (typeof input.xpReward === "number") {
+      const currentReq = await db.dataRequest.findUnique({ where: { id: input.id }, select: { target: true } });
+      let curTarget: Record<string, any> = {};
+      try {
+        curTarget = JSON.parse(currentReq?.target || "{}");
+      } catch {}
+      curTarget.xpReward = input.xpReward > 0 ? Math.floor(input.xpReward) : 0;
+      updateData.target = JSON.stringify(curTarget);
+    }
+
     await db.dataRequest.update({
       where: { id: input.id },
-      data: {
-        title: input.title.trim(),
-        description: input.description?.trim() || null,
-        fields: JSON.stringify(formattedFields),
-        deadline: deadlineDate,
-        ...(input.status ? { status: input.status } : {}),
-      },
+      data: updateData,
     });
 
     // تحديث أي منشور مجتمع مرتبط به
@@ -388,6 +429,7 @@ export interface SurveyAnalyticsResult {
   createdAt: string;
   deadline: string | null;
   totalResponses: number;
+  xpReward?: number;
   questionsAnalytics: QuestionAnalytics[];
   demographics: {
     byGrade: DemographicBreakdown[];
@@ -399,7 +441,8 @@ export interface SurveyAnalyticsResult {
 }
 
 export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyticsResult | null> {
-  const survey = await db.dataRequest.findUnique({
+  try {
+    const survey = await db.dataRequest.findUnique({
     where: { id: surveyId },
     include: {
       responses: {
@@ -695,6 +738,14 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
     answers: r.answers,
   }));
 
+  let xpReward = 0;
+  try {
+    const parsedTarget = JSON.parse(survey.target || "{}");
+    xpReward = typeof parsedTarget.xpReward === "number" ? Math.max(0, parsedTarget.xpReward) : 0;
+  } catch {
+    xpReward = 0;
+  }
+
   return {
     id: survey.id,
     title: survey.title,
@@ -703,6 +754,7 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
     createdAt: survey.createdAt.toISOString(),
     deadline: survey.deadline ? survey.deadline.toISOString() : null,
     totalResponses,
+    xpReward,
     questionsAnalytics,
     demographics: {
       byGrade,
@@ -712,6 +764,10 @@ export async function getSurveyAnalytics(surveyId: string): Promise<SurveyAnalyt
     recommendations,
     rawResponses,
   };
+  } catch (err: any) {
+    console.error("getSurveyWithAnalytics error:", err);
+    return null;
+  }
 }
 
 // ─── 3.1 جلب تفاصيل الاستبيان للصفحة المستقلة (/surveys/[id]) ───
@@ -726,6 +782,14 @@ export async function getSurveyDetails(surveyId: string) {
     });
 
     if (!survey) return null;
+
+    let xpReward = 0;
+    try {
+      const parsedTarget = JSON.parse(survey.target || "{}");
+      xpReward = typeof parsedTarget.xpReward === "number" ? Math.max(0, parsedTarget.xpReward) : 0;
+    } catch {
+      xpReward = 0;
+    }
 
     let fields: any[] = [];
     try {
@@ -826,6 +890,7 @@ export async function getSurveyDetails(surveyId: string) {
       totalVotes: survey._count.responses,
       hasVoted: !!userResponse,
       userResponse,
+      xpReward,
       questions: questionsWithStats,
       isLoggedIn: !!user,
       currentUserId: user?.id,

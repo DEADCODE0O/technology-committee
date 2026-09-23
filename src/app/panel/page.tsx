@@ -7,10 +7,9 @@ import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
 import { StudentShell } from "@/components/student/student-shell";
 import { NotificationBanner } from "@/components/platform/notification-banner";
-import { getStudentNotifications } from "@/lib/notifications";
+import { getStudentBadges } from "@/lib/student-badges";
 import { getStudentProgress } from "@/lib/progress";
 import { recordDailyActivity } from "@/lib/streak";
-import { getSocialCounters } from "@/actions/messaging";
 import { getStudentFeed } from "@/actions/student-posts";
 import { getCharmHeartsVisible } from "@/lib/platform";
 import { parseTarget, findTargetedStudentIds } from "@/lib/targeting";
@@ -58,8 +57,7 @@ export default async function StudentDashboardPage() {
   const [
     streakData,
     progress,
-    notifications,
-    socialCounters,
+    badges,
     studentFeed,
     committeePostsRaw,
     heartsVisible,
@@ -68,8 +66,7 @@ export default async function StudentDashboardPage() {
   ] = await Promise.all([
     recordDailyActivity(user.id).catch(() => ({ currentStreak: 1, longestStreak: 1, isNewDay: false, bonusPointsEarned: 0 })),
     getStudentProgress(user.id).catch(() => ({ xp: 0, level: 1, nextLevel: 2, progressToNext: 0, seasonXp: 0, seasonName: null, streakWeeks: 0, attendedCount: 0, tasksCompleted: 0, questsCompleted: 0 })),
-    getStudentNotifications(user).catch(() => ({ notifications: [], unreadCount: 0, pinnedBanner: null, pinnedBanners: [], pendingImportant: 0 })),
-    getSocialCounters(user.id).catch(() => ({ unreadMessagesCount: 0, pendingFriendRequestsCount: 0, totalSocialAlerts: 0 })),
+    getStudentBadges(user),
     getStudentFeed().catch(() => []),
     db.communityPost.findMany({
       where: { status: "PUBLISHED" },
@@ -266,6 +263,12 @@ export default async function StudentDashboardPage() {
       };
     });
 
+    let xpReward = 0;
+    try {
+      const parsedTarget = JSON.parse(s.target || "{}");
+      xpReward = typeof parsedTarget.xpReward === "number" ? Math.max(0, parsedTarget.xpReward) : 0;
+    } catch {}
+
     const surveyObj = {
       surveyId: s.id,
       title: s.title,
@@ -274,6 +277,7 @@ export default async function StudentDashboardPage() {
       deadline: s.deadline ? s.deadline.toISOString() : null,
       totalVotes,
       hasVoted: !!userResp,
+      xpReward,
       questions,
     };
 
@@ -298,45 +302,44 @@ export default async function StudentDashboardPage() {
         }
       } catch {}
 
-      // 2. محاولة استخراج أي معرّف CUID من الروابط
+      // 2. محاولة البحث عن CUID داخل نص الروابط
       if (!surveyData && p.links) {
-        const cuidMatch = p.links.match(/c[a-z0-9]{24}/g);
-        if (cuidMatch) {
-          for (const cid of cuidMatch) {
-            if (surveyDataMap.has(cid)) {
-              surveyData = surveyDataMap.get(cid);
+        const matches = p.links.match(/c[a-z0-9]{24}/g);
+        if (matches) {
+          for (const m of matches) {
+            if (surveyDataMap.has(m)) {
+              surveyData = surveyDataMap.get(m);
               break;
             }
           }
         }
       }
 
-      // 3. محاولة المطابقة التامة بالعنوان
+      // 3. محاولة المطابقة الدقيقة بعنوان الاستبيان
       if (!surveyData && p.title) {
-        const normTitle = p.title.trim().toLowerCase();
-        if (surveyByTitleMap.has(normTitle)) {
-          surveyData = surveyByTitleMap.get(normTitle);
+        const normalizedTitle = p.title.trim().toLowerCase();
+        if (surveyByTitleMap.has(normalizedTitle)) {
+          surveyData = surveyByTitleMap.get(normalizedTitle);
         }
       }
 
-      // 4. محاولة المطابقة الجزئية بالعنوان
+      // 4. محاولة المطابقة التقريبية بالكلمات المفتاحية
       if (!surveyData && p.title) {
-        const normTitle = p.title.trim().toLowerCase();
-        for (const [titleKey, data] of surveyByTitleMap.entries()) {
-          if (normTitle.includes(titleKey) || titleKey.includes(normTitle)) {
-            surveyData = data;
+        for (const [titleKey, sData] of surveyByTitleMap.entries()) {
+          if (titleKey.includes(p.title.trim().toLowerCase()) || p.title.trim().toLowerCase().includes(titleKey)) {
+            surveyData = sData;
             break;
           }
         }
       }
 
-      // 5. إذا كان المنشور استبياناً رسمياً ولم يرتبط بعد، نأخذ أحدث استبيان متاح
-      if (!surveyData && p.type === "SURVEY" && surveyDataMap.size > 0) {
+      // 5. استخدام أحدث استبيان متاح تلقائيًا
+      if (!surveyData && surveyDataMap.size > 0) {
         surveyData = Array.from(surveyDataMap.values())[0];
       }
     }
 
-    const commentsForStudent = p.comments.map((c: any) => {
+    const commentsForStudent = (p.comments || []).map((c: any) => {
       const commentUserPoints = c.user?.pointEvents?.reduce((acc: number, e: { points: number }) => acc + e.points, 0) ?? 0;
       return {
         id: c.id,
@@ -394,22 +397,21 @@ export default async function StudentDashboardPage() {
 
     return {
       id: p.id,
-      type: p.type,
       title: p.title,
       body: p.body,
       imageUrl: p.imageUrl,
-      media: p.mediaUrl ? planMedia(p.mediaUrl) : null,
-      links: parseExternalLinks(p.links),
+      type: p.type,
       pinned: p.pinned,
-      lockedComments: p.lockedComments,
-      autoApproveComments: p.autoApproveComments,
-      likesCount: p.reactions?.length ?? 0,
-      liked: myReactionKind !== null,
-      myReactionKind,
+      createdAt: p.createdAt.toISOString(),
+      author: p.createdBy ? (p.createdBy.displayName || p.createdBy.email.split("@")[0]) : "اللجنة التكنولوجية",
+      authorRole: p.createdBy?.role,
+      authorAvatar: p.createdBy?.avatarUrl,
+      authorFrameId: p.createdBy?.avatarFrameId,
+      authorLevel,
       reactionCounts,
-      formattedDate: timeAgo(p.createdAt),
-      createdBy: p.createdBy,
-      creatorLevel: authorLevel,
+      myReactionKind,
+      reactionsCount: p.reactions?.length ?? 0,
+      commentsCount: allComments.length,
       commentsForStudent: allComments,
       surveyData,
     };
@@ -420,19 +422,22 @@ export default async function StudentDashboardPage() {
       user={{
         name: profile.fullName,
         email: user.email,
+        role: user.role,
         avatarUrl: user.avatarUrl,
         avatarFrameId: user.avatarFrameId,
         level: progress.level,
       }}
-      active="panel"
-      unreadCount={notifications.unreadCount}
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      active="dashboard"
+      pendingCount={badges.pendingCount}
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
     >
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* إعلانات مهمة مثبتة إن وجدت */}
-        {notifications.pinnedBanners.length > 0 && (
+        {badges.pinnedBanners.length > 0 && (
           <div className="space-y-2">
-            {notifications.pinnedBanners.map((banner) => (
+            {badges.pinnedBanners.map((banner) => (
               <NotificationBanner key={banner.id} notification={banner} />
             ))}
           </div>
@@ -486,9 +491,9 @@ export default async function StudentDashboardPage() {
               >
                 <MessageCircle className="h-4 w-4 text-gold" />
                 <span className="hidden sm:inline">الرسائل</span>
-                {socialCounters.totalSocialAlerts > 0 && (
+                {badges.unreadMessagesCount > 0 && (
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black text-white animate-pulse">
-                    {socialCounters.totalSocialAlerts}
+                    {badges.unreadMessagesCount}
                   </span>
                 )}
               </Link>

@@ -54,6 +54,7 @@ export interface StandaloneSurveyViewProps {
     totalVotes: number;
     hasVoted: boolean;
     userResponse?: Record<string, any> | null;
+    xpReward?: number;
     questions: StandaloneQuestion[];
     isLoggedIn: boolean;
     currentUserId?: string;
@@ -718,12 +719,14 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
             <div className="text-start">
               <p className="text-xs sm:text-sm font-black text-foreground flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-gold shrink-0" />
-                {hasVoted ? "تحديث إجاباتك السابقة" : "صوتك أمانة ويصنع الفارق في قرارات الكلية"}
+                {hasVoted ? "تحديث إجاباتك السابقة" : "تسجيل إجاباتك في الاستبيان"}
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 {hasVoted
                   ? "يمكنك تعديل أي خيار وإعادة إرساله فوراً"
-                  : "تحصل على +15 XP في حسابك فور إرسال تصويتك الأول 🚀"}
+                  : survey.xpReward && survey.xpReward > 0
+                  ? `تحصل على +${survey.xpReward} XP في حسابك فور إرسال تصويتك الأول 🚀`
+                  : "مشاركتك تساهم في تطوير أنشطة وفعاليات الكلية"}
               </p>
             </div>
 
@@ -741,7 +744,7 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  {isEditingVote ? "حفظ وتحديث الإجابات 🚀" : "إرسال التصويت النهائي 🚀"}
+                  {isEditingVote ? "حفظ وتحديث الإجابات 🚀" : "إرسال التصويت 🚀"}
                 </>
               )}
             </button>

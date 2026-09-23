@@ -48,6 +48,7 @@ export interface CommunityPollCardProps {
   deadline?: string | null;
   totalVotes: number;
   hasVoted: boolean;
+  xpReward?: number;
   questions: PollQuestionData[];
   canVote: boolean;
 }
@@ -60,6 +61,7 @@ export function CommunityPollCard({
   deadline,
   totalVotes: initialTotalVotes,
   hasVoted: initialHasVoted,
+  xpReward = 0,
   questions,
   canVote,
 }: CommunityPollCardProps) {
@@ -606,7 +608,11 @@ export function CommunityPollCard({
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
-            {hasVoted ? "يمكنك تحديث وتغيير إجاباتك بحرية" : "تحصل على +15 XP فور إرسال تصويتك الأول!"}
+            {hasVoted
+              ? "يمكنك تحديث وتغيير إجاباتك بحرية"
+              : xpReward > 0
+              ? `تحصل على +${xpReward} XP فور إرسال تصويتك الأول!`
+              : "شارك برأيك في هذا الاستبيان"}
           </p>
 
           <button
@@ -623,7 +629,7 @@ export function CommunityPollCard({
             ) : (
               <>
                 <Send className="h-3.5 w-3.5" />
-                {isEditingVote ? "حفظ التعديل 🚀" : "إرسال تصويتي 🚀"}
+                {isEditingVote ? "حفظ التعديل 🚀" : "إرسال التصويت 🚀"}
               </>
             )}
           </button>

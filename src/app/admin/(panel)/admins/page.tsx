@@ -25,11 +25,11 @@ export default async function AdminStaffPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-zinc-50">
+        <h1 className="flex items-center gap-2.5 text-xl sm:text-2xl font-black text-foreground">
           <ShieldCheck className="h-6 w-6 text-gold" />
           المشرفون والصلاحيات
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
           رقّ أي طالب إلى مشرف وحدد ما يستطيع فعله بالضبط — كل وحدة بصلاحيتها الخاصة
         </p>
       </div>

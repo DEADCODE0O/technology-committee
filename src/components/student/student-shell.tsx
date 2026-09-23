@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, Bell, Trophy, MessageCircle, Globe, Settings } from "lucide-react";
+import { LayoutDashboard, LogOut, Compass, ClipboardList, Users, Bell, Trophy, MessageCircle, Globe, Settings, ShieldCheck } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -43,6 +43,7 @@ export function StudentShell({
     avatarUrl?: string | null;
     avatarFrameId?: string | null;
     level?: number;
+    role?: string;
   };
   active: string;
   children: React.ReactNode;
@@ -80,30 +81,45 @@ export function StudentShell({
 
           {/* تنقل شاشات كبيرة */}
           <nav className="flex items-center gap-1.5" aria-label="قائمة الطالب">
-            {NAV.map((n) => (
+            {NAV.map((n) => {
+              const isCurrentActive = active === n.key || (n.key === "dashboard" && active === "panel");
+              return (
+                <Link
+                  key={n.key}
+                  href={n.href}
+                  className={`relative hidden h-10 items-center gap-2 rounded-xl px-3.5 text-xs lg:text-sm font-bold transition-colors lg:inline-flex ${
+                    isCurrentActive
+                      ? "border border-gold/40 bg-gold/[0.12] text-gold-deep dark:text-gold-light"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                  }`}
+                >
+                  <n.icon className="h-4 w-4" />
+                  {n.label}
+                  {n.key === "tasks" && openTaskCount > 0 && (
+                    <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-extrabold text-night">
+                      {openTaskCount > 9 ? "9+" : openTaskCount}
+                    </span>
+                  )}
+                  {n.key === "messages" && unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-extrabold text-white animate-pulse">
+                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+
+            {/* زر المشرف السريع إذا كان الحساب يملك صلاحيات إشرافية */}
+            {user.role && user.role !== "STUDENT" && (
               <Link
-                key={n.key}
-                href={n.href}
-                className={`relative hidden h-10 items-center gap-2 rounded-xl px-3.5 text-xs lg:text-sm font-bold transition-colors lg:inline-flex ${
-                  active === n.key
-                    ? "border border-gold/40 bg-gold/[0.12] text-gold-deep dark:text-gold-light"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                }`}
+                href="/admin"
+                className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-3 text-xs font-bold text-gold-deep dark:text-gold-light transition-all hover:bg-gold/20 shadow-sm"
+                title="الانتقال إلى لوحة الإدارة"
               >
-                <n.icon className="h-4 w-4" />
-                {n.label}
-                {n.key === "tasks" && openTaskCount > 0 && (
-                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-extrabold text-night">
-                    {openTaskCount > 9 ? "9+" : openTaskCount}
-                  </span>
-                )}
-                {n.key === "messages" && unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-extrabold text-white animate-pulse">
-                    {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
-                  </span>
-                )}
+                <ShieldCheck className="h-4 w-4 text-gold" />
+                <span>لوحة الإشراف</span>
               </Link>
-            ))}
+            )}
 
             {/* الإشعارات: أيقونة دائمة بشارة عدم القراءة */}
             <Link
@@ -157,6 +173,25 @@ export function StudentShell({
         </div>
       </header>
 
+      {/* تنبيه وضع الطالب للمشرفين */}
+      {user.role && user.role !== "STUDENT" && (
+        <div className="border-b border-gold/25 bg-gradient-to-r from-gold/15 via-gold/10 to-gold/15 px-4 py-2 text-center text-xs font-medium text-foreground">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-gold-deep dark:text-gold-light font-bold text-xs sm:text-sm">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-gold" />
+              <span>أنت في وضع الطالب — لديك صلاحيات إشرافية نشطة</span>
+            </span>
+            <Link
+              href="/admin"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gold/40 bg-gold/20 px-3 py-1 text-xs font-extrabold text-gold-deep dark:text-gold-light hover:bg-gold/30 transition-all shadow-sm"
+            >
+              <span>دخول الإدارة</span>
+              <span aria-hidden="true">⚡</span>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <main
         className={
           chatMode
@@ -176,7 +211,7 @@ export function StudentShell({
         >
           <ul className="grid grid-cols-5 items-center px-1">
             {NAV.filter((n) => n.bottom).map((n) => {
-              const isActive = active === n.key;
+              const isActive = active === n.key || (n.key === "dashboard" && active === "panel");
               return (
                 <li key={n.key} className="relative">
                   <Link

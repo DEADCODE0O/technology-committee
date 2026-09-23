@@ -63,6 +63,7 @@ export interface SurveyListItem {
   responsesCount: number;
   questionsCount: number;
   pinned?: boolean;
+  xpReward?: number;
   questions?: SurveyQuestionItem[];
 }
 
@@ -92,6 +93,8 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const [bannerUrl, setBannerUrl] = useState("");
   const [postToCommunity, setPostToCommunity] = useState(true);
   const [pinned, setPinned] = useState(false);
+  const [enableXp, setEnableXp] = useState(false);
+  const [xpReward, setXpReward] = useState<number>(15);
   const [questions, setQuestions] = useState<SurveyQuestionItem[]>([
     {
       id: "q_1",
@@ -116,6 +119,8 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
   const [editDeadline, setEditDeadline] = useState("");
   const [editStatus, setEditStatus] = useState<"OPEN" | "CLOSED">("OPEN");
   const [editPinned, setEditPinned] = useState(false);
+  const [editEnableXp, setEditEnableXp] = useState(false);
+  const [editXpReward, setEditXpReward] = useState<number>(0);
   const [editQuestions, setEditQuestions] = useState<SurveyQuestionItem[]>([]);
   const [isEditingSubmitting, setIsEditingSubmitting] = useState(false);
 
@@ -199,6 +204,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         bannerUrl: bannerUrl.trim() || undefined,
         postToCommunity,
         pinned,
+        xpReward: enableXp ? xpReward : 0,
       };
 
       const res = await createSurvey(payload);
@@ -210,6 +216,8 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         setDeadline("");
         setBannerUrl("");
         setPinned(false);
+        setEnableXp(false);
+        setXpReward(15);
         router.refresh();
       } else {
         toast.error(res.error || "فشل إنشاء الاستبيان");
@@ -249,6 +257,9 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
     setEditDeadline(s.deadline ? s.deadline.slice(0, 16) : "");
     setEditStatus((s.status as "OPEN" | "CLOSED") || "OPEN");
     setEditPinned(!!s.pinned);
+    const curXp = s.xpReward ?? 0;
+    setEditEnableXp(curXp > 0);
+    setEditXpReward(curXp > 0 ? curXp : 15);
     setEditQuestions(
       s.questions && s.questions.length > 0
         ? s.questions.map((q) => ({
@@ -293,6 +304,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
 
     setIsEditingSubmitting(true);
     try {
+      const finalXp = editEnableXp ? editXpReward : 0;
       const res = await updateSurvey({
         id: editingId,
         title: editTitle.trim(),
@@ -300,6 +312,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
         status: editStatus,
         deadline: editDeadline || undefined,
         pinned: editPinned,
+        xpReward: finalXp,
         questions: editQuestions.map((q) => ({
           id: q.id,
           type: q.type,
@@ -321,6 +334,7 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   status: editStatus,
                   deadline: editDeadline || null,
                   pinned: editPinned,
+                  xpReward: finalXp,
                   questionsCount: editQuestions.length,
                   questions: editQuestions,
                 }
@@ -844,6 +858,41 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                 </div>
               )}
 
+              {/* خيار منح مكافأة XP */}
+              <div className="rounded-2xl border border-border bg-muted/20 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="enableXp" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                    منح مكافأة XP عند إكمال الاستبيان (افتراضياً: بدون XP)
+                  </label>
+                  <input
+                    type="checkbox"
+                    id="enableXp"
+                    checked={enableXp}
+                    onChange={(e) => {
+                      setEnableXp(e.target.checked);
+                      if (!e.target.checked) setXpReward(0);
+                      else if (xpReward === 0) setXpReward(15);
+                    }}
+                    className="h-4 w-4 rounded accent-gold cursor-pointer"
+                  />
+                </div>
+                {enableXp && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                    <span className="text-[11px] text-muted-foreground">مقدار نقاط XP للمشارك:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={xpReward}
+                      onChange={(e) => setXpReward(Math.max(1, Number(e.target.value) || 0))}
+                      className="w-24 rounded-xl border border-border bg-background px-3 py-1 text-xs font-bold text-foreground focus:border-gold focus:outline-none"
+                    />
+                    <span className="text-xs font-black text-gold">XP</span>
+                  </div>
+                )}
+              </div>
+
               {/* ── منشئ الأسئلة ── */}
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
@@ -1097,6 +1146,41 @@ export function SurveyManager({ initialSurveys, canManage }: SurveyManagerProps)
                   <Pin className="h-3.5 w-3.5 text-gold" />
                   تثبيت الاستبيان في أعلى خلاصة المجتمع 📌 (Pinned)
                 </label>
+              </div>
+
+              {/* خيار تعديل مكافأة XP */}
+              <div className="rounded-2xl border border-border bg-muted/20 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="editEnableXp" className="text-xs font-bold text-foreground cursor-pointer flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                    منح مكافأة XP عند إكمال الاستبيان (افتراضياً: بدون XP)
+                  </label>
+                  <input
+                    type="checkbox"
+                    id="editEnableXp"
+                    checked={editEnableXp}
+                    onChange={(e) => {
+                      setEditEnableXp(e.target.checked);
+                      if (!e.target.checked) setEditXpReward(0);
+                      else if (editXpReward === 0) setEditXpReward(15);
+                    }}
+                    className="h-4 w-4 rounded accent-gold cursor-pointer"
+                  />
+                </div>
+                {editEnableXp && (
+                  <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                    <span className="text-[11px] text-muted-foreground">مقدار نقاط XP للمشارك:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={500}
+                      value={editXpReward}
+                      onChange={(e) => setEditXpReward(Math.max(1, Number(e.target.value) || 0))}
+                      className="w-24 rounded-xl border border-border bg-background px-3 py-1 text-xs font-bold text-foreground focus:border-gold focus:outline-none"
+                    />
+                    <span className="text-xs font-black text-gold">XP</span>
+                  </div>
+                )}
               </div>
 
               {/* أسئلة الاستبيان */}

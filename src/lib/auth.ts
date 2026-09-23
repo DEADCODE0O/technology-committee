@@ -547,7 +547,8 @@ export async function requireStudent(
 ): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role === ROLES.STUDENT) {
+  // السماح للطلاب والمشرفين الذين يملكون ملف طالب بالوصول للوحة ومنصة الطالب بكامل مزاياها
+  if (user.role === ROLES.STUDENT || user.profile) {
     if (!opts?.skipProfileCheck && !user.profile) redirect("/profile/complete");
     if (!opts?.skipRequiredGate) {
       try {
@@ -561,7 +562,7 @@ export async function requireStudent(
     }
     return user;
   }
-  // أدمن دخل صفحة طالب — نحوّله لوجهته الطبيعية
+  // أدمن دخل صفحة طالب وليس لديه ملف طالب — نحوّله للوحة الإدارة
   if (isAdminRole(user.role)) redirect("/admin");
   redirect("/login");
 }
@@ -591,7 +592,7 @@ export async function requireStudentAction(
   const user = await getCurrentUser();
   if (!user) throw new Error("انتهت الجلسة — سجّل دخولك مرة أخرى");
   if (user.status === "SUSPENDED") throw new Error("حسابك معلق — تواصل مع إدارة اللجنة");
-  if (user.role !== ROLES.STUDENT) throw new Error("هذه العملية للطلاب فقط");
+  if (user.role !== ROLES.STUDENT && !user.profile) throw new Error("هذه العملية للطلاب فقط");
   if (!opts?.skipRequiredGate) {
     const { getStudentGate } = await import("@/lib/gate");
     const gate = await getStudentGate(user);

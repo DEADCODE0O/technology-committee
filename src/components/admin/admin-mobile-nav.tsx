@@ -1,5 +1,13 @@
 "use client";
 
+// ═══════════════════════════════════════════════════════════════
+//  قائمة لوحة الإدارة المتطورة للهواتف — تصميم فائق السلاسة في RTL
+//  • انزلاق دقيق ومتوافق مع اتجاه الواجهة العربية (RTL) بدون قفزات
+//  • شريط بحث ذكي بدون أي تداخل نصوص
+//  • وصول فوري لمنصة وحساب الطالب (حسابي)
+//  • أزرار لمس مريحة متوافقة مع إبهام اليد والـ Safe Area
+// ═══════════════════════════════════════════════════════════════
+
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,9 +36,11 @@ import {
   Settings,
   ScrollText,
   Globe,
-  ChevronDown,
+  GraduationCap,
   LogOut,
   ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Image from "next/image";
 import { logoutAction } from "@/actions/auth";
@@ -83,15 +93,18 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
     setIsOpen(false);
   }, [pathname]);
 
-  // منع التمرير في الخلفية عند فتح القائمة
+  // منع التمرير في الخلفية عند فتح القائمة مع الحفاظ على موضع الشاشة
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
     } else {
       document.body.style.overflow = "unset";
+      document.body.style.touchAction = "unset";
     }
     return () => {
       document.body.style.overflow = "unset";
+      document.body.style.touchAction = "unset";
     };
   }, [isOpen]);
 
@@ -125,7 +138,6 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
       }
     });
 
-    // أي عناصر أخرى غير مصنفة
     const otherItems = filteredItems.filter((i) => !categoryOrder.includes(i.category));
     if (otherItems.length > 0) {
       groups.push({ name: "أقسام أخرى", items: otherItems });
@@ -140,19 +152,19 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
   return (
     <>
       {/* ── زر فتح القائمة في الهيدر للموبايل ── */}
-      <div className="flex items-center gap-2 lg:hidden">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="inline-flex h-10 items-center gap-2 rounded-2xl border border-gold/30 bg-gold/10 px-3.5 text-xs font-black text-gold hover:bg-gold hover:text-night transition-all shadow-sm active:scale-95"
+          className="inline-flex h-9.5 items-center gap-2 rounded-2xl border border-gold/40 bg-gold/10 px-3 text-xs font-black text-gold hover:bg-gold hover:text-night transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
           aria-label="فتح قائمة الإدارة"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4.5 w-4.5" />
           <span>القائمة</span>
         </button>
 
         {currentItem && (
-          <span className="max-w-[130px] sm:max-w-[200px] truncate text-xs font-black text-foreground">
+          <span className="max-w-[120px] sm:max-w-[180px] truncate text-xs font-black text-foreground" title={currentItem.label}>
             {currentItem.label}
           </span>
         )}
@@ -160,24 +172,31 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
 
       {/* ── الدرج الجانبي للموبايل (Mobile Drawer) ── */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-night/80 backdrop-blur-md transition-opacity duration-200">
+        <div
+          dir="rtl"
+          className="fixed inset-0 z-50 flex justify-start bg-night/80 backdrop-blur-md transition-opacity duration-200"
+        >
           {/* خلفية للإغلاق عند النقر في الخارج */}
-          <div className="fixed inset-0" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed inset-0 cursor-pointer"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
 
-          <div className="relative flex w-full max-w-xs sm:max-w-sm flex-col bg-card border-s border-border shadow-2xl h-full z-10 animate-in slide-in-from-right duration-300">
+          <div className="relative flex w-full max-w-[320px] sm:max-w-xs flex-col bg-card border-e border-border shadow-2xl h-full z-10 animate-in slide-in-from-right duration-300">
             {/* هيدر القائمة */}
-            <div className="flex items-center justify-between border-b border-border p-4 bg-muted/20">
+            <div className="flex items-center justify-between border-b border-border p-4 bg-muted/30">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gold/30 bg-gold/15">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gold/30 bg-gold/15 shrink-0">
                   <Image src="/images/logo.png" alt="" width={24} height={24} className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-black text-foreground flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-gold" />
+                <div className="min-w-0">
+                  <h3 className="text-sm font-black text-foreground flex items-center gap-1.5 truncate">
+                    <ShieldCheck className="h-4 w-4 text-gold shrink-0" />
                     مركز التحكم
                   </h3>
-                  <p className="text-[10px] text-muted-foreground font-latin tracking-wider">
-                    TECH COMMITTEE ADMIN
+                  <p className="text-[9px] text-muted-foreground font-latin tracking-wider truncate">
+                    ADMIN DASHBOARD
                   </p>
                 </div>
               </div>
@@ -185,29 +204,47 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                aria-label="إغلاق"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
+                aria-label="إغلاق القائمة"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* شريط البحث الفوري */}
+            {/* بطاقة الوصول السريع لمنصة الطالب (حسابي) للمشرف */}
+            <div className="p-3 border-b border-border/70 bg-gold/[0.04]">
+              <Link
+                href="/panel"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center justify-between rounded-2xl border border-gold/40 bg-gold/10 hover:bg-gold/20 p-2.5 text-xs font-black text-gold-deep dark:text-gold shadow-xs transition-all active:scale-98"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-gold/20 text-gold">
+                    <GraduationCap className="h-4 w-4" />
+                  </span>
+                  <span>منصة الطالب (حسابي)</span>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 opacity-70" />
+              </Link>
+            </div>
+
+            {/* شريط البحث الفوري المضبوط بدقة لـ RTL */}
             <div className="p-3 border-b border-border bg-card">
-              <div className="relative">
-                <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="relative flex items-center">
+                <Search className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ابحث عن أي قسم أو أداة..."
-                  className="w-full rounded-xl border border-border bg-muted/30 pe-9 ps-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-gold focus:outline-none"
+                  placeholder="ابحث عن أي قسم..."
+                  className="w-full rounded-xl border border-border bg-muted/40 ps-9 pe-9 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-gold focus:outline-none transition-colors"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery("")}
-                    className="absolute left-3 top-2.5 text-muted-foreground hover:text-foreground"
+                    className="absolute end-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label="مسح البحث"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -224,7 +261,7 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
                       <span className="text-[11px] font-black text-gold uppercase tracking-wider">
                         {group.name}
                       </span>
-                      <span className="text-[10px] font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded-full">
+                      <span className="text-[10px] font-bold text-muted-foreground bg-muted/70 px-1.5 py-0.2 rounded-full">
                         {group.items.length}
                       </span>
                     </div>
@@ -239,26 +276,28 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
                             key={item.key}
                             href={item.href}
                             onClick={() => setIsOpen(false)}
-                            className={`flex min-h-[44px] items-center justify-between rounded-xl px-3 py-2.5 text-xs font-black transition-all ${
+                            className={`flex min-h-[44px] items-center justify-between rounded-xl px-3 py-2 text-xs font-black transition-all ${
                               isActive
                                 ? "bg-gold text-night shadow-md"
                                 : "text-foreground/80 hover:bg-muted hover:text-foreground"
                             }`}
                           >
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <span
-                                className={`shrink-0 ${
-                                  isActive ? "text-night" : "text-gold"
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                  isActive
+                                    ? "bg-night/15 text-night"
+                                    : "bg-muted/80 text-gold"
                                 }`}
                               >
                                 <Icon className="h-4 w-4" />
                               </span>
-                              <span>{item.label}</span>
+                              <span className="truncate">{item.label}</span>
                             </div>
 
                             {item.badge && (
                               <span
-                                className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${
+                                className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold shrink-0 ${
                                   isActive
                                     ? "bg-night/20 text-night"
                                     : "bg-muted text-muted-foreground"
@@ -281,8 +320,8 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
               )}
             </nav>
 
-            {/* فوتر القائمة */}
-            <div className="border-t border-border p-3 bg-muted/20 space-y-2">
+            {/* فوتر القائمة مع رابط الموقع العام وتسجيل الخروج ومراعاة الـ Safe Area */}
+            <div className="border-t border-border p-3 bg-muted/20 space-y-2 pb-6">
               <Link
                 href="/welcome"
                 onClick={() => setIsOpen(false)}
@@ -296,18 +335,19 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
               </Link>
 
               <div className="flex items-center justify-between pt-1 px-1">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 pe-2">
                   <p className="truncate text-xs font-bold text-foreground" dir="ltr">
                     {userEmail}
                   </p>
-                  <p className="text-[10px] font-bold text-gold">{userRoleLabel}</p>
+                  <p className="text-[10px] font-bold text-gold truncate">{userRoleLabel}</p>
                 </div>
 
-                <form action={logoutAction}>
+                <form action={logoutAction} className="shrink-0">
                   <button
                     type="submit"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-colors cursor-pointer"
                     title="تسجيل الخروج"
+                    aria-label="تسجيل الخروج"
                   >
                     <LogOut className="h-4 w-4" />
                   </button>

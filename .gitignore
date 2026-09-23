@@ -30,14 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — ملاحظة مهمة:
-# .env مُتتبع هنا «مقصودًا» لأنه إعداد تشغيل محلي للمنصة (مسار قاعدة SQLite
-# + سر تطوير محلي) ولازم يصل مع الكود عند النشر عبر المنصة نفسها.
-# أما أسرار الإنتاج الحقيقية (Vercel/Supabase) فتُضبط كمتغيرات بيئة في لوحة الاستضافة.
+# env files
+.env
 .env.local
 .env.*.local
-!.env
 !.env.example
+scratch/
 
 # vercel
 .vercel
@@ -62,3 +60,6 @@ server.log
 /uploads/
 tool-results/
 shots/
+scripts/test-*.mjs
+scripts/simulate-*.mjs
+scripts/inspect-*.mjs
