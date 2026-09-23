@@ -8,6 +8,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { revalidatePath } from "next/cache";
+import { purgeCacheTag } from "@/lib/cache/data-cache";
 import { db } from "@/lib/db";
 import { requireActionUser, requireStudentAction } from "@/lib/auth";
 import { logAudit } from "@/lib/platform";
@@ -53,6 +54,8 @@ async function reverseAttendancePoints(sessionId: string, userId: string): Promi
 }
 
 function refresh(sessionId: string, activityId?: string) {
+  purgeCacheTag("leaderboard");
+  if (activityId) purgeCacheTag(`activity-${activityId}`);
   if (activityId) revalidatePath(`/admin/activities/${activityId}`);
   revalidatePath(`/sessions/${sessionId}`);
   revalidatePath("/panel");

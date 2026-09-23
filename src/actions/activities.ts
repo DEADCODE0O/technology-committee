@@ -6,6 +6,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { revalidatePath } from "next/cache";
+import { purgeCacheTag } from "@/lib/cache/data-cache";
 import { db } from "@/lib/db";
 import { requireActionUser } from "@/lib/auth";
 import { logAudit } from "@/lib/platform";
@@ -20,6 +21,9 @@ const fieldTypeValues = FORM_FIELD_TYPES.map((f) => f.value as string);
 const CLOSING_MODE_VALUES = ["BY_DATE", "BY_CAPACITY", "EITHER", "MANUAL"];
 
 function refreshAll(ids?: { activityId?: string; sessionId?: string }) {
+  purgeCacheTag("activities");
+  purgeCacheTag("programs");
+  if (ids?.activityId) purgeCacheTag(`activity-${ids.activityId}`);
   revalidatePath("/admin/activities");
   revalidatePath("/admin/programs");
   revalidatePath("/activities");

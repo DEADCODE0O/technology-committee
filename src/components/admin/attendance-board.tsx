@@ -41,7 +41,14 @@ export function AttendanceBoard({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  const handleManualRefresh = () => {
+    setIsManualRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsManualRefreshing(false), 800);
+  };
 
   // رابط الحضور العام — يُبنى من نافذة المتصفح نفسها لأن خلف البروكسي
   // ترويسات الخادم الداخلية لا تعكس العنوان العام الذي يفتحه الطلاب
@@ -52,10 +59,13 @@ export function AttendanceBoard({
   );
   const publicCheckinUrl = publicOrigin ? `${publicOrigin}/checkin/${sessionToken}` : null;
 
-  // تحديث لحظي كل 8 ثوانٍ (يوقف لو المستخدم وقفه)
+  // تحديث دوري (معطّل افتراضياً لحفظ Egress، ولا يعمل إذا كانت الصفحة في الخلفية)
   useEffect(() => {
     if (!autoRefresh) return;
-    const t = setInterval(() => router.refresh(), 8000);
+    const t = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      router.refresh();
+    }, 20000);
     return () => clearInterval(t);
   }, [autoRefresh, router]);
 
@@ -112,11 +122,24 @@ export function AttendanceBoard({
             <p className="text-[11px] font-bold text-zinc-400">لم يُحدد</p>
           </div>
         </div>
-        <label className="flex items-center gap-2 text-xs font-bold text-zinc-400">
-          <RefreshCw className={`h-3.5 w-3.5 ${autoRefresh ? "animate-spin text-gold" : ""}`} />
-          تحديث تلقائي
-          <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-        </label>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleManualRefresh}
+            disabled={isManualRefreshing}
+            className="h-8 rounded-lg border-white/10 text-xs text-zinc-300 hover:text-white"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ml-1 ${isManualRefreshing ? "animate-spin text-gold" : ""}`} />
+            تحديث القائمة
+          </Button>
+          <label className="flex items-center gap-2 text-xs font-bold text-zinc-400 cursor-pointer">
+            <RefreshCw className={`h-3 w-3 ${autoRefresh ? "animate-spin text-gold" : ""}`} />
+            تلقائي (20ث)
+            <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+          </label>
+        </div>
       </div>
 
       {canManage && rows.length > 0 && sessionState !== "UPCOMING" && (

@@ -22,8 +22,15 @@ function resolveDatabaseUrl(): string | undefined {
   // لا يوجد إعداد إطلاقًا → الافتراضي المحلي للمنصة (قاعدة SQLite بجذر المشروع)
   if (!raw) return 'file:db/custom.db'
 
-  // قاعدة بعيدة (postgres/mysql) أو مسار مطلق → لا يحتاج تدخلًا
-  if (!raw.startsWith('file:')) return raw
+  // قاعدة بعيدة (postgres/mysql): إذا كانت تستخدم Supabase Transaction Pooler (منفذ 6543)
+  // نضمن إضافة connection_limit=1 لتقليل الاتصالات المهدرة في بيئات Serverless
+  if (!raw.startsWith('file:')) {
+    if (raw.includes(':6543') && !raw.includes('connection_limit=')) {
+      const sep = raw.includes('?') ? '&' : '?';
+      return `${raw}${sep}connection_limit=1`;
+    }
+    return raw;
+  }
   const rel = raw.slice('file:'.length).replace(/^\.\//, '')
   if (path.isAbsolute(rel)) return raw
 

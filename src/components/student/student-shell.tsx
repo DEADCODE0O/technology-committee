@@ -86,6 +86,7 @@ export function StudentShell({
                 <Link
                   key={n.key}
                   href={n.href}
+                  prefetch={false}
                   className={`relative hidden h-10 items-center gap-2 rounded-xl px-3.5 text-xs lg:text-sm font-bold transition-colors lg:inline-flex ${
                     isCurrentActive
                       ? "border border-gold/40 bg-gold/[0.12] text-gold-deep dark:text-gold-light"
@@ -215,6 +216,7 @@ export function StudentShell({
                 <li key={n.key} className="relative">
                   <Link
                     href={n.href}
+                    prefetch={false}
                     aria-current={isActive ? "page" : undefined}
                     className={`flex h-16 flex-col items-center justify-center gap-0.5 text-[10px] font-bold transition-all duration-200 ${
                       isActive ? "text-gold-deep dark:text-gold-light scale-[1.04]" : "text-muted-foreground hover:text-foreground active:text-foreground"

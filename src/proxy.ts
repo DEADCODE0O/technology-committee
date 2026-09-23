@@ -12,12 +12,14 @@ import { updateSession } from "@/lib/supabase/middleware";
 // ═══════════════════════════════════════════════════════════════
 
 export async function proxy(request: NextRequest) {
-  // 1) تجاوز أي طلبات تحميل مسبق في الخلفية (Prefetch) لحماية Egress المصادقة تماماً
+  // 1) تجاوز أي طلبات تحميل مسبق في الخلفية (Prefetch أو RSC navigation) لحماية Egress المصادقة تماماً
   const purpose =
     request.headers.get("purpose") ||
     request.headers.get("x-purpose") ||
     request.headers.get("next-router-prefetch");
-  if (purpose === "prefetch" || purpose === "1") {
+  const isRsc = request.headers.get("rsc") === "1" || request.nextUrl.searchParams.has("_rsc");
+  
+  if (purpose === "prefetch" || purpose === "1" || isRsc) {
     return NextResponse.next();
   }
 

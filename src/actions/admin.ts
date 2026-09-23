@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { revalidatePath } from "next/cache";
+import { purgeCacheTag } from "@/lib/cache/data-cache";
 import { cookies } from "next/headers";
 import { SignJWT } from "jose";
 import { db } from "@/lib/db";
@@ -122,6 +123,8 @@ export async function addPointEvent(
       details: { userId, points: pts, reason: why, sessionId: sessionId || null },
     });
 
+    purgeCacheTag("leaderboard");
+    purgeCacheTag(`user-${userId}`);
     revalidatePath("/admin/students");
     revalidatePath(`/admin/students/${userId}`);
     revalidatePath("/leaderboard");
@@ -160,6 +163,8 @@ export async function reversePointEvent(eventId: string, reason: string): Promis
       summary: `عكس ${event.points} نقطة — ${why}`,
       details: { reverseEventId: reverse.id, userId: event.userId, points: event.points },
     });
+    purgeCacheTag("leaderboard");
+    purgeCacheTag(`user-${event.userId}`);
     revalidatePath("/leaderboard");
     revalidatePath("/panel");
     revalidatePath(`/admin/students/${event.userId}`);

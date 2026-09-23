@@ -51,7 +51,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:h-20 lg:px-8">
         {/* الشعار الرسمي */}
-        <Link href="/welcome" className="flex items-center gap-3" aria-label={siteConfig.nameEn}>
+        <Link href="/welcome" prefetch={false} className="flex items-center gap-3" aria-label={siteConfig.nameEn}>
           <Image
             src={siteConfig.logo}
             alt="شعار اللجنة التكنولوجية"
@@ -77,6 +77,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
             <li key={link.href}>
               <Link
                 href={link.href}
+                prefetch={false}
                 className={`group relative text-sm font-semibold transition-colors duration-300 hover:text-gold dark:hover:text-gold ${
                   scrolled ? "text-muted-foreground" : "text-foreground/90 drop-shadow-none dark:text-zinc-200 dark:drop-shadow-sm"
                 }`}
@@ -99,6 +100,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
               {/* المستخدم المسجل — زر لوحته */}
               <Link
                 href={isAdmin ? "/admin" : "/panel"}
+                prefetch={false}
                 className="hidden h-10 items-center gap-2 rounded-full border border-gold/30 bg-gold/[0.08] pe-4 ps-2 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/50 sm:inline-flex"
               >
                 <AvatarWithFrame
@@ -124,6 +126,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
             <>
               <Link
                 href="/login"
+                prefetch={false}
                 className="hidden h-10 items-center rounded-full border border-gold/40 bg-gold/[0.08] px-6 text-sm font-bold text-gold transition-all duration-300 hover:-translate-y-0.5 hover:border-gold/60 hover:bg-gold/[0.15] sm:inline-flex"
               >
                 تسجيل الدخول
@@ -169,6 +172,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
                 >
                   <Link
                     href={link.href}
+                    prefetch={false}
                     onClick={() => setOpen(false)}
                     className="flex h-14 items-center justify-center rounded-2xl border border-border bg-card/40 text-base font-bold text-foreground transition-all active:scale-[0.98] hover:border-gold/30 hover:text-gold"
                   >
@@ -186,6 +190,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
                 >
                   <Link
                     href={isAdmin ? "/admin" : "/panel"}
+                    prefetch={false}
                     onClick={() => setOpen(false)}
                     className="flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-gold-light to-gold px-4 text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-transform active:scale-[0.98]"
                   >

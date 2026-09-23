@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { revalidatePath } from "next/cache";
+import { purgeCacheTag } from "@/lib/cache/data-cache";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getAvatarFrame, isFrameUnlocked } from "@/lib/avatar-frames";
@@ -13,6 +14,10 @@ import { MAX_TALENTS } from "@/lib/constants";
 import { cleanAvatarUrl } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+
+function invalidateUserCache(userId: string) {
+  purgeCacheTag(`user-${userId}`);
+}
 
 export async function equipAvatarFrame(
   frameId: string | null
@@ -34,6 +39,7 @@ export async function equipAvatarFrame(
         entityId: user.id,
         summary: "إلغاء تجهيز إطار الصورة الرمزية",
       });
+      invalidateUserCache(user.id);
       revalidatePath("/profile");
       revalidatePath("/leaderboard");
       revalidatePath("/community");
@@ -68,6 +74,7 @@ export async function equipAvatarFrame(
       details: { frameId, level },
     });
 
+    invalidateUserCache(user.id);
     revalidatePath("/profile");
     revalidatePath("/leaderboard");
     revalidatePath("/community");
@@ -293,6 +300,7 @@ export async function restoreAccountAvatarAction(): Promise<{
       details: { restoredAvatarUrl: cleanedAvatar },
     });
 
+    invalidateUserCache(user.id);
     revalidatePath("/", "layout");
     revalidatePath("/profile");
     revalidatePath("/panel");
@@ -350,6 +358,7 @@ export async function setAvatarUrlAction(
       details: { avatarUrl: targetUrl },
     });
 
+    invalidateUserCache(user.id);
     revalidatePath("/", "layout");
     revalidatePath("/profile");
     revalidatePath("/panel");
@@ -397,6 +406,7 @@ export async function updateDisplayNameAndBio(data: {
       data: updatePayload,
     });
 
+    invalidateUserCache(user.id);
     revalidatePath("/profile");
     revalidatePath("/panel");
     revalidatePath("/community");

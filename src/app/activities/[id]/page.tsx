@@ -17,6 +17,7 @@ import { SmartImg } from "@/components/platform/smart-img";
 import { ChevronRight, MapPin, Users, CalendarDays, Clock } from "lucide-react";
 import { formatCairoDate } from "@/lib/dates";
 import { CommunityLinksCard } from "@/components/platform/community-links-card";
+import { getCachedActivityById } from "@/lib/cache/data-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -30,17 +31,7 @@ function fmtTime(d: Date) {
 export default async function ActivityDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const activity = await db.activity.findUnique({
-    where: { id },
-    include: {
-      program: true,
-      sessions: {
-        where: { status: { not: "CANCELLED" } },
-        orderBy: { startsAt: "asc" },
-        include: { registrations: { where: { status: "REGISTERED" }, select: { id: true, userId: true } } },
-      },
-    },
-  });
+  const activity = await getCachedActivityById(id);
 
   if (!activity || activity.publish === "DRAFT" || activity.publish === "ARCHIVED") notFound();
 

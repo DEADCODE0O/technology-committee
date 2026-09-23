@@ -161,6 +161,7 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
                       <Link
                         key={m.key}
                         href={m.href}
+                        prefetch={false}
                         className={`group relative flex h-9 items-center justify-between rounded-xl px-2.5 text-xs font-bold transition-all ${
                           active
                             ? "bg-gold/15 text-gold-deep dark:text-gold-light border-s-3 border-gold font-black shadow-xs"
@@ -212,6 +213,7 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
       <div className="border-t border-border p-2.5 space-y-1 bg-muted/10">
         <Link
           href="/panel"
+          prefetch={false}
           className="flex h-9 items-center justify-between rounded-xl border border-gold/35 bg-gold/10 px-3 text-xs font-black text-gold-deep dark:text-gold transition-all hover:bg-gold/20 shadow-2xs"
           title="الانتقال إلى منصة الطالب وحسابي"
         >
@@ -225,6 +227,7 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
         </Link>
         <Link
           href="/welcome"
+          prefetch={false}
           className="flex h-8.5 items-center gap-2.5 rounded-xl px-3 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <Globe className="h-3.5 w-3.5" />

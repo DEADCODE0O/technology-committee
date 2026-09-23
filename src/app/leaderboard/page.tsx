@@ -21,6 +21,7 @@ import { getStudentBadges } from "@/lib/student-badges";
 import { monthStart, semesterStart, GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { LeveledName } from "@/components/ui/leveled-name";
+import { getCachedLeaderboardData } from "@/lib/cache/data-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -47,32 +48,10 @@ export default async function LeaderboardPage({
   let rankedTeams: { name: string; icon: string; color: string; points: number; members: number }[] = [];
 
   try {
-    season = await getActiveSeason();
-    const from =
-      activeTab === "month" ? monthStart() : activeTab === "semester" ? semesterStart() : undefined;
-    const seasonId = activeTab === "season" ? season?.id ?? "__none__" : undefined;
-    rows = await getLeaderboard(from, 50, seasonId);
-
-    // ترتيب الفرق
-    const teamRows = await db.team.findMany({
-      include: { _count: { select: { members: true } } },
-    });
-    const teamPoints = await db.teamPointEvent.groupBy({
-      by: ["teamId"],
-      _sum: { points: true },
-      orderBy: { _sum: { points: "desc" } },
-    });
-    const tMap = new Map(teamPoints.map((t) => [t.teamId, t._sum.points ?? 0]));
-    rankedTeams = teamRows
-      .map((t) => ({
-        name: t.name,
-        icon: t.icon,
-        color: t.color,
-        points: tMap.get(t.id) ?? 0,
-        members: t._count.members,
-      }))
-      .sort((a, b) => b.points - a.points)
-      .slice(0, 5);
+    const cached = await getCachedLeaderboardData(activeTab);
+    season = cached.season;
+    rows = cached.rows;
+    rankedTeams = cached.rankedTeams.slice(0, 5);
   } catch (err) {
     console.error("LeaderboardPage data fetch error:", err);
   }

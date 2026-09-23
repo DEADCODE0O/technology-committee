@@ -25,6 +25,12 @@ import { ROLES } from "@/lib/constants";
 import { canUser, isAdminRole, type Action, type Module } from "@/lib/permissions";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  extractAccessTokenFromCookies,
+  decodeSupabaseToken,
+  isTokenValidAndFresh,
+} from "@/lib/supabase/token-utils";
+import { getCachedUserById } from "@/lib/cache/data-cache";
 import { logAudit } from "@/lib/platform";
 
 const COOKIE_NAME = "tc_session";
@@ -183,8 +189,8 @@ export async function resolveSupabaseAppUser(
 
   const avatar = cleanAvatarUrl(rawAvatar);
 
-  // 1) نفس الـ UUID
-  const byId = await db.user.findUnique({ where: { id: authUser.id } });
+  // 1) نفس الـ UUID — استعلام مخزن مؤقتاً لتفادي تكرار القراءة
+  const byId = await getCachedUserById(authUser.id);
   if (byId) {
     const isPresetAvatar = Boolean(
       byId.avatarUrl?.startsWith("/images/avatars/") ||
@@ -429,14 +435,33 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
 
     // ── وضع Supabase: الهوية من Supabase Auth ثم ربطها بصف التطبيق ──
     if (isSupabaseConfigured()) {
-      const supabase = await createSupabaseServerClient();
       let authUser: AuthUser | null = null;
-      if (supabase) {
-        try {
-          const { data } = await supabase.auth.getUser();
-          authUser = data.user;
-        } catch (authErr) {
-          console.warn("[getCurrentUser] supabase.auth.getUser error:", authErr);
+      const allCookies = store.getAll();
+      const token = extractAccessTokenFromCookies(allCookies);
+
+      // 1) فحص محلي سريع ومباشر للـ JWT دون إجراء أي مكالمة شبكة خارجية (0 بايت Egress)
+      if (token && isTokenValidAndFresh(token, 60)) {
+        const decoded = decodeSupabaseToken(token);
+        if (decoded?.sub) {
+          authUser = {
+            id: decoded.sub,
+            email: decoded.email,
+            user_metadata: decoded.user_metadata ?? {},
+            app_metadata: decoded.app_metadata ?? {},
+          } as unknown as AuthUser;
+        }
+      }
+
+      // 2) احتياطي: إذا لم يكن التوكن سليمًا أو قارب على الانتهاء نطلب من Supabase
+      if (!authUser) {
+        const supabase = await createSupabaseServerClient();
+        if (supabase) {
+          try {
+            const { data } = await supabase.auth.getUser();
+            authUser = data.user;
+          } catch (authErr) {
+            console.warn("[getCurrentUser] supabase.auth.getUser error:", authErr);
+          }
         }
       }
 
@@ -507,8 +532,11 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
           ? meta.name.trim()
           : null;
 
-      // اجلب الملف المرتبط (إن وُجد)
-      const profile = await db.studentProfile.findUnique({ where: { userId: row.id } });
+      // اجلب الملف المرتبط (إن وُجد) — إذا كان مُتضمناً بالفعل نتفادى الاستعلام الإضافي
+      const profile =
+        (row as any).profile !== undefined
+          ? (row as any).profile
+          : await db.studentProfile.findUnique({ where: { userId: row.id } });
       return toSessionUser({
         ...row,
         avatarUrl: finalAvatar,

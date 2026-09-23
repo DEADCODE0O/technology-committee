@@ -12,6 +12,8 @@ import { getSessionState, decideRegistration } from "@/lib/activities";
 import { resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 
+import { getCachedPublishedActivities, getCachedPrograms } from "@/lib/cache/data-cache";
+
 export const dynamic = "force-dynamic";
 
 type TypeFilter = "ALL" | "COURSE" | "WORKSHOP" | "EVENT";
@@ -104,31 +106,16 @@ export default async function ActivitiesPage({
   let programs: any[] = [];
 
   try {
-    activities = await db.activity.findMany({
-      where: {
-        publish: "PUBLISHED",
-        ...(typeFilter !== "ALL" ? { type: typeFilter } : {}),
-        ...(sp.program ? { programId: sp.program } : {}),
-      },
-      include: {
-        program: true,
-        sessions: {
-          orderBy: { order: "asc" },
-          include: {
-            registrations: {
-              where: { status: "REGISTERED" },
-              select: { id: true },
-            },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    const [allActivities, allPrograms] = await Promise.all([
+      getCachedPublishedActivities(),
+      getCachedPrograms(),
+    ]);
 
-    programs = await db.program.findMany({
-      where: { status: "ACTIVE" },
-      orderBy: { order: "asc" },
-      include: { _count: { select: { activities: { where: { publish: "PUBLISHED" } } } } },
+    programs = allPrograms;
+    activities = allActivities.filter((a) => {
+      if (typeFilter !== "ALL" && a.type !== typeFilter) return false;
+      if (sp.program && a.programId !== sp.program) return false;
+      return true;
     });
   } catch (err) {
     console.error("ActivitiesPage data fetch error:", err);
