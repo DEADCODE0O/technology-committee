@@ -613,7 +613,7 @@ export async function requireStudent(
 // صفحات الإدارة — تحويل لصفحة دخول الإدارة
 export async function requireAdmin(module?: Module, action: Action = "view"): Promise<SessionUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/admin/login");
+  if (!user) redirect("/login?returnTo=/admin");
   if (!isAdminRole(user.role)) redirect("/panel");
   if (module && !canUser(user, module, action)) redirect("/admin?denied=1");
   return user;

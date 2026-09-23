@@ -29,7 +29,7 @@ async function handleCleanup(request: NextRequest) {
     }
   }
 
-  if (!isAuthorized && process.env.NODE_ENV === "production") {
+  if (!isAuthorized) {
     return NextResponse.json({ error: "غير مصرح بالوصول" }, { status: 401 });
   }
 

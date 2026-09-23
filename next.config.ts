@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // تحويلات الروابط الرسمية (توحيد تسجيل الدخول عبر /login)
+  async redirects() {
+    return [
+      {
+        source: "/admin/login",
+        destination: "/login?returnTo=/admin",
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     serverActions: {
       // بروكسي المعاينة يمرر طلبات Server Actions بعنوان داخلي (x-forwarded-host)
