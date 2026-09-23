@@ -206,6 +206,7 @@ model Activity {
   sessions   Session[]
   formFields FormField[]
   tasks      Task[]
+  teams      Team[]
   chatRooms  ChatRoom[]
 
   @@index([type, publish])
@@ -285,6 +286,7 @@ model Session {
   pointEvents   PointEvent[]
   attendance    Attendance[]
   evaluations   SessionEvaluation[]
+  teams         Team[]
 }
 
 // أسئلة التسجيل الديناميكية — على مستوى النشاط (تُسأل مرة واحدة)
@@ -497,18 +499,28 @@ model TaskSubmission {
 
 model Team {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String
   description String?
   color       String   @default("#c9a45c")
   icon        String   @default("🛡️")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  activityId  String?
+  activity    Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     Session?  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  whatsappUrl String?
+  telegramUrl String?
+
   members      TeamMember[]
   pointEvents  TeamPointEvent[]
   achievements TeamAchievement[]
   assignments  TaskAssignment[]
   chatRooms    ChatRoom[]
+
+  @@index([activityId])
+  @@index([sessionId])
 }
 
 model TeamMember {

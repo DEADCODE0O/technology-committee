@@ -260,3 +260,212 @@ export async function getMyTeam(): Promise<{ ok: boolean; team?: unknown; error?
     return { ok: false, error: e instanceof Error ? e.message : "تعذر جلب الفريق" };
   }
 }
+
+// ─── إدارة فرق الورش والمحاضرات ────────────────────────────
+
+export async function createSessionTeam(input: {
+  sessionId: string;
+  activityId?: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  whatsappUrl?: string;
+  telegramUrl?: string;
+  memberUserIds: string[];
+  leaderUserId?: string;
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    if (!input.sessionId) return { ok: false, error: "معرف الجلسة مطلوب" };
+    if (!input.name?.trim()) return { ok: false, error: "اسم الفريق مطلوب" };
+
+    let activityId = input.activityId;
+    if (!activityId) {
+      const sess = await db.session.findUnique({ where: { id: input.sessionId }, select: { activityId: true } });
+      activityId = sess?.activityId;
+    }
+
+    const team = await db.team.create({
+      data: {
+        name: input.name.trim(),
+        description: input.description?.trim() || null,
+        color: input.color || "#c9a45c",
+        icon: (input.icon || "🛡️").slice(0, 4),
+        sessionId: input.sessionId,
+        activityId: activityId || null,
+        whatsappUrl: input.whatsappUrl?.trim() || null,
+        telegramUrl: input.telegramUrl?.trim() || null,
+      },
+    });
+
+    if (input.memberUserIds && input.memberUserIds.length > 0) {
+      const membersData = input.memberUserIds.map((userId) => ({
+        teamId: team.id,
+        userId,
+        role: input.leaderUserId === userId ? "LEADER" : "MEMBER",
+      }));
+      await db.teamMember.createMany({
+        data: membersData,
+        skipDuplicates: true,
+      });
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "TEAM_CREATED",
+      entity: "TEAM",
+      entityId: team.id,
+      summary: `إنشاء فريق «${team.name}» في الجلسة`,
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    if (activityId) revalidatePath(`/admin/activities/${activityId}`);
+    revalidatePath("/panel");
+
+    return { ok: true, id: team.id };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}
+
+export async function updateSessionTeam(input: {
+  teamId: string;
+  sessionId: string;
+  name?: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  whatsappUrl?: string;
+  telegramUrl?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    const team = await db.team.findUnique({ where: { id: input.teamId } });
+    if (!team) return { ok: false, error: "الفريق غير موجود" };
+
+    await db.team.update({
+      where: { id: input.teamId },
+      data: {
+        ...(input.name ? { name: input.name.trim() } : {}),
+        ...(input.description !== undefined ? { description: input.description.trim() || null } : {}),
+        ...(input.color ? { color: input.color } : {}),
+        ...(input.icon ? { icon: input.icon.slice(0, 4) } : {}),
+        ...(input.whatsappUrl !== undefined ? { whatsappUrl: input.whatsappUrl.trim() || null } : {}),
+        ...(input.telegramUrl !== undefined ? { telegramUrl: input.telegramUrl.trim() || null } : {}),
+      },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "TEAM_UPDATED",
+      entity: "TEAM",
+      entityId: team.id,
+      summary: `تحديث بيانات ورابط فريق «${team.name}»`,
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    revalidatePath("/panel");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}
+
+export async function deleteSessionTeam(input: {
+  teamId: string;
+  sessionId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    const team = await db.team.findUnique({ where: { id: input.teamId } });
+    if (!team) return { ok: false, error: "الفريق غير موجود" };
+
+    await db.team.delete({ where: { id: input.teamId } });
+
+    await logAudit({
+      actor: admin,
+      action: "TEAM_DELETED",
+      entity: "TEAM",
+      entityId: input.teamId,
+      summary: `حذف فريق «${team.name}» من الجلسة`,
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    revalidatePath("/panel");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}
+
+export async function addSessionTeamMember(input: {
+  teamId: string;
+  sessionId: string;
+  userId: string;
+  role?: "MEMBER" | "LEADER";
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    await db.teamMember.upsert({
+      where: { teamId_userId: { teamId: input.teamId, userId: input.userId } },
+      create: { teamId: input.teamId, userId: input.userId, role: input.role || "MEMBER" },
+      update: { role: input.role || "MEMBER" },
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    revalidatePath("/panel");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}
+
+export async function removeSessionTeamMember(input: {
+  teamId: string;
+  sessionId: string;
+  userId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    await db.teamMember.delete({
+      where: { teamId_userId: { teamId: input.teamId, userId: input.userId } },
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    revalidatePath("/panel");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}
+
+export async function setSessionTeamLeader(input: {
+  teamId: string;
+  sessionId: string;
+  userId: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    await db.teamMember.updateMany({
+      where: { teamId: input.teamId, role: "LEADER" },
+      data: { role: "MEMBER" },
+    });
+    await db.teamMember.update({
+      where: { teamId_userId: { teamId: input.teamId, userId: input.userId } },
+      data: { role: "LEADER" },
+    });
+
+    revalidatePath(`/admin/sessions/${input.sessionId}`);
+    revalidatePath(`/sessions/${input.sessionId}`);
+    revalidatePath("/panel");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "حدث خطأ غير متوقع" };
+  }
+}

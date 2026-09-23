@@ -452,3 +452,273 @@ export async function resolveReport(
     return { ok: false, error: err instanceof Error ? err.message : "فشل معالجة البلاغ" };
   }
 }
+
+/**
+ * بيانات مركز العمليات والمراقبة الحية
+ */
+export async function getLiveOperationsData() {
+  await requireSurveillanceAuth();
+
+  const [
+    recentAttendance,
+    recentRegistrations,
+    strikeStudents,
+    recentAudits,
+    activities,
+    sessions,
+  ] = await Promise.all([
+    // 1. تسجيلات الحضور بالـ QR الحية
+    db.attendance.findMany({
+      where: { present: true },
+      include: {
+        registration: {
+          select: {
+            fullName: true,
+            phone: true,
+            studentCode: true,
+            gender: true,
+            grade: true,
+            section: true,
+            user: { select: { id: true, displayName: true, avatarUrl: true, avatarFrameId: true } },
+          },
+        },
+        session: {
+          select: { id: true, title: true, activity: { select: { id: true, title: true, type: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 35,
+    }),
+
+    // 2. أحدث التسجيلات
+    db.registration.findMany({
+      include: {
+        session: {
+          select: { id: true, title: true, activity: { select: { id: true, title: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 35,
+    }),
+
+    // 3. الطلاب ذوو إنذارات الغياب وتقييد الحضور
+    db.user.findMany({
+      where: {
+        role: "STUDENT",
+        OR: [
+          { unexcusedAbsences: { gt: 0 } },
+          { attendanceRestricted: true },
+        ],
+      },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+        avatarUrl: true,
+        avatarFrameId: true,
+        unexcusedAbsences: true,
+        attendanceRestricted: true,
+        lastActiveAt: true,
+        profile: {
+          select: {
+            fullName: true,
+            phone: true,
+            studentCode: true,
+            grade: true,
+            section: true,
+            gender: true,
+          },
+        },
+      },
+      orderBy: [{ unexcusedAbsences: "desc" }, { attendanceRestricted: "desc" }],
+      take: 50,
+    }),
+
+    // 4. سجل الأمان والعمليات
+    db.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 35,
+    }),
+
+    // 5. الأنشطة لاختيار الجمهور
+    db.activity.findMany({
+      select: { id: true, title: true, type: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+
+    // 6. الجلسات لاختيار الجمهور
+    db.session.findMany({
+      select: { id: true, title: true, startsAt: true, activity: { select: { title: true } } },
+      orderBy: { startsAt: "desc" },
+      take: 25,
+    }),
+  ]);
+
+  return {
+    recentAttendance: recentAttendance.map((a) => ({
+      id: a.id,
+      studentName: a.registration.fullName,
+      studentPhone: a.registration.phone || "—",
+      studentCode: a.registration.studentCode || "—",
+      grade: a.registration.grade || "—",
+      section: a.registration.section || "—",
+      gender: a.registration.gender || "—",
+      sessionTitle: a.session?.title || "—",
+      activityTitle: a.session?.activity?.title || "—",
+      activityType: a.session?.activity?.type || "WORKSHOP",
+      method: a.method || "QR",
+      attendedAt: (a.markedAt || a.createdAt).toISOString(),
+      avatarUrl: a.registration.user?.avatarUrl || null,
+      level: 1,
+    })),
+    recentRegistrations: recentRegistrations.map((r) => ({
+      id: r.id,
+      fullName: r.fullName,
+      phone: r.phone || "—",
+      studentCode: r.studentCode || "—",
+      grade: r.grade || "—",
+      section: r.section || "—",
+      gender: r.gender || "—",
+      status: r.status,
+      source: r.source,
+      waitlistOrder: r.waitlistOrder,
+      sessionTitle: r.session.title,
+      activityTitle: r.session.activity.title,
+      createdAt: r.createdAt.toISOString(),
+    })),
+    strikeStudents: strikeStudents.map((s) => ({
+      id: s.id,
+      name: s.profile?.fullName || s.displayName || s.email,
+      phone: s.profile?.phone || "—",
+      studentCode: s.profile?.studentCode || "—",
+      grade: s.profile?.grade || "—",
+      section: s.profile?.section || "—",
+      gender: s.profile?.gender || "—",
+      absenceStrikes: s.unexcusedAbsences,
+      attendanceRestricted: s.attendanceRestricted,
+      avatarUrl: s.avatarUrl,
+    })),
+    recentAudits: recentAudits.map((l) => ({
+      id: l.id,
+      action: l.action,
+      entity: l.entity,
+      summary: l.summary,
+      actorName: l.actorEmail || "النظام",
+      createdAt: l.createdAt.toISOString(),
+    })),
+    activities,
+    sessions: sessions.map((s) => ({
+      id: s.id,
+      title: `${s.activity.title} — ${s.title}`,
+      startsAt: s.startsAt.toISOString(),
+    })),
+  };
+}
+
+/**
+ * إرسال رسالة أو توجيه إداري جماعي (مع رابط جروب أو تكليف)
+ */
+export async function sendAdministrativeBroadcast(input: {
+  audience: "ALL" | "ACTIVITY" | "SESSION" | "STRIKES";
+  activityId?: string;
+  sessionId?: string;
+  title: string;
+  body: string;
+  priority: "NORMAL" | "URGENT" | "DIRECTIVE";
+  actionUrl?: string;
+  actionLabel?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireSurveillanceAuth();
+    if (!input.title?.trim()) return { ok: false, error: "عنوان التوجيه مطلوب" };
+    if (!input.body?.trim()) return { ok: false, error: "نص التوجيه مطلوب" };
+
+    // تجهيز هدف الاستهداف (Target JSON)
+    let targetObj: Record<string, any> = { userIds: [] };
+
+    if (input.audience === "ACTIVITY" && input.activityId) {
+      targetObj = { activityId: input.activityId };
+    } else if (input.audience === "SESSION" && input.sessionId) {
+      targetObj = { sessionId: input.sessionId };
+    } else if (input.audience === "STRIKES") {
+      const strikeUsers = await db.user.findMany({
+        where: { role: "STUDENT", OR: [{ unexcusedAbsences: { gt: 0 } }, { attendanceRestricted: true }] },
+        select: { id: true },
+      });
+      targetObj = { userIds: strikeUsers.map((u) => u.id) };
+    }
+
+    const isUrgent = input.priority === "URGENT" || input.priority === "DIRECTIVE";
+    const notificationType = input.priority === "URGENT" ? "IMPORTANT" : "ANNOUNCEMENT";
+    const actionUrl = input.actionUrl?.trim() || null;
+    const actionLabel = input.actionLabel?.trim() || (actionUrl?.includes("chat.whatsapp.com") ? "انضم لجروب الواتساب 💬" : "فتح الرابط ↗");
+    const linkType = actionUrl?.includes("whatsapp") || actionUrl?.includes("wa.me") ? "WHATSAPP" : actionUrl?.includes("t.me") ? "TELEGRAM" : "LINK";
+
+    const created = await db.notification.create({
+      data: {
+        title: input.title.trim(),
+        body: input.body.trim(),
+        type: notificationType,
+        pinned: isUrgent, // يظهر بنراً عاجلاً بأعلى لوحة الطالب حتى إغلاقه
+        ctaUrl: actionUrl,
+        ctaLabel: actionUrl ? actionLabel : null,
+        ctaNewTab: true,
+        linkType,
+        target: JSON.stringify(targetObj),
+        createdById: admin.id,
+      },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "ADMIN_BROADCAST_SENT",
+      entity: "Notification",
+      entityId: created.id,
+      summary: `إرسال توجيه جماعي: «${input.title}» (${input.audience})`,
+    });
+
+    revalidatePath("/panel");
+    revalidatePath("/admin/surveillance");
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "فشل إرسال التوجيه" };
+  }
+}
+
+/**
+ * تصفير إنذارات الغياب وإلغاء تقييد الحضور لطالب
+ */
+export async function resetStudentAbsenceStrikes(userId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireSurveillanceAuth();
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+    if (!user) return { ok: false, error: "الطالب غير موجود" };
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        unexcusedAbsences: 0,
+        attendanceRestricted: false,
+        absenceWarnings: 0,
+      },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "ABSENCE_STRIKES_RESET",
+      entity: "User",
+      entityId: userId,
+      summary: `تصفير إنذارات الغياب للطالب: ${user.profile?.fullName || user.displayName || user.email}`,
+    });
+
+    revalidatePath("/admin/surveillance");
+    revalidatePath(`/admin/students/${userId}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "فشل تصفير الإنذارات" };
+  }
+}

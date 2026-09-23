@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   CalendarDays, Clock, MapPin, Users, History, User as UserIcon,
-  Hourglass, LogIn, Ban, Archive, CircleCheck, ChevronRight,
+  Hourglass, LogIn, Ban, Archive, CircleCheck, ChevronRight, Crown, Shield,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
@@ -21,7 +21,7 @@ import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/a
 import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 import { formatCairoDate } from "@/lib/dates";
-import { CommunityLinksCard } from "@/components/platform/community-links-card";
+import { CommunityLinksCard, WhatsAppIcon, TelegramIcon } from "@/components/platform/community-links-card";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +97,33 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const isRegisteredInSession = existing?.status === "REGISTERED" || (!!user && isAdminRole(user.role));
   const whatsappUrl = session.whatsappUrl || activity.whatsappUrl;
   const telegramUrl = session.telegramUrl || activity.telegramUrl;
+
+  // جلب فريق الطالب الخاص بهذه الجلسة (إن وُجد)
+  const myTeam = user
+    ? await db.team.findFirst({
+        where: {
+          sessionId: session.id,
+          members: { some: { userId: user.id } },
+        },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  role: true,
+                  avatarUrl: true,
+                  avatarFrameId: true,
+                  profile: { select: { fullName: true } },
+                },
+              },
+            },
+            orderBy: { role: "desc" },
+          },
+        },
+      })
+    : null;
 
   // الصورة: المرفوعة على السيرفر أو من الرابط (درايف/خارجي) للمحاضرة أو النشاط
   const sessionImg = session.image || activity.image;
@@ -335,6 +362,110 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                 itemTitle={sessionLabel}
                 type={isCourse ? "محاضرة" : typeWord}
               />
+            </div>
+          )}
+
+          {/* بطاقة فريق العمل المخصص للطالب في هذه الجلسة */}
+          {myTeam && (
+            <div
+              className="mt-6 rounded-3xl border bg-card p-5 sm:p-6 shadow-sm overflow-hidden relative"
+              style={{ borderColor: `${myTeam.color}50` }}
+            >
+              <div
+                className="absolute top-0 right-0 left-0 h-1.5"
+                style={{ backgroundColor: myTeam.color }}
+              />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl text-2xl shadow-inner shrink-0"
+                    style={{ backgroundColor: `${myTeam.color}20`, border: `1px solid ${myTeam.color}50` }}
+                  >
+                    {myTeam.icon || "🛡️"}
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-black text-foreground">
+                        فريقك في الورشة: {myTeam.name}
+                      </h3>
+                      {myTeam.members.find((m) => m.userId === user?.id)?.role === "LEADER" ? (
+                        <span className="rounded-full bg-gold/20 text-gold-light border border-gold/40 px-2.5 py-0.5 text-[10px] font-black flex items-center gap-1">
+                          <Crown className="h-3 w-3" /> أنت قائد الفريق
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-muted text-muted-foreground px-2.5 py-0.5 text-[10px] font-bold">
+                          عضو في الفريق
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      تم توزيعك ضمن هذا الفريق للعمل الجماعي وتطبيق مهام وتكليفات الورشة.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {myTeam.whatsappUrl && (
+                    <a
+                      href={myTeam.whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#20ba59] px-4 py-2.5 text-xs font-black text-white shadow-sm transition-all hover:scale-[1.02]"
+                    >
+                      <WhatsAppIcon className="h-4 w-4" />
+                      جروب واتساب الفريق 💬
+                    </a>
+                  )}
+                  {myTeam.telegramUrl && (
+                    <a
+                      href={myTeam.telegramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#229ED9] hover:bg-[#1e8ec3] px-3 py-2 text-xs font-black text-white shadow-sm"
+                    >
+                      <TelegramIcon className="h-3.5 w-3.5" />
+                      تليجرام الفريق
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* زملاؤك في الفريق */}
+              <div className="mt-4">
+                <p className="text-xs font-extrabold text-foreground mb-2.5 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5 text-gold" />
+                  <span>زملاؤك في الفريق ({myTeam.members.length} أعضاء):</span>
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {myTeam.members.map((m) => {
+                    const isLeader = m.role === "LEADER";
+                    const isMe = m.userId === user?.id;
+                    const name = m.user.profile?.fullName || m.user.displayName || "طالب";
+                    return (
+                      <div
+                        key={m.userId}
+                        className={`flex items-center gap-2.5 rounded-xl p-2 text-xs transition-colors border ${
+                          isMe
+                            ? "bg-gold/10 border-gold/40 text-foreground font-bold"
+                            : "bg-muted/30 border-border text-foreground"
+                        }`}
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-xs">
+                          {isLeader ? "👑" : "🛡️"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-[11px] leading-tight">
+                            {name} {isMe && "(أنت)"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {isLeader ? "قائد الفريق" : "عضو في الفريق"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

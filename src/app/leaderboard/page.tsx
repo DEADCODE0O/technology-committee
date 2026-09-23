@@ -256,9 +256,113 @@ export default async function LeaderboardPage({
             </div>
           )}
 
-          {/* حالة 3: ثلاثة طلاب فأكثر (المنصة الأولمبية الكاملة 2 - 1 - 3) */}
+          {/* حالة 3: ثلاثة طلاب فأكثر */}
           {rows.length >= 3 && first && second && third && (
-            <div className="mb-14 grid grid-cols-3 items-end gap-2.5 sm:gap-6 max-w-4xl mx-auto" aria-label="أفضل ثلاثة طلاب">
+            <>
+              {/* 📱 عرض الهواتف الذكية (< sm): ترتيب فاخر ومريح دون تكدس */}
+              <div className="sm:hidden space-y-4 mb-10" aria-label="أفضل ثلاثة طلاب على الموبايل">
+                {/* 🥇 بطل المنصة - المركز الأول */}
+                <div className="relative overflow-hidden rounded-3xl border-2 border-gold/70 bg-gradient-to-b from-surface via-[#16130b] to-surface p-5 text-center shadow-[0_0_40px_-10px_rgba(201,164,92,0.45)]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="flex items-center gap-1.5 rounded-full bg-gold/20 px-3 py-1 text-xs font-black text-gold-light border border-gold/50 shadow-sm">
+                      <Crown className="h-4 w-4 text-gold inline" />
+                      🥇 بطل المنصة — المركز الأول
+                    </span>
+                    <span className="text-xl font-black text-gold-light">#1</span>
+                  </div>
+
+                  <div className="my-3 flex justify-center">
+                    <AvatarWithFrame
+                      name={first.fullName}
+                      avatarUrl={first.avatarUrl}
+                      frameId={first.avatarFrameId}
+                      size="xl"
+                      level={first.level}
+                      showLevel
+                    />
+                  </div>
+
+                  <h3 className="text-lg font-black text-zinc-50 flex items-center justify-center gap-1.5">
+                    <LeveledName name={first.fullName} level={first.level} size="md" showLevelChip={false} />
+                  </h3>
+                  <p className="mt-0.5 text-xs text-zinc-400">
+                    {GRADE_LABELS[first.grade] ?? "—"} — {SECTION_LABELS[first.section] ?? "—"}
+                  </p>
+
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-gold/15 border border-gold/40 px-5 py-2">
+                    <span className="text-2xl font-black text-gold-light">{first.points}</span>
+                    <span className="text-xs font-bold text-zinc-400">نقطة تميز</span>
+                  </div>
+                </div>
+
+                {/* 🥈 المركز الثاني و 🥉 المركز الثالث */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 🥈 المركز الثاني */}
+                  <div className="rounded-2xl border border-zinc-500/40 bg-surface/90 p-3.5 text-center shadow-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="rounded-full bg-zinc-800/80 px-2 py-0.5 text-[10px] font-extrabold text-zinc-300 border border-zinc-600/40">
+                        🥈 المركز الثاني
+                      </span>
+                      <span className="text-sm font-black text-zinc-400">#2</span>
+                    </div>
+
+                    <div className="my-2 flex justify-center">
+                      <AvatarWithFrame
+                        name={second.fullName}
+                        avatarUrl={second.avatarUrl}
+                        frameId={second.avatarFrameId}
+                        size="md"
+                        level={second.level}
+                        showLevel
+                      />
+                    </div>
+
+                    <h3 className="text-xs font-bold truncate text-foreground">
+                      {second.fullName}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                      {GRADE_LABELS[second.grade] ?? "—"}
+                    </p>
+                    <p className="mt-2 text-sm font-black text-zinc-200">
+                      {second.points} <span className="text-[10px] text-zinc-500">نقطة</span>
+                    </p>
+                  </div>
+
+                  {/* 🥉 المركز الثالث */}
+                  <div className="rounded-2xl border border-amber-700/40 bg-surface/90 p-3.5 text-center shadow-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="rounded-full bg-amber-950/80 px-2 py-0.5 text-[10px] font-extrabold text-amber-400 border border-amber-700/40">
+                        🥉 المركز الثالث
+                      </span>
+                      <span className="text-sm font-black text-amber-500">#3</span>
+                    </div>
+
+                    <div className="my-2 flex justify-center">
+                      <AvatarWithFrame
+                        name={third.fullName}
+                        avatarUrl={third.avatarUrl}
+                        frameId={third.avatarFrameId}
+                        size="md"
+                        level={third.level}
+                        showLevel
+                      />
+                    </div>
+
+                    <h3 className="text-xs font-bold truncate text-foreground">
+                      {third.fullName}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 truncate mt-0.5">
+                      {GRADE_LABELS[third.grade] ?? "—"}
+                    </p>
+                    <p className="mt-2 text-sm font-black text-amber-400">
+                      {third.points} <span className="text-[10px] text-zinc-500">نقطة</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 🖥️ عرض الشاشات الأكبر (>= sm): المنصة الأولمبية الكاملة 2 - 1 - 3 */}
+              <div className="hidden sm:grid sm:grid-cols-3 items-end gap-6 max-w-4xl mx-auto mb-14" aria-label="أفضل ثلاثة طلاب">
               {/* 🥈 المركز الثاني (يسار الأول أولمبياً) */}
               <div className="flex flex-col items-center">
                 <div className="w-full rounded-2xl sm:rounded-3xl border border-zinc-500/40 bg-surface/90 p-3 sm:p-5 text-center shadow-lg transition-transform hover:-translate-y-1">
@@ -364,7 +468,8 @@ export default async function LeaderboardPage({
                   <span className="text-xl sm:text-2xl font-black text-amber-500">#3</span>
                 </div>
               </div>
-            </div>
+              </div>
+            </>
           )}
 
           {/* ═══════════════════════════════════════════════════════════════

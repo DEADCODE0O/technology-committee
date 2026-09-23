@@ -14,7 +14,7 @@ const TEAM_COLORS = [
 const TEAM_ICONS = ["🛡️", "⚡", "🚀", "🔥", "💎", "🌟", "🎯", "👑", "🦁", "🦅"];
 
 export interface DistributeStudentsInput {
-  source: "ALL_STUDENTS" | "ACTIVITY" | "SESSION" | "CUSTOM";
+  source: "ALL_STUDENTS" | "ACTIVITY" | "SESSION" | "SESSION_ATTENDEES" | "CUSTOM";
   activityId?: string;
   sessionId?: string;
   userIds?: string[];
@@ -25,6 +25,7 @@ export interface DistributeStudentsInput {
   existingTeamIds?: string[];
   newTeamCount?: number;
   newTeamPrefix?: string;
+  whatsappUrls?: string[];
 
   constraints?: {
     maxPerTeam?: number;
@@ -91,6 +92,28 @@ export async function distributeStudentsToTeams(
         }
       }
       candidateUsers = Array.from(uniqueMap.values());
+    } else if (input.source === "SESSION_ATTENDEES" && input.sessionId) {
+      const registrations = await db.registration.findMany({
+        where: {
+          sessionId: input.sessionId,
+          status: "REGISTERED",
+          attendance: {
+            some: {
+              sessionId: input.sessionId,
+              present: true,
+            },
+          },
+        },
+        include: { user: { include: { profile: true } } },
+      });
+      for (const r of registrations) {
+        if (!r.user || !r.userId) continue;
+        candidateUsers.push({
+          id: r.user.id,
+          name: r.user.displayName || r.user.profile?.fullName || r.fullName || r.user.email,
+          gender: r.user.profile?.gender || r.gender || "MALE",
+        });
+      }
     } else if (input.source === "SESSION" && input.sessionId) {
       const registrations = await db.registration.findMany({
         where: {
@@ -103,8 +126,8 @@ export async function distributeStudentsToTeams(
         if (!r.user || !r.userId) continue;
         candidateUsers.push({
           id: r.user.id,
-          name: r.user.displayName || r.user.profile?.fullName || r.user.email,
-          gender: r.user.profile?.gender || "MALE",
+          name: r.user.displayName || r.user.profile?.fullName || r.fullName || r.user.email,
+          gender: r.user.profile?.gender || r.gender || "MALE",
         });
       }
     } else if (input.source === "CUSTOM" && input.userIds && input.userIds.length > 0) {
@@ -120,7 +143,7 @@ export async function distributeStudentsToTeams(
     }
 
     if (candidateUsers.length === 0) {
-      return { ok: false, error: "لم يتم العثور على طلاب مستهدفين للتوزيع" };
+      return { ok: false, error: input.source === "SESSION_ATTENDEES" ? "لم يحضر أي طالب بعد في هذه الجلسة" : "لم يتم العثور على طلاب مستهدفين للتوزيع" };
     }
 
     // ── 2. تطبيق خوارزمية الترتيب والفرز ──
@@ -164,10 +187,17 @@ export async function distributeStudentsToTeams(
     interface TargetTeam {
       id: string;
       name: string;
+      whatsappUrl?: string | null;
       members: { id: string; name: string; gender: string }[];
     }
 
     let targetTeams: TargetTeam[] = [];
+
+    let resolvedActivityId = input.activityId;
+    if (!resolvedActivityId && input.sessionId) {
+      const sess = await db.session.findUnique({ where: { id: input.sessionId }, select: { activityId: true } });
+      resolvedActivityId = sess?.activityId;
+    }
 
     if (input.targetMode === "EXISTING_TEAMS" && input.existingTeamIds && input.existingTeamIds.length > 0) {
       const existing = await db.team.findMany({
@@ -176,50 +206,50 @@ export async function distributeStudentsToTeams(
       if (existing.length === 0) {
         return { ok: false, error: "الفرق المحددة غير موجودة" };
       }
-      targetTeams = existing.map((t) => ({ id: t.id, name: t.name, members: [] }));
+      targetTeams = existing.map((t) => ({ id: t.id, name: t.name, whatsappUrl: t.whatsappUrl, members: [] }));
     } else {
       const teamCount = Math.max(2, input.newTeamCount || Math.ceil(orderedStudents.length / 5));
       const prefix = input.newTeamPrefix?.trim() || "فريق";
 
+      // عدد الفرق السابقة للجلسة لتسمية متسلسلة نظيفة
+      const prevTeamsCount = input.sessionId ? await db.team.count({ where: { sessionId: input.sessionId } }) : 0;
+
       if (dryRun) {
         // محاكاة فقط
         for (let i = 1; i <= teamCount; i++) {
+          const num = prevTeamsCount + i;
           targetTeams.push({
             id: `temp-${i}`,
-            name: `${prefix} ${i}`,
+            name: `${prefix} ${num}`,
+            whatsappUrl: input.whatsappUrls?.[i - 1]?.trim() || null,
             members: [],
           });
         }
       } else {
-        // إنشاء الفرق فعلياً في قاعدة البيانات مع شات تلقائي لكل فريق
+        // إنشاء الفرق فعلياً في قاعدة البيانات
         for (let i = 1; i <= teamCount; i++) {
           const color = TEAM_COLORS[(i - 1) % TEAM_COLORS.length];
           const icon = TEAM_ICONS[(i - 1) % TEAM_ICONS.length];
-          const uniqueName = `${prefix} ${i} (${Date.now().toString().slice(-4)})`;
+          const num = prevTeamsCount + i;
+          const cleanName = `${prefix} ${num}`;
+          const whatsappUrl = input.whatsappUrls?.[i - 1]?.trim() || null;
 
           const newTeam = await db.team.create({
             data: {
-              name: uniqueName,
+              name: cleanName,
               color,
               icon,
-              description: `فريق تم إنشاؤه عبر التوزيع الذكي (${input.method})`,
-            },
-          });
-
-          // إنشاء شات الفريق
-          await db.chatRoom.create({
-            data: {
-              name: `شات ${newTeam.name}`,
-              type: "TEAM",
-              teamId: newTeam.id,
-              icon,
-              description: `غرفة التنسيق والمحادثة لأعضاء ${newTeam.name}`,
+              sessionId: input.sessionId || null,
+              activityId: resolvedActivityId || null,
+              whatsappUrl,
+              description: input.sessionId ? `فريق عمل في الجلسة (${input.method})` : `فريق تم إنشاؤه عبر التوزيع الذكي (${input.method})`,
             },
           });
 
           targetTeams.push({
             id: newTeam.id,
             name: newTeam.name,
+            whatsappUrl: newTeam.whatsappUrl,
             members: [],
           });
         }
@@ -274,8 +304,15 @@ export async function distributeStudentsToTeams(
       });
 
       revalidatePath("/admin/teams");
-      revalidatePath("/messages");
       revalidatePath("/panel");
+      if (input.sessionId) {
+        revalidatePath(`/admin/sessions/${input.sessionId}`);
+        revalidatePath(`/sessions/${input.sessionId}`);
+      }
+      if (resolvedActivityId) {
+        revalidatePath(`/admin/activities/${resolvedActivityId}`);
+        revalidatePath(`/activities/${resolvedActivityId}`);
+      }
     }
 
     return {

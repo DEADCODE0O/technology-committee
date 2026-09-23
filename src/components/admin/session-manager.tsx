@@ -8,7 +8,7 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck, Maximize2, Download, Eye, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck, Maximize2, Download, Eye, Image as ImageIcon, MessageCircle } from "lucide-react";
 import { saveSession, deleteSession, toggleSessionRegistration } from "@/actions/activities";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,6 +36,8 @@ export type AdminSession = {
   onlineLabel: string | null;
   materialUrl: string | null;
   materialLabel: string | null;
+  whatsappUrl?: string | null;
+  telegramUrl?: string | null;
   status: string;
   qrToken: string;
   // التسجيل
@@ -63,6 +65,8 @@ type FormState = {
   onlineLabel: string;
   materialUrl: string;
   materialLabel: string;
+  whatsappUrl: string;
+  telegramUrl: string;
   status: string;
   // التسجيل
   seats: string;
@@ -118,6 +122,8 @@ export function SessionManager({
       presenter: "",
       onlineUrl: "", onlineLabel: "",
       materialUrl: "", materialLabel: "",
+      whatsappUrl: "",
+      telegramUrl: "",
       status: "SCHEDULED",
       seats: "50",
       registrationOpensAt: "",
@@ -152,6 +158,8 @@ export function SessionManager({
       onlineLabel: s.onlineLabel ?? "",
       materialUrl: s.materialUrl ?? "",
       materialLabel: s.materialLabel ?? "",
+      whatsappUrl: s.whatsappUrl ?? "",
+      telegramUrl: s.telegramUrl ?? "",
       status: s.status,
       seats: String(s.seats),
       registrationOpensAt: toLocalInput(s.registrationOpensAt),
@@ -181,6 +189,8 @@ export function SessionManager({
         onlineLabel: form.onlineLabel || undefined,
         materialUrl: form.materialUrl || undefined,
         materialLabel: form.materialLabel || undefined,
+        whatsappUrl: form.whatsappUrl || undefined,
+        telegramUrl: form.telegramUrl || undefined,
         status: form.status,
         seats: Number(form.seats) || 50,
         registrationOpensAt: toUtcIso(form.registrationOpensAt) || undefined,
@@ -272,8 +282,18 @@ export function SessionManager({
                   {s.registrationClosesAt ? ` · يقفل ${formatCairoDate(s.registrationClosesAt, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true })}` : ""}
                   {" · "}{CLOSING_MODES.find((m) => m.value === s.closingMode)?.label ?? s.closingMode}
                 </p>
-                {(s.materialUrl || s.onlineUrl) && (
+                {(s.materialUrl || s.onlineUrl || s.whatsappUrl || s.telegramUrl) && (
                   <div className="mt-2 flex flex-wrap gap-2">
+                    {s.whatsappUrl && (
+                      <a href={s.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 hover:bg-emerald-500/20">
+                        <MessageCircle className="h-3 w-3" /> جروب واتساب
+                      </a>
+                    )}
+                    {s.telegramUrl && (
+                      <a href={s.telegramUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-400 hover:bg-sky-500/20">
+                        ✈️ تليجرام
+                      </a>
+                    )}
                     {s.materialUrl && (
                       <a href={s.materialUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] font-bold text-zinc-300 hover:border-gold/30">
                         📁 {s.materialLabel || "المواد"} {detectLinkType(s.materialUrl) === "DRIVE" ? "(درايف)" : ""}
@@ -466,6 +486,25 @@ export function SessionManager({
               <div className="space-y-1.5">
                 <Label className="text-xs text-zinc-400">اسم زر البث</Label>
                 <Input value={form.onlineLabel} onChange={(e) => setForm((p) => ({ ...p, onlineLabel: e.target.value }))} placeholder="انضم أونلاين" className="text-xs" />
+              </div>
+            </div>
+          </div>
+
+          {/* ── جروبات وتواصل الجلسة (واتساب وتليجرام) ── */}
+          <div className="space-y-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.03] p-4">
+            <p className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-400">
+              <MessageCircle className="h-3.5 w-3.5 text-emerald-400" /> مجموعة التواصل الخاصة بهذه الجلسة (تظهر للمقبولين فقط)
+            </p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300">رابط مجموعة WhatsApp (اختياري)</Label>
+                <Input dir="ltr" value={form.whatsappUrl} onChange={(e) => setForm((p) => ({ ...p, whatsappUrl: e.target.value }))} placeholder="https://chat.whatsapp.com/..." className="text-xs" />
+                <p className="text-[10px] text-zinc-500">تواصل مباشر لطلاب هذه الجلسة أو المحاضرة</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-zinc-300">رابط قناة/مجموعة Telegram (اختياري)</Label>
+                <Input dir="ltr" value={form.telegramUrl} onChange={(e) => setForm((p) => ({ ...p, telegramUrl: e.target.value }))} placeholder="https://t.me/..." className="text-xs" />
+                <p className="text-[10px] text-zinc-500">قناة التنبيهات أو المناقشات للجلسة</p>
               </div>
             </div>
           </div>

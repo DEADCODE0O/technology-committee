@@ -10,6 +10,8 @@ import { AttendanceBoard, type AttendanceRowData } from "@/components/admin/atte
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
 import { ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
 import { formatCairoDate } from "@/lib/dates";
+import { SessionTeamsManager } from "@/components/admin/session-teams-manager";
+import { WhatsAppIcon, TelegramIcon } from "@/components/platform/community-links-card";
 
 export const dynamic = "force-dynamic";
 
@@ -57,10 +59,43 @@ export default async function AdminSessionPage({
     seats: session.seats,
   });
 
+  const teams = await db.team.findMany({
+    where: { sessionId: session.id },
+    include: {
+      members: {
+        include: {
+          user: {
+            include: { profile: true },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const candidateStudents = session.registrations
+    .filter((r) => r.status === "REGISTERED" && r.userId)
+    .map((r) => {
+      const attended = r.attendance.some((a) => a.sessionId === session.id && a.present);
+      const teamMembership = teams.find((t) => t.members.some((m) => m.userId === r.userId));
+      return {
+        userId: r.userId!,
+        fullName: r.fullName,
+        email: r.email,
+        phone: r.phone,
+        gender: r.gender,
+        grade: r.grade,
+        section: r.section,
+        attended,
+        teamId: teamMembership?.id ?? null,
+      };
+    });
+
   const TABS = [
     { key: "details", label: "بيانات الجلسة" },
     { key: "participants", label: `المشاركون (${registeredCount}/${session.seats})` },
     { key: "attendance", label: "الحضور وQR" },
+    { key: "teams", label: `فرق الورشة (${teams.length})` },
   ];
   const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "details";
 
@@ -126,6 +161,8 @@ export default async function AdminSessionPage({
     onlineLabel: session.onlineLabel,
     materialUrl: session.materialUrl,
     materialLabel: session.materialLabel,
+    whatsappUrl: session.whatsappUrl,
+    telegramUrl: session.telegramUrl,
     status: session.status,
     qrToken: session.qrToken,
     seats: session.seats,
@@ -179,6 +216,51 @@ export default async function AdminSessionPage({
           </p>
         </div>
       </div>
+
+      {/* بانر روابط جروبات التواصل للأدمن */}
+      {(session.whatsappUrl || session.telegramUrl || activity.whatsappUrl || activity.telegramUrl) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+              <WhatsAppIcon className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-foreground">
+                {session.whatsappUrl || session.telegramUrl
+                  ? "مجموعة تواصل مخصصة لهذه الجلسة مفعّلة 💬"
+                  : "مجموعة التواصل موروثة من الورشة العامة 💬"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                تظهر تلقائياً للطلاب المقبولين فقط في صفحة المحاضرة والورشة.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(session.whatsappUrl || activity.whatsappUrl) && (
+              <a
+                href={(session.whatsappUrl || activity.whatsappUrl)!}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-sm"
+              >
+                <WhatsAppIcon className="h-3.5 w-3.5" />
+                فتح جروب الواتساب ↗
+              </a>
+            )}
+            {(session.telegramUrl || activity.telegramUrl) && (
+              <a
+                href={(session.telegramUrl || activity.telegramUrl)!}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-sky-700 shadow-sm"
+              >
+                <TelegramIcon className="h-3.5 w-3.5" />
+                فتح التليجرام ↗
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* التابات */}
       <nav className="flex flex-wrap gap-2 border-b border-white/[0.06] pb-3" role="tablist">
@@ -247,6 +329,46 @@ export default async function AdminSessionPage({
           sessionState={state}
           rows={attendanceRows}
           canManage={canAttendance}
+        />
+      )}
+
+      {activeTab === "teams" && (
+        <SessionTeamsManager
+          sessionId={session.id}
+          activityId={activity.id}
+          sessionTitle={sessionLabel}
+          activityTitle={activity.title}
+          teams={teams.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            color: t.color,
+            icon: t.icon,
+            whatsappUrl: t.whatsappUrl,
+            telegramUrl: t.telegramUrl,
+            members: t.members.map((m) => ({
+              userId: m.userId,
+              role: m.role,
+              user: {
+                id: m.user.id,
+                displayName: m.user.displayName,
+                email: m.user.email,
+                level: 1,
+                avatarUrl: m.user.avatarUrl,
+                avatarFrameId: m.user.avatarFrameId,
+                profile: m.user.profile
+                  ? {
+                      fullName: m.user.profile.fullName,
+                      phone: m.user.profile.phone,
+                      gender: m.user.profile.gender,
+                      grade: m.user.profile.grade,
+                      section: m.user.profile.section,
+                    }
+                  : null,
+              },
+            })),
+          }))}
+          candidates={candidateStudents}
         />
       )}
     </div>

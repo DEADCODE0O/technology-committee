@@ -100,6 +100,8 @@ export default async function AdminActivityDetailPage({
       onlineLabel: s.onlineLabel,
       materialUrl: s.materialUrl,
       materialLabel: s.materialLabel,
+      whatsappUrl: s.whatsappUrl,
+      telegramUrl: s.telegramUrl,
       status: s.status,
       qrToken: s.qrToken,
       seats: s.seats,
