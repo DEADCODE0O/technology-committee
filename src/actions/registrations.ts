@@ -32,14 +32,20 @@ async function promoteFromWaitlist(
   sessionId: string,
   adminId?: string
 ): Promise<{ id: string; waitlistOrder: number | null } | null> {
-  for (let i = 0; i < 5; i++) {
-    const session = await db.session.findUnique({ where: { id: sessionId } });
+  const promoted = await db.$transaction(async (tx) => {
+    // قفل حصري على صف الجلسة لمنع ترقية متزامنة مكررة
+    await tx.session.update({
+      where: { id: sessionId },
+      data: { updatedAt: new Date() },
+    });
+
+    const session = await tx.session.findUnique({ where: { id: sessionId } });
     if (!session) return null;
-    const registered = await countRegistered(sessionId);
+    const registered = await tx.registration.count({ where: { sessionId, status: "REGISTERED" } });
     if (registered >= session.seats) return null;
 
     // الأولوية الأولى: الطلاب الملتزمون الذين لم يُقيد حضورهم
-    let next = await db.registration.findFirst({
+    let next = await tx.registration.findFirst({
       where: {
         sessionId,
         status: "WAITLISTED",
@@ -53,7 +59,7 @@ async function promoteFromWaitlist(
 
     // في حال عدم وجود طلاب ملتزمين في الانتظار، يتم ترقية الباقين
     if (!next) {
-      next = await db.registration.findFirst({
+      next = await tx.registration.findFirst({
         where: { sessionId, status: "WAITLISTED" },
         orderBy: [{ waitlistOrder: "asc" }, { createdAt: "asc" }],
       });
@@ -61,21 +67,24 @@ async function promoteFromWaitlist(
 
     if (!next) return null;
 
-    await db.registration.update({
+    await tx.registration.update({
       where: { id: next.id },
       data: { status: "REGISTERED", waitlistOrder: null },
     });
-    if (adminId) {
-      await logAudit({
-        action: "WAITLIST_PROMOTED",
-        entity: "REGISTRATION",
-        entityId: next.id,
-        summary: `ترقية من قائمة الانتظار: ${next.fullName}`,
-      });
-    }
-    return { id: next.id, waitlistOrder: next.waitlistOrder };
+
+    return { id: next.id, waitlistOrder: next.waitlistOrder, fullName: next.fullName };
+  });
+
+  if (promoted && adminId) {
+    await logAudit({
+      action: "WAITLIST_PROMOTED",
+      entity: "REGISTRATION",
+      entityId: promoted.id,
+      summary: `ترقية من قائمة الانتظار: ${promoted.fullName}`,
+    });
   }
-  return null;
+
+  return promoted ? { id: promoted.id, waitlistOrder: promoted.waitlistOrder } : null;
 }
 
 // ─── تسجيل عضو (طالب لديه حساب) ─────────────────────────────
@@ -95,25 +104,28 @@ export async function registerToSession(
     if (!session) return { ok: false, error: "الجلسة غير موجودة" };
     if (session.activity.publish !== "PUBLISHED") return { ok: false, error: "هذا النشاط غير متاح حاليًا" };
 
-    const registered = await countRegistered(sessionId);
-    const decision = decideRegistration({
-      session: {
-        registrationOpensAt: session.registrationOpensAt,
-        registrationClosesAt: session.registrationClosesAt,
-        startsAt: session.startsAt,
-        endsAt: session.endsAt,
-        closingMode: session.closingMode,
-        registrationOpen: session.registrationOpen,
-      },
-      registeredCount: registered,
-      seats: session.seats,
-    });
+    // تحقق من الأسئلة الإلزامية (أسئلة النشاط — تُسأل مرة واحدة)
+    for (const field of session.activity.formFields) {
+      if (field.required) {
+        const val = answers[field.id];
+        const empty = val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0);
+        if (empty) return { ok: false, error: `السؤال «${field.label}» إلزامي` };
+      }
+    }
 
-    // الأدمن؟ يتجاوز كل القيود إذا كان التجاوز مسموحًا لهذه الجلسة
     const adminBypass = isAdminRole(user.role) && session.allowAdminOverride;
+    const isAttendanceRestricted = user.attendanceRestricted || (user.unexcusedAbsences ?? 0) >= 3;
 
-    if (!decision.open && !adminBypass) {
-      if (decision.reason === "FULL" && waitlistAvailable({
+    const txResult = await db.$transaction(async (tx) => {
+      // قفل حصري على صف الجلسة لمنع أي سباق تزامني (Race Condition) عند امتلاء المقاعد
+      await tx.session.update({
+        where: { id: sessionId },
+        data: { updatedAt: new Date() },
+      });
+
+      const registered = await tx.registration.count({ where: { sessionId, status: "REGISTERED" } });
+
+      const decision = decideRegistration({
         session: {
           registrationOpensAt: session.registrationOpensAt,
           registrationClosesAt: session.registrationClosesAt,
@@ -124,57 +136,79 @@ export async function registerToSession(
         },
         registeredCount: registered,
         seats: session.seats,
-      })) {
-        // السعة مكتملة والتاريخ لم يغلق → قائمة انتظار (نكمل بالأسفل)
+      });
+
+      if (!decision.open && !adminBypass) {
+        if (decision.reason === "FULL" && waitlistAvailable({
+          session: {
+            registrationOpensAt: session.registrationOpensAt,
+            registrationClosesAt: session.registrationClosesAt,
+            startsAt: session.startsAt,
+            endsAt: session.endsAt,
+            closingMode: session.closingMode,
+            registrationOpen: session.registrationOpen,
+          },
+          registeredCount: registered,
+          seats: session.seats,
+        })) {
+          // السعة مكتملة والتاريخ لم يغلق → قائمة انتظار (نكمل بالأسفل)
+        } else {
+          return { ok: false as const, error: decision.message };
+        }
+      }
+
+      // تسجيل سابق؟
+      const existing = await tx.registration.findUnique({
+        where: { sessionId_userId: { sessionId, userId: user.id } },
+      });
+      if (existing && existing.status !== "CANCELLED") {
+        return {
+          ok: false as const,
+          error: existing.status === "WAITLISTED" ? "أنت بالفعل في قائمة الانتظار" : "أنت مسجل بالفعل في هذه الجلسة",
+        };
+      }
+
+      const willWaitlist = !adminBypass && (registered >= session.seats || isAttendanceRestricted);
+      const waitlistOrder = willWaitlist
+        ? (await tx.registration.count({ where: { sessionId, status: "WAITLISTED" } })) + 1
+        : null;
+
+      const data = {
+        sessionId,
+        userId: user.id,
+        fullName: user.profile?.fullName ?? user.email,
+        phone: user.profile?.phone ?? null,
+        email: user.email,
+        grade: user.profile?.grade ?? null,
+        section: user.profile?.section ?? null,
+        gender: user.profile?.gender ?? null,
+        studentCode: user.profile?.studentCode ?? null,
+        answers: Object.keys(answers).length ? JSON.stringify(answers) : null,
+        source: "ACCOUNT",
+        status: willWaitlist ? "WAITLISTED" : "REGISTERED",
+        waitlistOrder,
+      };
+
+      if (existing) {
+        await tx.registration.update({ where: { id: existing.id }, data });
       } else {
-        return { ok: false, error: decision.message };
+        await tx.registration.create({ data });
       }
-    }
 
-    // تحقق من الأسئلة الإلزامية (أسئلة النشاط — تُسأل مرة واحدة)
-    for (const field of session.activity.formFields) {
-      if (field.required) {
-        const val = answers[field.id];
-        const empty = val === undefined || val === null || val === "" || (Array.isArray(val) && val.length === 0);
-        if (empty) return { ok: false, error: `السؤال «${field.label}» إلزامي` };
-      }
-    }
-
-    // تسجيل سابق؟
-    const existing = await db.registration.findUnique({
-      where: { sessionId_userId: { sessionId, userId: user.id } },
+      return {
+        ok: true as const,
+        isNew: !existing,
+        willWaitlist,
+        registered,
+        fullName: data.fullName,
+      };
     });
-    if (existing && existing.status !== "CANCELLED") {
-      return { ok: false, error: existing.status === "WAITLISTED" ? "أنت بالفعل في قائمة الانتظار" : "أنت مسجل بالفعل في هذه الجلسة" };
+
+    if (!txResult.ok) {
+      return { ok: false, error: txResult.error };
     }
 
-    // فحص تقييد الحضور (3 غيابات بدون عذر)
-    const isAttendanceRestricted = user.attendanceRestricted || (user.unexcusedAbsences ?? 0) >= 3;
-    const willWaitlist = !adminBypass && (registered >= session.seats || isAttendanceRestricted);
-    const waitlistOrder = willWaitlist
-      ? (await db.registration.count({ where: { sessionId, status: "WAITLISTED" } })) + 1
-      : null;
-
-    const data = {
-      sessionId,
-      userId: user.id,
-      fullName: user.profile?.fullName ?? user.email,
-      phone: user.profile?.phone ?? null,
-      email: user.email,
-      grade: user.profile?.grade ?? null,
-      section: user.profile?.section ?? null,
-      gender: user.profile?.gender ?? null,
-      studentCode: user.profile?.studentCode ?? null,
-      answers: Object.keys(answers).length ? JSON.stringify(answers) : null,
-      source: "ACCOUNT",
-      status: willWaitlist ? "WAITLISTED" : "REGISTERED",
-      waitlistOrder,
-    };
-
-    if (existing) {
-      await db.registration.update({ where: { id: existing.id }, data });
-    } else {
-      await db.registration.create({ data });
+    if (txResult.isNew) {
       // تقييم الإنجازات المتعلقة بالمشاركة (فعاليات/مسابقات)
       try {
         const { evaluateQuests } = await import("@/lib/progress");
@@ -183,18 +217,18 @@ export async function registerToSession(
     }
 
     await logAudit({
-      action: willWaitlist ? "WAITLIST_JOINED" : "SESSION_REGISTERED",
+      action: txResult.willWaitlist ? "WAITLIST_JOINED" : "SESSION_REGISTERED",
       entity: "REGISTRATION",
       entityId: sessionId,
-      summary: `${data.fullName} — ${willWaitlist ? (isAttendanceRestricted ? "انضم لقائمة الانتظار (تقييد بسبب 3 غيابات)" : "انضم لقائمة انتظار") : "سجل في"} «${session.activity.title} — ${session.title}»`,
+      summary: `${txResult.fullName} — ${txResult.willWaitlist ? (isAttendanceRestricted ? "انضم لقائمة الانتظار (تقييد بسبب 3 غيابات)" : "انضم لقائمة انتظار") : "سجل في"} «${session.activity.title} — ${session.title}»`,
     });
 
     refresh(sessionId, session.activityId);
     return {
       ok: true,
-      waitlisted: willWaitlist,
+      waitlisted: txResult.willWaitlist,
       restrictedNotice:
-        willWaitlist && isAttendanceRestricted && registered < session.seats
+        txResult.willWaitlist && isAttendanceRestricted && txResult.registered < session.seats
           ? "نظراً لوجود 3 غيابات سابقة في الورش بدون عذر، تم نقلك لقائمة الانتظار تلقائياً لإعطاء الأولوية للطلاب الملتزمين."
           : undefined,
     };
@@ -272,58 +306,72 @@ export async function addManualRegistration(
     const session = await db.session.findUnique({ where: { id: input.sessionId }, include: { activity: true } });
     if (!session) return { ok: false, error: "الجلسة غير موجودة" };
 
-    // منع التكرار: نفس الهاتف بنفس الجلسة
-    const dup = await db.registration.findFirst({
-      where: { sessionId: input.sessionId, phone, status: { not: "CANCELLED" } },
-    });
-    if (dup) return { ok: false, error: "هذا الرقم مسجل بالفعل في هذه الجلسة" };
-
-    // الإضافة اليدوية تتجاوز العدد ووقت الإغلاق — فقط إذا كان التجاوز مفعّلًا لهذه الجلسة
-    if (!session.allowAdminOverride) {
-      const registered = await countRegistered(input.sessionId);
-      const decision = decideRegistration({
-        session: {
-          registrationOpensAt: session.registrationOpensAt,
-          registrationClosesAt: session.registrationClosesAt,
-          startsAt: session.startsAt,
-          endsAt: session.endsAt,
-          closingMode: session.closingMode,
-          registrationOpen: session.registrationOpen,
-        },
-        registeredCount: registered,
-        seats: session.seats,
+    const txResult = await db.$transaction(async (tx) => {
+      // قفل حصري على صف الجلسة
+      await tx.session.update({
+        where: { id: input.sessionId },
+        data: { updatedAt: new Date() },
       });
-      if (!decision.open) return { ok: false, error: `التجاوز الإداري معطّل لهذه الجلسة (${decision.message})` };
-    }
 
-    const registered = await countRegistered(input.sessionId);
-    const overCapacity = registered >= session.seats;
+      // منع التكرار: نفس الهاتف بنفس الجلسة
+      const dup = await tx.registration.findFirst({
+        where: { sessionId: input.sessionId, phone, status: { not: "CANCELLED" } },
+      });
+      if (dup) return { ok: false as const, error: "هذا الرقم مسجل بالفعل في هذه الجلسة" };
 
-    const reg = await db.registration.create({
-      data: {
-        sessionId: input.sessionId,
-        userId: null,
-        fullName,
-        phone,
-        email: (input.email || "").trim() || null,
-        grade: input.grade || null,
-        section: input.section || null,
-        gender: input.gender || null,
-        studentCode: (input.studentCode || "").trim() || null,
-        answers: input.answers && Object.keys(input.answers).length ? JSON.stringify(input.answers) : null,
-        source: "MANUAL",
-        status: "REGISTERED",
-        waitlistOrder: null,
-      },
+      const registered = await tx.registration.count({ where: { sessionId: input.sessionId, status: "REGISTERED" } });
+
+      // الإضافة اليدوية تتجاوز العدد ووقت الإغلاق — فقط إذا كان التجاوز مفعّلًا لهذه الجلسة
+      if (!session.allowAdminOverride) {
+        const decision = decideRegistration({
+          session: {
+            registrationOpensAt: session.registrationOpensAt,
+            registrationClosesAt: session.registrationClosesAt,
+            startsAt: session.startsAt,
+            endsAt: session.endsAt,
+            closingMode: session.closingMode,
+            registrationOpen: session.registrationOpen,
+          },
+          registeredCount: registered,
+          seats: session.seats,
+        });
+        if (!decision.open) return { ok: false as const, error: `التجاوز الإداري معطّل لهذه الجلسة (${decision.message})` };
+      }
+
+      const overCapacity = registered >= session.seats;
+
+      const reg = await tx.registration.create({
+        data: {
+          sessionId: input.sessionId,
+          userId: null,
+          fullName,
+          phone,
+          email: (input.email || "").trim() || null,
+          grade: input.grade || null,
+          section: input.section || null,
+          gender: input.gender || null,
+          studentCode: (input.studentCode || "").trim() || null,
+          answers: input.answers && Object.keys(input.answers).length ? JSON.stringify(input.answers) : null,
+          source: "MANUAL",
+          status: "REGISTERED",
+          waitlistOrder: null,
+        },
+      });
+
+      return { ok: true as const, reg, overCapacity, registered };
     });
+
+    if (!txResult.ok) {
+      return { ok: false, error: txResult.error };
+    }
 
     await logAudit({
       actor: admin,
       action: "MANUAL_REGISTRATION",
       entity: "REGISTRATION",
-      entityId: reg.id,
-      summary: `تسجيل يدوي: ${fullName} في «${session.activity.title} — ${session.title}»${overCapacity ? " — بتجاوز العدد المتاح" : ""}`,
-      details: { sessionId: input.sessionId, overCapacity, registeredBefore: registered, seats: session.seats },
+      entityId: txResult.reg.id,
+      summary: `تسجيل يدوي: ${fullName} في «${session.activity.title} — ${session.title}»${txResult.overCapacity ? " — بتجاوز العدد المتاح" : ""}`,
+      details: { sessionId: input.sessionId, overCapacity: txResult.overCapacity, registeredBefore: txResult.registered, seats: session.seats },
     });
 
     refresh(input.sessionId, session.activityId);
@@ -362,23 +410,6 @@ export async function guestRegisterToSession(
     if (session.activity.publish !== "PUBLISHED") return { ok: false, error: "هذا النشاط غير متاح حاليًا" };
     if (!session.allowGuests) return { ok: false, error: "هذه الجلسة للأعضاء المسجلين فقط" };
 
-    const registered = await countRegistered(input.sessionId);
-    const gate = {
-      session: {
-        registrationOpensAt: session.registrationOpensAt,
-        registrationClosesAt: session.registrationClosesAt,
-        startsAt: session.startsAt,
-        endsAt: session.endsAt,
-        closingMode: session.closingMode,
-        registrationOpen: session.registrationOpen,
-      },
-      registeredCount: registered,
-      seats: session.seats,
-    };
-    const decision = decideRegistration(gate);
-    const canWaitlist = decision.reason === "FULL" && waitlistAvailable(gate);
-    if (!decision.open && !canWaitlist) return { ok: false, error: decision.message };
-
     // لو مسجل دخوله كعضو — سجّل بحسابك بدل ضيف
     const user = await getCurrentUser();
     if (user) {
@@ -416,43 +447,80 @@ export async function guestRegisterToSession(
       }
     }
 
-    const dup = await db.registration.findFirst({
-      where: { sessionId: input.sessionId, phone, status: { not: "CANCELLED" } },
-    });
-    if (dup) return { ok: false, error: "هذا الرقم مسجل بالفعل في هذه الجلسة" };
+    const txResult = await db.$transaction(async (tx) => {
+      // قفل حصري على صف الجلسة لمنع السباق التزامني عند وصول تسجيلات متعددة في نفس اللحظة
+      await tx.session.update({
+        where: { id: input.sessionId },
+        data: { updatedAt: new Date() },
+      });
 
-    const isFull = registered >= session.seats;
-    const waitlistOrder = isFull
-      ? (await db.registration.count({ where: { sessionId: input.sessionId, status: "WAITLISTED" } })) + 1
-      : null;
+      const registered = await tx.registration.count({ where: { sessionId: input.sessionId, status: "REGISTERED" } });
 
-    const reg = await db.registration.create({
-      data: {
-        sessionId: input.sessionId,
-        userId: null,
-        fullName,
-        phone,
-        email: (input.email || "").trim() || null,
-        grade: input.grade || null,
-        section: input.section || null,
-        gender: input.gender || null,
-        studentCode: null,
-        answers: Object.keys(answers).length ? JSON.stringify(answers) : null,
-        source: "GUEST",
-        status: isFull ? "WAITLISTED" : "REGISTERED",
-        waitlistOrder,
-      },
+      const gate = {
+        session: {
+          registrationOpensAt: session.registrationOpensAt,
+          registrationClosesAt: session.registrationClosesAt,
+          startsAt: session.startsAt,
+          endsAt: session.endsAt,
+          closingMode: session.closingMode,
+          registrationOpen: session.registrationOpen,
+        },
+        registeredCount: registered,
+        seats: session.seats,
+      };
+      const decision = decideRegistration(gate);
+      const canWaitlist = decision.reason === "FULL" && waitlistAvailable(gate);
+      if (!decision.open && !canWaitlist) return { ok: false as const, error: decision.message };
+
+      const dup = await tx.registration.findFirst({
+        where: { sessionId: input.sessionId, phone, status: { not: "CANCELLED" } },
+      });
+      if (dup) return { ok: false as const, error: "هذا الرقم مسجل بالفعل في هذه الجلسة" };
+
+      const isFull = registered >= session.seats;
+      const waitlistOrder = isFull
+        ? (await tx.registration.count({ where: { sessionId: input.sessionId, status: "WAITLISTED" } })) + 1
+        : null;
+
+      const reg = await tx.registration.create({
+        data: {
+          sessionId: input.sessionId,
+          userId: null,
+          fullName,
+          phone,
+          email: (input.email || "").trim() || null,
+          grade: input.grade || null,
+          section: input.section || null,
+          gender: input.gender || null,
+          studentCode: null,
+          answers: Object.keys(answers).length ? JSON.stringify(answers) : null,
+          source: "GUEST",
+          status: isFull ? "WAITLISTED" : "REGISTERED",
+          waitlistOrder,
+        },
+      });
+
+      return { ok: true as const, reg, isFull };
     });
+
+    if (!txResult.ok) {
+      return { ok: false, error: txResult.error };
+    }
 
     await logAudit({
       action: "GUEST_REGISTERED",
       entity: "REGISTRATION",
-      entityId: reg.id,
-      summary: `تسجيل ضيف: ${fullName} في «${session.activity.title} — ${session.title}»`,
+      entityId: txResult.reg.id,
+      summary: `تسجيل ضيف: ${fullName} (${phone}) في «${session.activity.title} — ${session.title}»${txResult.isFull ? " — قائمة انتظار" : ""}`,
+      details: {
+        sessionId: input.sessionId,
+        status: txResult.reg.status,
+        waitlistOrder: txResult.reg.waitlistOrder,
+      },
     });
 
     refresh(input.sessionId, session.activityId);
-    return { ok: true, waitlisted: isFull };
+    return { ok: true, waitlisted: txResult.isFull };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }
