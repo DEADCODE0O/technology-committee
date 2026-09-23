@@ -901,21 +901,11 @@ export async function deleteStudentPermanently(
     const dbUserId = targetUser.id;
     const studentName = targetUser.profile?.fullName || targetUser.email;
 
-    // 1. حذف المستخدم من Supabase Auth (بالمعرّف وبالبريد للتأكد التام)
+    // 1. حذف المستخدم من Supabase Auth
     if (isSupabaseConfigured()) {
       const supaAdmin = getSupabaseAdmin();
       if (supaAdmin) {
-        const { error: supaErr } = await supaAdmin.auth.admin.deleteUser(dbUserId);
-        if (supaErr) {
-          // إذا كان معرّف Supabase مختلفاً عن معرّف قاعدة البيانات، نبحث بالبريد ونحذفه
-          const { data: usersList } = await supaAdmin.auth.admin.listUsers();
-          const supaMatch = usersList?.users?.find(
-            (u) => u.email?.toLowerCase() === targetUser!.email.toLowerCase()
-          );
-          if (supaMatch && supaMatch.id !== dbUserId) {
-            await supaAdmin.auth.admin.deleteUser(supaMatch.id);
-          }
-        }
+        await supaAdmin.auth.admin.deleteUser(dbUserId).catch(() => {});
       }
     }
 

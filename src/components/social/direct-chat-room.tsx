@@ -221,6 +221,10 @@ export function DirectChatRoom({
         });
 
         const res = await fetch(`/api/chat/poll?${params.toString()}`);
+        if (res.status === 410) {
+          isMounted = false;
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           if (isMounted && data.ok && data.hasNew && Array.isArray(data.messages) && data.messages.length > 0) {

@@ -64,9 +64,50 @@ export async function POST(req: NextRequest) {
   if (!sig) return NextResponse.json({ error: "الصيغ المسموحة: PDF · JPG · PNG · WEBP · ZIP" }, { status: 415 });
 
   const name = `task-${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${sig.ext}`;
-  const dir = path.join(process.cwd(), "uploads");
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, name), buf);
+  let finalUrl = "";
 
-  return NextResponse.json({ url: `/api/uploads/${name}` });
+  // 1) الرفع على Supabase Storage لضمان العمل على Vercel Serverless بدون أخطاء EROFS
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = process.env.SUPABASE_BUCKET || "workshops";
+
+  if (supabaseUrl && serviceKey) {
+    try {
+      const storagePath = `tasks/${name}`;
+      const res = await fetch(
+        `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${bucket}/${storagePath}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            "Content-Type": sig.mime,
+            "x-upsert": "true",
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+          body: buf,
+        }
+      );
+
+      if (res.ok) {
+        finalUrl = `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storagePath}`;
+      }
+    } catch {
+      finalUrl = "";
+    }
+  }
+
+  // 2) التخزين المحلي الاحتياطي (لبيئة التطوير دون مفاتيح Supabase)
+  if (!finalUrl) {
+    try {
+      const dir = path.join(process.cwd(), "uploads");
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, name), buf);
+      finalUrl = `/api/uploads/${name}`;
+    } catch (err) {
+      console.error("Local task file save error:", err);
+      return NextResponse.json({ error: "تعذر حفظ الملف على السيرفر" }, { status: 500 });
+    }
+  }
+
+  return NextResponse.json({ url: finalUrl });
 }

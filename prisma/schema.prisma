@@ -88,6 +88,9 @@ model User {
   studentPostComments  StudentPostComment[]
   sessionEvaluations   SessionEvaluation[]
   demandPollVotes      DemandPollVote[]
+
+  @@index([role, status])
+  @@index([createdAt])
 }
 
 // ─── ملف الطالب ──────────────────────────────────────────────

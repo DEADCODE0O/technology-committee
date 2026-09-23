@@ -212,40 +212,30 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
       let finalUserId: string | null = null;
 
       if (supaAdmin) {
-        // فحص ما إذا كان المستخدم موجود مسبقاً في Supabase Auth
-        const { data: usersList } = await supaAdmin.auth.admin.listUsers();
-        const matchedSupa = usersList?.users?.find((u) => u.email?.toLowerCase() === email);
+        // إنشاء المستخدم وتأكيد بريده فوراً في Supabase Auth دون استعلامات حصر بطيئة
+        const { data: createdUser, error: createErr } = await supaAdmin.auth.admin.createUser({
+          email,
+          password: data.password,
+          email_confirm: true,
+        });
 
-        if (matchedSupa) {
-          finalUserId = matchedSupa.id;
-          await supaAdmin.auth.admin.updateUserById(finalUserId, {
-            password: data.password,
-            email_confirm: true,
-          });
-        } else {
-          // إنشاء المستخدم وتأكيد بريده فوراً بدون قيود رسائل
-          const { data: createdUser, error: createErr } = await supaAdmin.auth.admin.createUser({
-            email,
-            password: data.password,
-            email_confirm: true,
-          });
-
-          if (createdUser?.user) {
-            finalUserId = createdUser.user.id;
-          } else {
-            console.error("[registerStudent] supaAdmin.createUser error:", createErr);
-            if (/already/i.test(createErr?.message || "")) {
-              const { data: retryList } = await supaAdmin.auth.admin.listUsers();
-              const retryUser = retryList?.users?.find((u) => u.email?.toLowerCase() === email);
-              if (retryUser) {
-                finalUserId = retryUser.id;
-                await supaAdmin.auth.admin.updateUserById(finalUserId, {
-                  password: data.password,
-                  email_confirm: true,
-                });
-              }
+        if (createdUser?.user) {
+          finalUserId = createdUser.user.id;
+        } else if (/already|exists/i.test(createErr?.message || "")) {
+          // الحساب موجود مسبقاً في Supabase Auth ولكن غير موجود في صفحة db.user
+          // نسجل الدخول للتأكد من كلمة السر واستخراج المعرف بأمان تام
+          const supabase = await createSupabaseServerClient();
+          if (supabase) {
+            const { data: signInData } = await supabase.auth.signInWithPassword({
+              email,
+              password: data.password,
+            });
+            if (signInData?.user) {
+              finalUserId = signInData.user.id;
             }
           }
+        } else {
+          console.error("[registerStudent] supaAdmin.createUser error:", createErr);
         }
       }
 
@@ -568,26 +558,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       if (!ipLimit.ok) return { error: waitMessage(ipLimit.retryAfterSec) };
     }
 
-    let user = await db.user.findUnique({ where: { email }, include: { profile: true } });
-    if (!user && isSupabaseConfigured()) {
-      const supaAdmin = getSupabaseAdmin();
-      if (supaAdmin) {
-        const { data: list } = await supaAdmin.auth.admin.listUsers();
-        const supaUser = list?.users?.find((u) => u.email?.toLowerCase() === email);
-        if (supaUser) {
-          user = await db.user.create({
-            data: {
-              id: supaUser.id,
-              email,
-              role: ROLES.STUDENT,
-              status: "ACTIVE",
-              provider: "EMAIL",
-            },
-            include: { profile: true },
-          });
-        }
-      }
-    }
+    const user = await db.user.findUnique({ where: { email }, include: { profile: true } });
     if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
     if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
 
@@ -613,18 +584,14 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
         password,
       });
 
-      // إذا كان الحساب غير مفعل البريد، نقوم بتفعيله تلقائيًا عبر المشرف وإعادة المحاولة
+      // إذا كان الحساب غير مفعل البريد، نقوم بتفعيله تلقائيًا عبر المشرف بمعرّفه المباشر وإعادة المحاولة
       if (signInError && /email not confirmed/i.test(signInError.message || "")) {
         const supaAdmin = getSupabaseAdmin();
-        if (supaAdmin) {
-          const { data: list } = await supaAdmin.auth.admin.listUsers();
-          const match = list?.users?.find((u) => u.email?.toLowerCase() === email);
-          if (match) {
-            await supaAdmin.auth.admin.updateUserById(match.id, { email_confirm: true });
-            const retry = await supabase.auth.signInWithPassword({ email, password });
-            signInData = retry.data;
-            signInError = retry.error;
-          }
+        if (supaAdmin && user) {
+          await supaAdmin.auth.admin.updateUserById(user.id, { email_confirm: true }).catch(() => {});
+          const retry = await supabase.auth.signInWithPassword({ email, password });
+          signInData = retry.data;
+          signInError = retry.error;
         }
       }
 

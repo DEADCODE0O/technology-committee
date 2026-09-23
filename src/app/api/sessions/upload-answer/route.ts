@@ -88,17 +88,54 @@ export async function POST(req: NextRequest) {
 
   // اسم ملف مولّد آمن — لا نثق باسم الملف الأصلي
   const name = `ans-${Date.now().toString(36)}-${crypto.randomUUID().slice(0, 8)}.${detected.ext}`;
-  try {
-    const dir = path.join(process.cwd(), "uploads");
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, name), bytes);
-  } catch {
-    return NextResponse.json({ error: "تعذر رفع الملف على السيرفر" }, { status: 500 });
+  let finalUrl = "";
+
+  // 1) الرفع على Supabase Storage لضمان العمل على Vercel Serverless
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const bucket = process.env.SUPABASE_BUCKET || "workshops";
+
+  if (supabaseUrl && serviceKey) {
+    try {
+      const storagePath = `answers/${name}`;
+      const res = await fetch(
+        `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${bucket}/${storagePath}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            "Content-Type": detected.mime,
+            "x-upsert": "true",
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+          body: bytes,
+        }
+      );
+
+      if (res.ok) {
+        finalUrl = `${supabaseUrl.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${storagePath}`;
+      }
+    } catch {
+      finalUrl = "";
+    }
+  }
+
+  // 2) التخزين المحلي الاحتياطي (لبيئة التطوير دون مفاتيح Supabase)
+  if (!finalUrl) {
+    try {
+      const dir = path.join(process.cwd(), "uploads");
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, name), bytes);
+      finalUrl = `/api/uploads/${name}`;
+    } catch (err) {
+      console.error("Local answer file save error:", err);
+      return NextResponse.json({ error: "تعذر رفع الملف على السيرفر" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({
     ok: true,
-    url: `/api/uploads/${name}`,
+    url: finalUrl,
     name: file.name || `file.${detected.ext}`,
   });
 }
