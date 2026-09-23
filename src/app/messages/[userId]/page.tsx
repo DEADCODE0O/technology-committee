@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, UserX } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
-import { getConversationMessages, getSocialCounters } from "@/actions/messaging";
+import { getConversationMessages } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { StudentShell } from "@/components/student/student-shell";
 import { DirectChatRoom } from "@/components/social/direct-chat-room";
 
@@ -17,9 +18,9 @@ export default async function ConversationPage(props: {
     redirect("/login");
   }
 
-  const [conversationData, socialCounters] = await Promise.all([
+  const [conversationData, badges] = await Promise.all([
     getConversationMessages(userId),
-    getSocialCounters(user.id),
+    getStudentBadges(user),
   ]);
 
   return (
@@ -31,7 +32,10 @@ export default async function ConversationPage(props: {
         avatarFrameId: user.avatarFrameId,
       }}
       active="messages"
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
+      pendingCount={badges.pendingCount}
       chatMode={true}
     >
       <div className="w-full flex-1 flex flex-col h-full min-h-0">

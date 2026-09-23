@@ -20,11 +20,19 @@ export interface StudentBadgesResult {
  */
 export async function getStudentBadges(user: {
   id: string;
-  profile: { grade: string; section: string; gender: string } | null;
+  profile?: { grade: string; section: string; gender: string } | null;
 }): Promise<StudentBadgesResult> {
   try {
+    // 1. جلب عضوية الفريق للطالب لمطابقة استعلام صفحة المهام تماماً
+    const membership = await db.teamMember
+      .findFirst({
+        where: { userId: user.id },
+        select: { teamId: true },
+      })
+      .catch(() => null);
+
     const [notificationsRes, socialRes, assignments, pendingDataCount] = await Promise.all([
-      getStudentNotifications(user).catch(() => ({
+      getStudentNotifications(user as any).catch(() => ({
         notifications: [],
         unreadCount: 0,
         pinnedBanner: null,
@@ -36,26 +44,37 @@ export async function getStudentBadges(user: {
         pendingFriendRequestsCount: 0,
         totalSocialAlerts: 0,
       })),
-      db.taskAssignment.findMany({
-        where: {
-          OR: [
-            { userId: user.id },
-            { team: { members: { some: { userId: user.id } } } },
-          ],
-          task: { status: "PUBLISHED" },
-        },
-        select: {
-          submission: {
-            select: { status: true },
+      db.taskAssignment
+        .findMany({
+          where: {
+            OR: [
+              { userId: user.id },
+              ...(membership?.teamId ? [{ teamId: membership.teamId }] : []),
+            ],
+            task: { status: { in: ["PUBLISHED", "CLOSED"] } },
           },
-        },
-      }).catch(() => []),
-      db.dataResponse.count({
-        where: {
-          userId: user.id,
-          request: { status: "OPEN", mandatory: true },
-        },
-      }).catch(() => 0),
+          select: {
+            submission: {
+              select: { status: true },
+            },
+          },
+        })
+        .catch((e) => {
+          console.error("[getStudentBadges] tasks error:", e);
+          return [];
+        }),
+      // طلبات البيانات الإلزامية المعلقة بانتظار إجابة الطالب
+      db.dataRequest
+        .count({
+          where: {
+            status: "OPEN",
+            mandatory: true,
+            responses: {
+              none: { userId: user.id },
+            },
+          },
+        })
+        .catch(() => 0),
     ]);
 
     const openTaskCount = assignments.filter(

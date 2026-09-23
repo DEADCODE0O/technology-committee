@@ -44,18 +44,18 @@ export default async function LoginPage({
         <Link href="/welcome" className="mb-8 flex items-center justify-center gap-3" aria-label="اللجنة التكنولوجية">
           <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={56} height={56} className="h-14 w-14" priority />
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-extrabold text-zinc-100">اللجنة التكنولوجية</span>
-            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold/70">TECHNOLOGY COMMITTEE</span>
+            <span className="text-lg font-extrabold text-foreground">اللجنة التكنولوجية</span>
+            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold-deep dark:text-gold/70">TECHNOLOGY COMMITTEE</span>
           </span>
         </Link>
 
-        <div className="rounded-3xl border border-white/[0.08] bg-surface/90 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-8">
+        <div className="rounded-3xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur-xl sm:p-8">
           <div className="mb-6 text-center">
-            <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.08] text-gold">
+            <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/30 bg-gold/[0.08] text-gold">
               <Sparkles className="h-6 w-6" />
             </span>
-            <h1 className="text-2xl font-extrabold text-zinc-50">أهلاً بعودتك</h1>
-            <p className="mt-1.5 text-sm text-zinc-500">سجّل دخولك وكمّل مشوارك معانا</p>
+            <h1 className="text-2xl font-extrabold text-foreground">أهلاً بعودتك</h1>
+            <p className="mt-1.5 text-sm font-semibold text-muted-foreground">سجّل دخولك وكمّل مشوارك معانا</p>
           </div>
 
           <LoginForm returnTo={returnTo} initialError={initialError} notice={noticeMsg} googleEnabled={isSupabaseConfigured()} />

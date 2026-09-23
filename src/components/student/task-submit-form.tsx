@@ -100,7 +100,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
     <form onSubmit={onSubmit} className="space-y-4">
       {needsVariant && pool.length > 1 && (
         <div>
-          <p className="mb-2 text-xs font-extrabold text-zinc-300">اختر أحد البدائل:</p>
+          <p className="mb-2 text-xs font-extrabold text-foreground">اختر أحد البدائل:</p>
           <div className="grid gap-2.5">
             {pool.map((p, i) => (
               <button
@@ -110,11 +110,11 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
                 className={`rounded-2xl border p-4 text-start transition-colors ${
                   variant === i
                     ? "border-gold/50 bg-gold/[0.08]"
-                    : "border-white/[0.07] bg-white/[0.02] hover:border-white/20"
+                    : "border-border bg-card hover:border-gold/30"
                 }`}
               >
-                <p className="text-sm font-extrabold text-zinc-100">{p.title}</p>
-                {p.description && <p className="mt-1 text-xs leading-6 text-zinc-400">{p.description}</p>}
+                <p className="text-sm font-extrabold text-foreground">{p.title}</p>
+                {p.description && <p className="mt-1 text-xs leading-6 text-muted-foreground">{p.description}</p>}
               </button>
             ))}
           </div>
@@ -123,7 +123,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
 
       {needsText && (
         <div>
-          <label htmlFor="task-text" className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-zinc-300">
+          <label htmlFor="task-text" className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-foreground">
             <Type className="h-3.5 w-3.5 text-gold/70" /> إجابتك النصية
           </label>
           <textarea
@@ -133,26 +133,26 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
             rows={5}
             maxLength={5000}
             placeholder="اكتب إجابتك أو ملاحظاتك هنا..."
-            className="w-full resize-y rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm leading-7 text-zinc-100 placeholder:text-zinc-600 focus:border-gold/50 focus:outline-none"
+            className="w-full resize-y rounded-2xl border border-border bg-card px-4 py-3 text-sm leading-7 text-foreground placeholder:text-muted-foreground focus:border-gold/50 focus:outline-none"
           />
         </div>
       )}
 
       {/* إذا كان نوع المهمة يتطلب ملف */}
       {needsFile && (
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-3">
+        <div className="rounded-2xl border border-border bg-card/60 p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-xs font-extrabold text-zinc-200">
+            <span className="flex items-center gap-1.5 text-xs font-extrabold text-foreground">
               <HardDrive className="h-4 w-4 text-gold" /> تسليم الملف المطلوب
             </span>
-            <div className="flex items-center gap-1 rounded-xl bg-white/[0.05] p-0.5 text-[11px] font-bold">
+            <div className="flex items-center gap-1 rounded-xl bg-muted/60 p-0.5 text-[11px] font-bold">
               <button
                 type="button"
                 onClick={() => setFileMethod("DRIVE")}
                 className={`rounded-lg px-2.5 py-1 transition-all ${
                   fileMethod === "DRIVE"
                     ? "bg-gradient-to-b from-gold-light to-gold text-night font-extrabold shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 رابط Google Drive (موصى به)
@@ -163,7 +163,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
                 className={`rounded-lg px-2.5 py-1 transition-all ${
                   fileMethod === "UPLOAD"
                     ? "bg-gradient-to-b from-gold-light to-gold text-night font-extrabold shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 رفع ملف مباشر
@@ -180,10 +180,10 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
                   placeholder="https://drive.google.com/file/d/..."
-                  className="w-full rounded-xl border border-white/10 bg-night/70 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-gold/50 focus:outline-none"
+                  className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-gold/50 focus:outline-none"
                 />
                 {isDriveLink && (
-                  <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-extrabold text-emerald-400 border border-emerald-500/25">
+                  <span className="absolute end-3 top-3 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-extrabold text-emerald-500 border border-emerald-500/25">
                     <CheckCircle2 className="h-3 w-3" /> رابط درايف سليم
                   </span>
                 )}
@@ -193,37 +193,37 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
                 <button
                   type="button"
                   onClick={() => setShowDriveHelp(!showDriveHelp)}
-                  className="inline-flex items-center gap-1 text-gold/80 hover:text-gold-light underline underline-offset-4"
+                  className="inline-flex items-center gap-1 text-gold/90 hover:text-gold-light underline underline-offset-4"
                 >
                   <HelpCircle className="h-3 w-3" />
                   {showDriveHelp ? "إخفاء الخطوات" : "كيف أنسخ رابط Google Drive بشكل صحيح؟"}
                 </button>
                 {link && !isDriveLink && (
-                  <span className="text-zinc-500">رابط خارجي مقبول (Dropbox/OneDrive/GitHub)</span>
+                  <span className="text-muted-foreground">رابط خارجي مقبول (Dropbox/OneDrive/GitHub)</span>
                 )}
               </div>
 
               {showDriveHelp && (
-                <div className="rounded-xl border border-gold/20 bg-gold/[0.04] p-3 text-[11px] leading-6 text-zinc-300 space-y-1">
-                  <p className="font-bold text-gold-light">📌 خطوات بسيطة لتسليم الواجب بدون فقدان الجودة:</p>
+                <div className="rounded-xl border border-gold/25 bg-gold/[0.06] p-3 text-[11px] leading-6 text-foreground/80 space-y-1">
+                  <p className="font-bold text-gold-dark dark:text-gold-light">📌 خطوات بسيطة لتسليم الواجب بدون فقدان الجودة:</p>
                   <p>1. ارفع ملفك (PDF، صورة، فيديو، أو ZIP) على حسابك في Google Drive.</p>
-                  <p>2. اضغط كليك يمين على الملف واختر <strong className="text-white">مشاركة (Share)</strong>.</p>
-                  <p>3. في خانة الوصول العام، اختر <strong className="text-white">«أي شخص لديه الرابط» (Anyone with the link)</strong>.</p>
-                  <p>4. اضغط <strong className="text-white">نسخ الرابط (Copy link)</strong> ثم الصقه في المربع أعلاه.</p>
+                  <p>2. اضغط كليك يمين على الملف واختر <strong className="text-foreground">مشاركة (Share)</strong>.</p>
+                  <p>3. في خانة الوصول العام، اختر <strong className="text-foreground">«أي شخص لديه الرابط» (Anyone with the link)</strong>.</p>
+                  <p>4. اضغط <strong className="text-foreground">نسخ الرابط (Copy link)</strong> ثم الصقه في المربع أعلاه.</p>
                 </div>
               )}
             </div>
           ) : (
             <div>
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-white/15 bg-night/60 px-4 py-3.5 transition-colors hover:border-gold/40">
+              <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-3.5 transition-colors hover:border-gold/40">
                 <input type="file" className="sr-only" onChange={onUpload} accept=".pdf,.jpg,.jpeg,.png,.webp,.zip" />
                 {uploading ? (
                   <Loader2 className="h-5 w-5 animate-spin text-gold" />
                 ) : (
-                  <Upload className="h-5 w-5 text-zinc-400" />
+                  <Upload className="h-5 w-5 text-muted-foreground" />
                 )}
-                <span className="text-xs font-bold text-zinc-300">{fileLabel || "اضغط لاختيار ملف من جهازك (PDF / صورة / ZIP حتى 8MB)"}</span>
-                {fileUrl && <CheckCircle2 className="ms-auto h-5 w-5 text-emerald-400" />}
+                <span className="text-xs font-bold text-foreground">{fileLabel || "اضغط لاختيار ملف من جهازك (PDF / صورة / ZIP حتى 8MB)"}</span>
+                {fileUrl && <CheckCircle2 className="ms-auto h-5 w-5 text-emerald-500" />}
               </label>
             </div>
           )}
@@ -233,7 +233,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
       {/* إذا كان نوع المهمة يتطلب رابط فقط */}
       {needsLinkOnly && (
         <div>
-          <label htmlFor="task-link" className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-zinc-300">
+          <label htmlFor="task-link" className="mb-1.5 flex items-center gap-1.5 text-xs font-extrabold text-foreground">
             <Link2 className="h-3.5 w-3.5 text-gold/70" /> رابط التسليم (Google Drive / GitHub / Figma / أي رابط)
           </label>
           <input
@@ -242,13 +242,13 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="https://..."
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-gold/50 focus:outline-none"
+            className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-gold/50 focus:outline-none"
           />
         </div>
       )}
 
       {error && (
-        <p className="flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-300">
+        <p className="flex items-center gap-2 rounded-xl bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-500">
           <AlertTriangle className="h-4 w-4 shrink-0" /> {error}
         </p>
       )}
@@ -261,7 +261,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         {canResubmit ? "أعد التسليم" : "سلّم التكليف الآن"}
       </button>
-      <p className="text-[11px] text-zinc-500">نوع التسليم المطلوب: {TASK_SUBMISSION_TYPE_LABELS[submissionType]}</p>
+      <p className="text-[11px] text-muted-foreground">نوع التسليم المطلوب: {TASK_SUBMISSION_TYPE_LABELS[submissionType]}</p>
     </form>
   );
 }

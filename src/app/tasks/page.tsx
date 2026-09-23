@@ -2,8 +2,7 @@ import Link from "next/link";
 import { ClipboardList, Clock, Send, CheckCircle2, Award, Inbox } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { StudentShell } from "@/components/student/student-shell";
 import { parseTaskPool, parseExternalLinks } from "@/lib/tasks";
 import { TASK_SUBMISSION_TYPE_LABELS, TASK_DISTRIBUTION_LABELS } from "@/lib/constants";
@@ -51,10 +50,7 @@ export default async function MyTasksPage() {
   const submitted = assignments.filter((a) => a.submission && a.submission.status !== "EVALUATED");
   const evaluated = assignments.filter((a) => a.submission?.status === "EVALUATED");
 
-  const [notifications, socialCounters] = await Promise.all([
-    getStudentNotifications(user),
-    getSocialCounters(user.id),
-  ]);
+  const badges = await getStudentBadges(user);
   void submitTask;
 
   return (
@@ -66,21 +62,22 @@ export default async function MyTasksPage() {
         avatarFrameId: user.avatarFrameId,
       }}
       active="tasks"
-      unreadCount={notifications.unreadCount}
+      unreadCount={badges.unreadCount}
       openTaskCount={open.length}
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      unreadMessagesCount={badges.unreadMessagesCount}
+      pendingCount={badges.pendingCount}
     >
       <div className="space-y-6">
         {/* رأس الصفحة */}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-zinc-100">
+            <h1 className="flex items-center gap-2.5 text-2xl font-extrabold text-foreground">
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gold/30 bg-gold/[0.1] text-gold">
                 <ClipboardList className="h-5 w-5" />
               </span>
               مهامي
             </h1>
-            <p className="mt-1.5 text-sm text-zinc-400">
+            <p className="mt-1.5 text-sm text-muted-foreground font-medium">
               {open.length > 0
                 ? `عندك ${open.length} ${open.length === 1 ? "مهمة بانتظار تسليمك" : "مهام بانتظار تسليمك"}`
                 : "مفيش مهام دلوقتي — استمتع بالأنشطة 🎯"}
@@ -90,10 +87,10 @@ export default async function MyTasksPage() {
 
         {/* الحالة الفارغة */}
         {assignments.length === 0 && (
-          <div className="rounded-3xl border border-white/[0.06] bg-surface p-10 text-center">
+          <div className="rounded-3xl border border-border bg-card p-10 text-center shadow-sm">
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-gold/20 bg-gold/[0.06] text-3xl">🎯</span>
-            <h2 className="mt-5 text-lg font-extrabold text-zinc-200">مفيش مهام دلوقتي</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-7 text-zinc-500">
+            <h2 className="mt-5 text-lg font-extrabold text-foreground">مفيش مهام دلوقتي</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-7 text-muted-foreground">
               كل ما اللجنة تكلفك بمهمة هتلاقيها هنا فورًا مع إشعار يوصلك — في الوقت ده، اكتشف الأنشطة وشارك تعلّم وأنجز.
             </p>
             <Link
@@ -121,13 +118,13 @@ export default async function MyTasksPage() {
                   <Link
                     key={a.id}
                     href={`/tasks/${a.task.id}`}
-                    className="group rounded-3xl border border-white/[0.07] bg-surface p-5 transition-all hover:border-gold/30 hover:bg-gold/[0.03]"
+                    className="group rounded-3xl border border-border bg-card p-5 shadow-sm transition-all hover:border-gold/40 hover:shadow-md hover:bg-gold/[0.02]"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-base font-extrabold leading-7 text-zinc-100 group-hover:text-gold-light">
+                      <h3 className="text-base font-extrabold leading-7 text-foreground group-hover:text-gold-deep dark:group-hover:text-gold-light">
                         {variant ? variant.title : a.task.title}
                         {a.team && (
-                          <span className="ms-2 rounded-lg bg-white/[0.05] px-2 py-0.5 align-middle text-[11px] font-bold text-zinc-400">
+                          <span className="ms-2 rounded-lg bg-muted px-2 py-0.5 align-middle text-[11px] font-bold text-muted-foreground">
                             {a.team.icon} {a.team.name}
                           </span>
                         )}
@@ -135,10 +132,10 @@ export default async function MyTasksPage() {
                       <span
                         className={`shrink-0 rounded-xl px-2.5 py-1 text-[11px] font-extrabold ${
                           tone === "danger"
-                            ? "bg-red-500/15 text-red-300"
+                            ? "bg-red-500/15 text-red-600 dark:text-red-300"
                             : tone === "warn"
-                            ? "bg-amber-500/15 text-amber-300"
-                            : "bg-emerald-500/10 text-emerald-300/80"
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+                            : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300/80"
                         }`}
                       >
                         {a.task.dueAt
@@ -148,25 +145,25 @@ export default async function MyTasksPage() {
                           : "بلا موعد"}
                       </span>
                     </div>
-                    <p className="mt-2.5 line-clamp-2 text-[13px] leading-6 text-zinc-400">
+                    <p className="mt-2.5 line-clamp-2 text-[13px] leading-6 text-muted-foreground">
                       {(variant?.description ?? a.task.description).replace(/\n/g, " ")}
                     </p>
                     <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-bold">
-                      <span className="rounded-lg bg-white/[0.04] px-2 py-1 text-zinc-400">
+                      <span className="rounded-lg bg-muted px-2 py-1 text-muted-foreground">
                         {TASK_SUBMISSION_TYPE_LABELS[a.task.submissionType]}
                       </span>
                       {pool.length > 1 && (
-                        <span className="rounded-lg bg-white/[0.04] px-2 py-1 text-zinc-400">
+                        <span className="rounded-lg bg-muted px-2 py-1 text-muted-foreground">
                           {TASK_DISTRIBUTION_LABELS[a.task.distribution]}
                         </span>
                       )}
                       {links.length > 0 && (
-                        <span className="rounded-lg bg-gold/[0.08] px-2 py-1 text-gold/80">
+                        <span className="rounded-lg bg-gold/[0.08] px-2 py-1 text-gold-deep dark:text-gold/80 font-bold border border-gold/20">
                           {links.length} روابط مساعدة
                         </span>
                       )}
                       {a.task.xpReward > 0 && (
-                        <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                        <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-emerald-700 dark:text-emerald-300 font-extrabold">
                           +{a.task.xpReward} XP
                         </span>
                       )}
@@ -181,7 +178,7 @@ export default async function MyTasksPage() {
         {/* سلّمت بانتظار التقييم */}
         {submitted.length > 0 && (
           <section aria-label="مهام سلّمتها">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-zinc-400">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-muted-foreground">
               <Send className="h-4 w-4" /> سلّمتها — بانتظار التقييم ({submitted.length})
             </h2>
             <div className="space-y-2.5">
@@ -189,10 +186,10 @@ export default async function MyTasksPage() {
                 <Link
                   key={a.id}
                   href={`/tasks/${a.task.id}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-surface px-4 py-3.5 transition-colors hover:border-gold/25"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-xs transition-colors hover:border-gold/30 hover:bg-gold/[0.02]"
                 >
-                  <span className="min-w-0 truncate text-sm font-bold text-zinc-200">{a.task.title}</span>
-                  <span className="shrink-0 rounded-lg bg-gold/[0.1] px-2.5 py-1 text-[11px] font-extrabold text-gold">
+                  <span className="min-w-0 truncate text-sm font-bold text-foreground">{a.task.title}</span>
+                  <span className="shrink-0 rounded-lg bg-gold/[0.1] px-2.5 py-1 text-[11px] font-extrabold text-gold-deep dark:text-gold border border-gold/20">
                     {a.submission?.late ? "سلّمت متأخرًا" : "بانتظار التقييم"}
                   </span>
                 </Link>
@@ -204,7 +201,7 @@ export default async function MyTasksPage() {
         {/* قُيّمت */}
         {evaluated.length > 0 && (
           <section aria-label="مهام قُيّمت">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-emerald-400/80">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-4 w-4" /> قُيّمت ({evaluated.length})
             </h2>
             <div className="space-y-2.5">
@@ -212,16 +209,16 @@ export default async function MyTasksPage() {
                 <Link
                   key={a.id}
                   href={`/tasks/${a.task.id}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-surface px-4 py-3.5 transition-colors hover:border-gold/25"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-xs transition-colors hover:border-gold/30 hover:bg-gold/[0.02]"
                 >
-                  <span className="min-w-0 truncate text-sm font-bold text-zinc-200">{a.task.title}</span>
+                  <span className="min-w-0 truncate text-sm font-bold text-foreground">{a.task.title}</span>
                   <span className="flex shrink-0 items-center gap-2">
                     {a.submission && a.submission.xpAwarded > 0 && (
-                      <span className="flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-[11px] font-extrabold text-emerald-300">
+                      <span className="flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2 py-1 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300">
                         <Award className="h-3 w-3" /> +{a.submission.xpAwarded}
                       </span>
                     )}
-                    <span className="rounded-lg bg-emerald-500/10 px-2.5 py-1 text-[11px] font-extrabold text-emerald-300">
+                    <span className="rounded-lg bg-emerald-500/10 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700 dark:text-emerald-300">
                       {a.submission?.score}/100
                     </span>
                   </span>

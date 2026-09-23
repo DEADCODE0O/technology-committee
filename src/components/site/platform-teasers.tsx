@@ -70,11 +70,11 @@ export async function PlatformTeasers() {
   return (
     <section className="relative mx-auto max-w-6xl px-4 py-14 sm:px-6" aria-labelledby="live-platform">
       <div className="mb-8 text-center">
-        <p className="font-latin text-[10px] tracking-[0.35em] text-gold/60">LIVE FROM THE PLATFORM</p>
-        <h2 id="live-platform" className="mt-2 text-2xl font-extrabold text-zinc-100 sm:text-3xl">
+        <p className="font-latin text-[10px] tracking-[0.35em] text-gold-deep dark:text-gold/60">LIVE FROM THE PLATFORM</p>
+        <h2 id="live-platform" className="mt-2 text-2xl font-extrabold text-foreground sm:text-3xl">
           المنصة حية — شوف بنفسك
         </h2>
-        <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-zinc-500">
+        <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-muted-foreground">
           أنشطة بتُفتح تسجيلها دلوقتي · إنجازات بتتولد · طلاب بيتألقوا — القصة بتتكتب كل يوم
         </p>
       </div>
@@ -117,10 +117,10 @@ export async function PlatformTeasers() {
                   href={`/sessions/${s.id}`}
                   className={`group flex flex-col justify-between rounded-3xl border p-4 sm:p-5 transition-all hover:-translate-y-0.5 ${
                     isUrgent
-                      ? "border-rose-500/30 bg-surface hover:border-rose-500/50 hover:shadow-[0_15px_30px_-15px_rgba(244,63,94,0.3)]"
+                      ? "border-rose-500/30 bg-card hover:border-rose-500/50 hover:shadow-[0_15px_30px_-15px_rgba(244,63,94,0.3)]"
                       : isRegistrationOpen
-                      ? "border-emerald-500/25 bg-surface hover:border-emerald-500/45 hover:shadow-[0_15px_30px_-15px_rgba(16,185,129,0.25)]"
-                      : "border-white/[0.07] bg-surface hover:border-gold/30 hover:bg-gold/[0.03]"
+                      ? "border-emerald-500/25 bg-card hover:border-emerald-500/45 hover:shadow-[0_15px_30px_-15px_rgba(16,185,129,0.25)]"
+                      : "border-border bg-card hover:border-gold/30 hover:bg-gold/[0.03]"
                   }`}
                 >
                   <div>
@@ -135,34 +135,34 @@ export async function PlatformTeasers() {
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[11px] font-extrabold text-zinc-500">{fmtDate(s.startsAt)}</p>
+                      <p className="text-[11px] font-extrabold text-muted-foreground">{fmtDate(s.startsAt)}</p>
                       {isFull ? (
-                        <span className="rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-black text-rose-300">
+                        <span className="rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-black text-rose-600 dark:text-rose-300">
                           مكتمل
                         </span>
                       ) : isUrgent ? (
-                        <span className="rounded-full bg-rose-500/20 border border-rose-500/40 px-2.5 py-0.5 text-[10px] font-black text-rose-300 animate-pulse">
+                        <span className="rounded-full bg-rose-500/20 border border-rose-500/40 px-2.5 py-0.5 text-[10px] font-black text-rose-600 dark:text-rose-300 animate-pulse">
                           🔥 يقفل قريباً
                         </span>
                       ) : isRegistrationOpen ? (
-                        <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black text-emerald-300">
+                        <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 dark:text-emerald-300">
                           🟢 متاح الآن
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-2 text-base font-black leading-7 text-zinc-100 group-hover:text-gold-light">{s.activity.title}</p>
-                    <p className="mt-1 text-xs text-zinc-400">{s.title}</p>
+                    <p className="mt-2 text-base font-black leading-7 text-foreground group-hover:text-gold-deep dark:group-hover:text-gold-light">{s.activity.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{s.title}</p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-white/[0.06]">
+                  <div className="mt-4 pt-3 border-t border-border">
                     {countdownTo ? (
                       <Countdown to={countdownTo.toISOString()} prefix={isRegistrationOpen ? "يقفل بعد" : "يُفتح بعد"} variant="pill" tone={isRegistrationOpen ? "success" : "gold"} autoUrgent={true} />
                     ) : (
                       <div className="flex items-center justify-between text-xs">
-                        <span className={`font-bold ${isRegistrationOpen ? "text-emerald-400" : "text-zinc-400"}`}>
+                        <span className={`font-bold ${isRegistrationOpen ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground"}`}>
                           {phaseText}
                         </span>
-                        {seatsLeft > 0 && <span className="text-[10px] text-zinc-500">{seatsLeft} مقعد متبقٍ</span>}
+                        {seatsLeft > 0 && <span className="text-[10px] text-muted-foreground">{seatsLeft} مقعد متبقٍ</span>}
                       </div>
                     )}
                   </div>
@@ -179,18 +179,18 @@ export async function PlatformTeasers() {
       {/* لحظات المجتمع */}
       {posts.length > 0 && (
         <div className="mb-8">
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-zinc-300">
-            <MessagesSquare className="h-4 w-4 text-gold/70" /> من المجتمع
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-foreground">
+            <MessagesSquare className="h-4 w-4 text-gold" /> من المجتمع
           </h3>
           <div className="grid gap-3 sm:grid-cols-3">
             {posts.map((p) => (
               <Link
                 key={p.id}
                 href="/panel"
-                className="group rounded-2xl border border-white/[0.06] bg-surface px-4 py-3.5 transition-colors hover:border-gold/25"
+                className="group rounded-2xl border border-border bg-card px-4 py-3.5 shadow-xs transition-colors hover:border-gold/30 hover:bg-gold/[0.02]"
               >
                 <p className="text-lg">{COMMUNITY_POST_TYPE_ICONS[p.type]}</p>
-                <p className="mt-1.5 line-clamp-2 text-sm font-bold leading-6 text-zinc-200 group-hover:text-gold-light">{p.title}</p>
+                <p className="mt-1.5 line-clamp-2 text-sm font-bold leading-6 text-foreground group-hover:text-gold-deep dark:group-hover:text-gold-light">{p.title}</p>
               </Link>
             ))}
           </div>
@@ -200,16 +200,16 @@ export async function PlatformTeasers() {
       {/* الطلاب المميزون */}
       {featured.length > 0 && (
         <div>
-          <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-zinc-300">
-            <Trophy className="h-4 w-4 text-gold/70" /> طلابنا المميزون
+          <h3 className="mb-4 flex items-center gap-2 text-sm font-extrabold uppercase tracking-wide text-foreground">
+            <Trophy className="h-4 w-4 text-gold" /> طلابنا المميزون
           </h3>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {featured.map((f) => (
-              <div key={f.userId} className="rounded-2xl border border-gold/15 bg-gold/[0.04] p-4 text-center">
+              <div key={f.userId} className="rounded-2xl border border-gold/20 bg-card p-4 text-center shadow-xs">
                 <Sparkles className="mx-auto h-4 w-4 text-gold" />
-                <p className="mt-2 text-sm font-extrabold text-zinc-100">{f.fullName}</p>
-                <p className="mt-1 text-[11px] font-bold text-gold/80">{f.featuredKind ? FEATURED_KIND_LABELS[f.featuredKind] : "طالب مميز"}</p>
-                {f.featuredNote && <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-zinc-500">{f.featuredNote}</p>}
+                <p className="mt-2 text-sm font-extrabold text-foreground">{f.fullName}</p>
+                <p className="mt-1 text-[11px] font-bold text-gold-deep dark:text-gold/80">{f.featuredKind ? FEATURED_KIND_LABELS[f.featuredKind] : "طالب مميز"}</p>
+                {f.featuredNote && <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground">{f.featuredNote}</p>}
               </div>
             ))}
           </div>

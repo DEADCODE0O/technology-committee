@@ -52,12 +52,12 @@ function Card({ n, onRead }: { n: CenterNotification; onRead: (id: string) => vo
   return (
     <div
       className={[
-        "relative overflow-hidden rounded-2xl border p-4 transition-colors",
+        "relative overflow-hidden rounded-2xl border p-4 transition-colors shadow-xs",
         isImportant
-          ? "border-gold/40 bg-gradient-to-l from-gold/[0.10] to-transparent"
+          ? "border-gold/40 bg-gradient-to-l from-gold/[0.12] via-gold/[0.04] to-card"
           : unread
-            ? "border-white/[0.10] bg-white/[0.03]"
-            : "border-white/[0.06] bg-white/[0.015]",
+            ? "border-border bg-card"
+            : "border-border/60 bg-card/60",
       ].join(" ")}
     >
       {unread && !isImportant && <div className="absolute inset-y-0 right-0 w-1 bg-gold/70" />}
@@ -67,38 +67,38 @@ function Card({ n, onRead }: { n: CenterNotification; onRead: (id: string) => vo
         <span className="mt-0.5 shrink-0 text-xl leading-none">{NOTIFICATION_TYPE_ICONS[n.type] ?? "🔔"}</span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className={`text-sm font-extrabold ${unread ? "text-zinc-100" : "text-zinc-300"}`}>{n.title}</p>
+            <p className={`text-sm font-extrabold ${unread ? "text-foreground" : "text-muted-foreground"}`}>{n.title}</p>
             {isImportant && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold-light">
+              <span className="inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold-deep dark:text-gold-light">
                 <Pin className="h-3 w-3" /> مهم
               </span>
             )}
             {n.type && n.type !== "INFO" && n.type !== "IMPORTANT" && NOTIFICATION_TYPE_LABELS[n.type] && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold/5 px-2 py-0.5 text-[10px] font-bold text-gold-light/90">
+              <span className="inline-flex items-center gap-1 rounded-full border border-gold/20 bg-gold/5 px-2 py-0.5 text-[10px] font-bold text-gold-deep dark:text-gold-light/90">
                 {NOTIFICATION_TYPE_LABELS[n.type].split(" — ")[0].split(" / ")[0]}
               </span>
             )}
             {btns.length > 1 && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-zinc-400">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
                 <Link2 className="h-3 w-3" /> {btns.length} أزرار
               </span>
             )}
             {imgSrc && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-zinc-400">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
                 <ImageIcon className="h-3 w-3" /> صورة
               </span>
             )}
             {btns.length === 1 && btns[0].linkType && (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-bold text-zinc-400">
+              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
                 {LINK_TYPE_LABELS[btns[0].linkType] ?? "رابط"}
               </span>
             )}
           </div>
 
-          {n.body && <p className="mt-1.5 text-[13px] leading-6 text-zinc-400">{n.body}</p>}
+          {n.body && <p className="mt-1.5 text-[13px] leading-6 text-muted-foreground">{n.body}</p>}
 
           {imgSrc && (
-            <div className="mt-2.5 overflow-hidden rounded-xl border border-white/[0.08]">
+            <div className="mt-2.5 overflow-hidden rounded-xl border border-border">
               <SmartImg src={imgSrc} alt="" className="max-h-56 w-full object-cover" />
             </div>
           )}
@@ -107,8 +107,8 @@ function Card({ n, onRead }: { n: CenterNotification; onRead: (id: string) => vo
             {btns.map((b, i) => (
               <CtaLink key={i} label={b.label} url={b.url} linkType={b.linkType} newTab={b.newTab} onClick={() => onRead(n.id)} />
             ))}
-            <span className="text-[11px] text-zinc-500">{timeAgo(n.createdAt)}</span>
-            {unread && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold-light">جديد</span>}
+            <span className="text-[11px] text-muted-foreground">{timeAgo(n.createdAt)}</span>
+            {unread && <span className="rounded-full bg-gold/15 border border-gold/25 px-2 py-0.5 text-[10px] font-bold text-gold-deep dark:text-gold-light">جديد</span>}
           </div>
         </div>
       </div>
@@ -150,10 +150,10 @@ export function NotificationsList({ notifications }: { notifications: CenterNoti
 
   if (notifications.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-8 text-center">
+      <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <p className="text-2xl">🔔</p>
-        <p className="mt-2 text-sm font-bold text-zinc-300">لا توجد إشعارات حاليًا</p>
-        <p className="mt-1 text-xs text-zinc-500">كل إعلانات اللجنة ومهامك وروابط الجروبات ستظهر هنا</p>
+        <p className="mt-2 text-sm font-bold text-foreground">لا توجد إشعارات حاليًا</p>
+        <p className="mt-1 text-xs text-muted-foreground">كل إعلانات اللجنة ومهامك وروابط الجروبات ستظهر هنا</p>
       </div>
     );
   }
@@ -162,13 +162,13 @@ export function NotificationsList({ notifications }: { notifications: CenterNoti
     <div className="space-y-5">
       {unreadCount > 0 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs font-bold text-zinc-400">
+          <p className="text-xs font-bold text-muted-foreground">
             {unreadCount} إشعار غير مقروء
           </p>
           <button
             onClick={markAll}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-gold/25 bg-gold/[0.08] px-3 py-1.5 text-xs font-bold text-gold-light transition-colors hover:bg-gold/20"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gold/30 bg-gold/[0.08] px-3 py-1.5 text-xs font-bold text-gold-deep dark:text-gold-light transition-colors hover:bg-gold/20"
           >
             {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCheck className="h-3.5 w-3.5" />}
             تعليم الكل كمقروء
@@ -178,7 +178,7 @@ export function NotificationsList({ notifications }: { notifications: CenterNoti
 
       {important.length > 0 && (
         <section>
-          <h3 className="mb-2.5 flex items-center gap-2 text-sm font-extrabold text-gold-light">
+          <h3 className="mb-2.5 flex items-center gap-2 text-sm font-extrabold text-gold-deep dark:text-gold-light">
             <Pin className="h-4 w-4" /> مهم — دائمًا هنا
           </h3>
           <div className="space-y-3">
@@ -191,7 +191,7 @@ export function NotificationsList({ notifications }: { notifications: CenterNoti
 
       {others.length > 0 && (
         <section>
-          <h3 className="mb-2.5 text-sm font-extrabold text-zinc-300">كل الإشعارات</h3>
+          <h3 className="mb-2.5 text-sm font-extrabold text-foreground">كل الإشعارات</h3>
           <div className="space-y-3">
             {others.map((n) => (
               <Card key={n.id} n={n} onRead={markRead} />

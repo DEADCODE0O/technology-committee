@@ -17,8 +17,7 @@ import { StudentShell } from "@/components/student/student-shell";
 import { getLeaderboard, type LeaderboardEntry } from "@/lib/platform";
 import { getActiveSeason, getStudentProgress } from "@/lib/progress";
 import { getCurrentUser } from "@/lib/auth";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { monthStart, semesterStart, GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 import { LeveledName } from "@/components/ui/leveled-name";
@@ -96,11 +95,12 @@ export default async function LeaderboardPage({
   } = { name: "", email: "" };
   let unreadCount = 0;
   let unreadMessagesCount = 0;
+  let openTaskCount = 0;
+  let pendingCount = 0;
   if (isStudent && user) {
-    const [progress, notifs, socialCounters] = await Promise.all([
+    const [progress, badges] = await Promise.all([
       getStudentProgress(user.id),
-      getStudentNotifications(user),
-      getSocialCounters(user.id),
+      getStudentBadges(user),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -109,8 +109,10 @@ export default async function LeaderboardPage({
       avatarFrameId: user.avatarFrameId,
       level: progress.level,
     };
-    unreadCount = notifs.unreadCount;
-    unreadMessagesCount = socialCounters.totalSocialAlerts;
+    unreadCount = badges.unreadCount;
+    unreadMessagesCount = badges.unreadMessagesCount;
+    openTaskCount = badges.openTaskCount;
+    pendingCount = badges.pendingCount;
   }
 
   const leaderboardContent = (
@@ -125,8 +127,8 @@ export default async function LeaderboardPage({
             aria-selected={activeTab === t.key}
             className={`inline-flex h-11 items-center gap-2 rounded-full border px-5 text-xs sm:text-sm font-extrabold transition-all shadow-sm ${
               activeTab === t.key
-                ? "border-gold/60 bg-gold/[0.15] text-gold-light shadow-[0_0_20px_-5px_rgba(201,164,92,0.4)]"
-                : "border-white/[0.08] bg-white/[0.02] text-zinc-400 hover:border-gold/30 hover:text-zinc-200"
+                ? "border-gold/60 bg-gold/[0.15] text-gold-deep dark:text-gold-light shadow-[0_0_20px_-5px_rgba(201,164,92,0.4)]"
+                : "border-border bg-card text-muted-foreground hover:border-gold/30 hover:text-foreground"
             }`}
           >
             {t.icon}
@@ -491,12 +493,14 @@ export default async function LeaderboardPage({
         active="leaderboard"
         unreadCount={unreadCount}
         unreadMessagesCount={unreadMessagesCount}
+        openTaskCount={openTaskCount}
+        pendingCount={pendingCount}
       >
         <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">
             <span className="text-gold-gradient">الطلاب المتصدرون</span>
           </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-400 max-w-2xl">
+          <p className="mt-2 text-sm leading-6 text-muted-foreground max-w-2xl font-medium">
             كل مشاركة لك قيمة — حضور، إنجاز، وموهبة. اصنع سمعتك واعتلِ عرش المتصدرين.
           </p>
         </div>

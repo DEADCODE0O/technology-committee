@@ -1,8 +1,7 @@
 import { Metadata } from "next";
 import { requireStudent } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { StudentShell } from "@/components/student/student-shell";
 import { SettingsManager } from "@/components/student/settings-manager";
 
@@ -16,10 +15,9 @@ export const metadata: Metadata = {
 export default async function SettingsPage() {
   const user = await requireStudent();
 
-  const [progress, notifications, socialCounters] = await Promise.all([
+  const [progress, badges] = await Promise.all([
     getStudentProgress(user.id).catch(() => ({ level: 1 })),
-    getStudentNotifications(user).catch(() => ({ unreadCount: 0 })),
-    getSocialCounters(user.id).catch(() => ({ totalSocialAlerts: 0 })),
+    getStudentBadges(user),
   ]);
 
   const shellUser = {
@@ -34,8 +32,10 @@ export default async function SettingsPage() {
     <StudentShell
       user={shellUser}
       active="settings"
-      unreadCount={notifications.unreadCount}
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
+      pendingCount={badges.pendingCount}
     >
       <SettingsManager
         user={{

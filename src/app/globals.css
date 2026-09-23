@@ -582,8 +582,54 @@ html[data-avatar-frames="hidden"] .avatar-frame-layer {
   color: #27272a !important;
   border-color: #e4e4e7 !important;
 }
+
+/* ── تصحيح التباين الشامل للرماديات في وضع النهار لضمان وضوح كامل للقراءة (WCAG AAA) ── */
+.light .text-zinc-50 {
+  color: #18181b !important;
+}
+.light .text-zinc-100 {
+  color: #201d19 !important;
+}
+.light .text-zinc-200 {
+  color: #27272a !important;
+}
 .light .text-zinc-300 {
   color: #3f3f46 !important;
+}
+.light .text-zinc-400 {
+  color: #52525b !important;
+}
+.light .text-zinc-500 {
+  color: #71717a !important;
+}
+
+/* الحفاظ على النص الفاتح فوق التراكبات السوداء والمظلمة المتعمدة */
+.light [class*="bg-black"] .text-zinc-50,
+.light [class*="bg-black"] .text-zinc-100,
+.light [class*="bg-black"] .text-zinc-200,
+.light [class*="bg-black"] .text-zinc-300,
+.light [class*="bg-black"] .text-zinc-400,
+.light [class*="bg-night"] .text-zinc-50,
+.light [class*="bg-night"] .text-zinc-100,
+.light [class*="bg-night"] .text-zinc-200,
+.light [class*="bg-night"] .text-zinc-300,
+.light [class*="bg-night"] .text-zinc-400,
+.light [class*="bg-[#121b22]"] .text-zinc-50,
+.light [class*="bg-[#121b22]"] .text-zinc-100,
+.light [class*="bg-[#121b22]"] .text-zinc-200,
+.light [class*="bg-[#121b22]"] .text-zinc-300,
+.light [class*="bg-[#121b22]"] .text-zinc-400,
+.light [class*="from-black"] .text-zinc-50,
+.light [class*="from-black"] .text-zinc-100,
+.light [class*="from-black"] .text-zinc-200,
+.light [class*="from-black"] .text-zinc-300,
+.light [class*="from-black"] .text-zinc-400,
+.light [class*="from-night"] .text-zinc-50,
+.light [class*="from-night"] .text-zinc-100,
+.light [class*="from-night"] .text-zinc-200,
+.light [class*="from-night"] .text-zinc-300,
+.light [class*="from-night"] .text-zinc-400 {
+  color: inherit !important;
 }
 
 .light [class*="bg-cyan-950"] {

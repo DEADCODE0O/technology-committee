@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireStudent } from "@/lib/auth";
 import { findTargetedStudentIds, parseTarget } from "@/lib/targeting";
 import { makeDataKey } from "@/lib/validation";
+import { getStudentBadges } from "@/lib/student-badges";
 import { StudentShell } from "@/components/student/student-shell";
 import { DataResponseForm, type RespField } from "@/components/student/data-response-form";
 
@@ -42,12 +43,13 @@ export default async function StudentDataRequestPage({ params }: { params: Promi
   let fields: RespField[] = [];
   try { fields = JSON.parse(request.fields); } catch { fields = []; }
 
-  const [existing, saved] = await Promise.all([
+  const [existing, saved, badges] = await Promise.all([
     db.dataResponse.findUnique({
       where: { requestId_userId: { requestId: id, userId: user.id } },
     }),
     // البيانات المحفوظة تُستخدم دائمًا — لا يُسأل الطالب مجددًا
     db.studentData.findMany({ where: { userId: user.id } }),
+    getStudentBadges(user),
   ]);
 
   let initialAnswers: Record<string, string | string[]> = {};
@@ -81,77 +83,81 @@ export default async function StudentDataRequestPage({ params }: { params: Promi
         avatarFrameId: user.avatarFrameId,
       }}
       active="dashboard"
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
+      pendingCount={badges.pendingCount}
     >
       <div className="mx-auto max-w-2xl space-y-5">
-        <Link href="/panel" className="inline-flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-gold-light">
+        <Link href="/panel" className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-gold-deep dark:hover:text-gold-light">
           <ArrowRight className="h-3.5 w-3.5" />
           العودة للوحة
         </Link>
 
-        <section className="rounded-3xl border border-gold/20 bg-surface p-6">
+        <section className="rounded-3xl border border-gold/25 bg-card p-6 shadow-sm">
           <div className="flex items-center gap-2.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-gold/25 bg-gold/[0.08] text-gold">
               <ClipboardList className="h-5 w-5" />
             </span>
-            <h1 className="text-xl font-extrabold text-zinc-50">{request.title}</h1>
+            <h1 className="text-xl font-extrabold text-foreground">{request.title}</h1>
           </div>
           {request.description && (
-            <p className="mt-3 text-sm leading-7 text-zinc-400">{request.description}</p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">{request.description}</p>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-bold">
             {request.status === "OPEN" && !deadlinePassed ? (
-              <span className="rounded-md border border-gold/25 bg-gold/[0.08] px-2 py-0.5 text-gold-light">مفتوح للإجابة</span>
+              <span className="rounded-md border border-gold/25 bg-gold/[0.08] px-2 py-0.5 text-gold-deep dark:text-gold-light">مفتوح للإجابة</span>
             ) : (
-              <span className="rounded-md border border-red-500/25 bg-red-500/[0.06] px-2 py-0.5 text-red-300">
+              <span className="rounded-md border border-red-500/25 bg-red-500/[0.06] px-2 py-0.5 text-red-600 dark:text-red-300">
                 {deadlinePassed ? "انتهى الموعد النهائي" : "مغلق"}
               </span>
             )}
             {request.deadline && (
-              <span className="flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-zinc-400">
+              <span className="flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-muted-foreground">
                 <CalendarClock className="h-3 w-3" />
                 حتى {formatDateAr(new Date(request.deadline))}
               </span>
             )}
             {existing && (
-              <span className="rounded-md border border-emerald-400/25 bg-emerald-400/[0.06] px-2 py-0.5 text-emerald-300">
+              <span className="rounded-md border border-emerald-400/25 bg-emerald-400/[0.06] px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
                 أجبت — يمكنك التعديل
               </span>
             )}
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/[0.06] bg-surface p-5 sm:p-6">
+        <section className="rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
           {existing ? (
             <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.05] p-6 text-center">
-              <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-300" />
-              <p className="mt-3 text-base font-extrabold text-zinc-100">تم استلام بياناتك بالفعل</p>
-              <p className="mt-1 text-sm leading-6 text-zinc-500">لن نطلب منك نفس البيانات مرة أخرى إلا إذا أرسلت الإدارة طلبًا جديدًا لجمعها مرة أخرى.</p>
+              <CheckCircle2 className="mx-auto h-9 w-9 text-emerald-600 dark:text-emerald-300" />
+              <p className="mt-3 text-base font-extrabold text-foreground">تم استلام بياناتك بالفعل</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">لن نطلب منك نفس البيانات مرة أخرى إلا إذا أرسلت الإدارة طلبًا جديدًا لجمعها مرة أخرى.</p>
             </div>
           ) : allReused ? (
             <div className="rounded-2xl border border-gold/25 bg-gold/[0.05] p-6">
               <div className="text-center">
                 <CheckCircle2 className="mx-auto h-9 w-9 text-gold" />
-                <p className="mt-3 text-base font-extrabold text-gold-light">بياناتك محفوظة بالفعل</p>
-                <p className="mt-1 text-sm leading-6 text-zinc-500">تم استخدام المعلومات الموجودة في ملفك بدل إعادة سؤالك عنها.</p>
+                <p className="mt-3 text-base font-extrabold text-gold-deep dark:text-gold-light">بياناتك محفوظة بالفعل</p>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">تم استخدام المعلومات الموجودة في ملفك بدل إعادة سؤالك عنها.</p>
               </div>
               <div className="mt-5 space-y-2">
                 {savedFields.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-                    <p className="text-[11px] font-bold text-zinc-500">{item.label}</p>
-                    <p className="mt-1 whitespace-pre-wrap text-sm font-bold text-zinc-200">{formatSavedValue(item.value)}</p>
+                  <div key={item.id} className="rounded-xl border border-border bg-muted/40 px-4 py-3">
+                    <p className="text-[11px] font-bold text-muted-foreground">{item.label}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-sm font-bold text-foreground">{formatSavedValue(item.value)}</p>
                   </div>
                 ))}
               </div>
             </div>
           ) : fields.length === 0 ? (
-            <p className="py-6 text-center text-sm text-zinc-500">لا أسئلة في هذا الطلب</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">لا أسئلة في هذا الطلب</p>
           ) : (
             <>
               {savedFields.length > 0 && (
                 <div className="mb-5 rounded-2xl border border-gold/15 bg-gold/[0.03] p-4">
-                  <p className="mb-2 text-xs font-extrabold text-gold-light">بيانات استخدمناها من ملفك</p>
+                  <p className="mb-2 text-xs font-extrabold text-gold-deep dark:text-gold-light">بيانات استخدمناها من ملفك</p>
                   <div className="space-y-1.5">
-                    {savedFields.map((item) => <p key={item.id} className="text-xs text-zinc-400"><span className="font-bold text-zinc-300">{item.label}:</span> {formatSavedValue(item.value)}</p>)}
+                    {savedFields.map((item) => <p key={item.id} className="text-xs text-muted-foreground"><span className="font-bold text-foreground">{item.label}:</span> {formatSavedValue(item.value)}</p>)}
                   </div>
                 </div>
               )}

@@ -6,7 +6,7 @@ import { SitePageShell } from "@/components/platform/site-page-shell";
 import { StudentShell } from "@/components/student/student-shell";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
-import { getStudentNotifications } from "@/lib/notifications";
+import { getStudentBadges } from "@/lib/student-badges";
 import { Countdown } from "@/components/platform/countdown";
 import {
   ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS, ACTIVITY_LEVEL_LABELS, ACTIVITY_TYPE_SESSION_WORD,
@@ -86,10 +86,13 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+  let unreadMessagesCount = 0;
+  let openTaskCount = 0;
+  let pendingCount = 0;
   if (isStudent && user) {
-    const [progress, notifs] = await Promise.all([
+    const [progress, badges] = await Promise.all([
       getStudentProgress(user.id),
-      getStudentNotifications(user),
+      getStudentBadges(user),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -98,7 +101,10 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
       avatarFrameId: user.avatarFrameId,
       level: progress.level,
     };
-    unreadCount = notifs.unreadCount;
+    unreadCount = badges.unreadCount;
+    unreadMessagesCount = badges.unreadMessagesCount;
+    openTaskCount = badges.openTaskCount;
+    pendingCount = badges.pendingCount;
   }
 
   const isRegisteredForActivity = !!user && activity.sessions.some((s) => s.registrations.some((r) => r.userId === user.id));
@@ -327,6 +333,9 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
         user={shellUser}
         active="activities"
         unreadCount={unreadCount}
+        unreadMessagesCount={unreadMessagesCount}
+        openTaskCount={openTaskCount}
+        pendingCount={pendingCount}
       >
         {detailContent}
       </StudentShell>

@@ -36,33 +36,33 @@ export default async function RegisterPage({
         <Link href="/welcome" className="mb-8 flex items-center justify-center gap-3" aria-label="اللجنة التكنولوجية">
           <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={56} height={56} className="h-14 w-14" priority />
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-extrabold text-zinc-100">اللجنة التكنولوجية</span>
-            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold/70">TECHNOLOGY COMMITTEE</span>
+            <span className="text-lg font-extrabold text-foreground">اللجنة التكنولوجية</span>
+            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold-deep dark:text-gold/70">TECHNOLOGY COMMITTEE</span>
           </span>
         </Link>
 
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-extrabold text-zinc-50 sm:text-3xl">
+          <h1 className="text-2xl font-extrabold text-foreground sm:text-3xl">
             انضم لمجتمع <span className="text-gold-gradient">يصنع الفرق</span>
           </h1>
-          <p className="mt-2 text-sm leading-7 text-zinc-500">
+          <p className="mt-2 text-sm leading-7 text-muted-foreground font-medium">
             دقيقة واحدة تفصلك عن تجربة جامعية مختلفة — ورش، نقاط، إنجازات، ومواهبك
           </p>
         </div>
 
         <div className="space-y-4">
-          <div className="space-y-2.5 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
+          <div className="space-y-2.5 rounded-2xl border border-gold/30 bg-gold/[0.06] p-3 shadow-xs">
             <GoogleButton returnTo={returnTo} label="إنشاء حساب بحساب Google" />
-            <p className="mt-1 text-center text-[11px] leading-5 text-zinc-500">
+            <p className="mt-1 text-center text-[11px] leading-5 text-muted-foreground font-semibold">
               تسجيل دخول فوري وآمن بنقرة واحدة بحساب Google — وبعدها نطلب فقط بياناتك الدراسية الأساسية.
             </p>
           </div>
           <div className="flex items-center gap-3" aria-hidden="true">
-            <span className="h-px flex-1 bg-white/[0.08]" />
-            <span className="text-xs font-bold text-zinc-500">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-xs font-extrabold text-muted-foreground">
               أو إنشاء حساب بالبريد الإلكتروني
             </span>
-            <span className="h-px flex-1 bg-white/[0.08]" />
+            <span className="h-px flex-1 bg-border" />
           </div>
           <RegisterWizard codeConfig={codeConfig} returnTo={returnTo} />
         </div>

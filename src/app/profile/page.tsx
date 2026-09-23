@@ -5,8 +5,7 @@ import { db } from "@/lib/db";
 import { StudentShell } from "@/components/student/student-shell";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentRank, getAvatarFramesVisible, getCharmHeartsVisible } from "@/lib/platform";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { UserCharmHeart } from "@/components/ui/user-charm-heart";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { getAccountFlair } from "@/lib/account-style";
@@ -36,8 +35,7 @@ export default async function ProfilePage() {
     attendedHistory,
     avatarFramesVisible,
     heartsVisible,
-    notifications,
-    socialCounters,
+    studentBadges,
   ] = await Promise.all([
     db.user.findUnique({
       where: { id: user.id },
@@ -91,8 +89,7 @@ export default async function ProfilePage() {
     }),
     getAvatarFramesVisible(),
     getCharmHeartsVisible(),
-    getStudentNotifications(user),
-    getSocialCounters(user.id),
+    getStudentBadges(user),
   ]);
 
   const activeQuests = questRows.filter((q) => q.quest.active);
@@ -109,8 +106,10 @@ export default async function ProfilePage() {
         level: progress.level,
       }}
       active="profile"
-      unreadCount={notifications.unreadCount}
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      unreadCount={studentBadges.unreadCount}
+      openTaskCount={studentBadges.openTaskCount}
+      unreadMessagesCount={studentBadges.unreadMessagesCount}
+      pendingCount={studentBadges.pendingCount}
     >
       <div className="space-y-6 max-w-4xl mx-auto pb-10">
         {/* ── 1. بطاقة الهوية الاجتماعية والاسم والبايو (Mobile-First Hero) ── */}

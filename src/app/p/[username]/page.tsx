@@ -20,6 +20,7 @@ import { UserCharmHeart } from "@/components/ui/user-charm-heart";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { ProfileSocialActions } from "@/components/social/profile-social-actions";
 import { StudentShell } from "@/components/student/student-shell";
+import { getStudentBadges } from "@/lib/student-badges";
 import {
   GRADE_LABELS,
   SECTION_LABELS,
@@ -338,6 +339,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
 
   // إذا كان الزائر طالباً مسجلاً، نغلفه داخل StudentShell
   if (currentUser && currentUser.role === "STUDENT") {
+    const badges = await getStudentBadges(currentUser);
     return (
       <StudentShell
         user={{
@@ -347,6 +349,10 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
           avatarFrameId: currentUser.avatarFrameId,
         }}
         active="messages"
+        unreadCount={badges.unreadCount}
+        openTaskCount={badges.openTaskCount}
+        unreadMessagesCount={badges.unreadMessagesCount}
+        pendingCount={badges.pendingCount}
       >
         {profileContent}
       </StudentShell>

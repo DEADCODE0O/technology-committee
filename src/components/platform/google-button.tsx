@@ -44,7 +44,7 @@ export function GoogleButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/[0.04] text-sm font-bold text-zinc-100 transition-colors hover:border-white/25 hover:bg-white/[0.08]"
+      className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm font-extrabold text-foreground shadow-xs transition-all hover:border-gold/50 hover:bg-muted/80 active:scale-[0.99] dark:border-white/15 dark:bg-white/[0.04] dark:text-zinc-100 dark:hover:border-white/25 dark:hover:bg-white/[0.08]"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
         <path

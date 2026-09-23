@@ -59,23 +59,23 @@ export function LoginForm({
 
       {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
-      <div className="space-y-2.5 rounded-2xl border border-gold/20 bg-gold/[0.05] p-3">
+      <div className="space-y-2.5 rounded-2xl border border-gold/30 bg-gold/[0.06] p-3 shadow-xs">
         <GoogleButton returnTo={returnTo} enabled={googleEnabled} label="تسجيل الدخول بحساب Google" />
-        <p className="mt-1 text-center text-[11px] leading-5 text-zinc-500">
+        <p className="mt-1 text-center text-[11px] leading-5 text-muted-foreground font-semibold">
           تسجيل دخول فوري وآمن بنقرة واحدة بحساب Google بدون الحاجة لكلمة سر
         </p>
       </div>
 
       <div className="flex items-center gap-3" aria-hidden="true">
-        <span className="h-px flex-1 bg-white/[0.08]" />
-        <span className="text-xs font-bold text-zinc-500">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-extrabold text-muted-foreground">
           أو تسجيل الدخول بالبريد الإلكتروني
         </span>
-        <span className="h-px flex-1 bg-white/[0.08]" />
+        <span className="h-px flex-1 bg-border" />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-bold text-zinc-200">
+        <Label htmlFor="email" className="text-sm font-extrabold text-foreground">
           البريد الإلكتروني
         </Label>
         <Input
@@ -86,18 +86,18 @@ export function LoginForm({
           autoComplete="email"
           required
           placeholder="student@example.com"
-          className="h-12 rounded-xl text-start"
+          className="h-12 rounded-xl text-start border-border bg-card text-foreground"
         />
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password" className="text-sm font-bold text-zinc-200">
+          <Label htmlFor="password" className="text-sm font-extrabold text-foreground">
             كلمة السر
           </Label>
           <Link
             href="/auth/forgot-password"
-            className="text-xs font-bold text-gold/80 transition-colors hover:text-gold"
+            className="text-xs font-bold text-gold-deep dark:text-gold-light transition-colors hover:text-gold"
           >
             نسيت كلمة السر؟
           </Link>
@@ -110,14 +110,14 @@ export function LoginForm({
             autoComplete="current-password"
             required
             placeholder="••••••••"
-            className="h-12 rounded-xl text-left ps-4 pr-11"
+            className="h-12 rounded-xl text-left ps-4 pr-11 border-border bg-card text-foreground"
             dir="ltr"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "إخفاء كلمة السر" : "إظهار كلمة السر"}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-zinc-400 hover:text-zinc-200 transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>

@@ -5,8 +5,7 @@ import { SitePageShell } from "@/components/platform/site-page-shell";
 import { StudentShell } from "@/components/student/student-shell";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
-import { getStudentNotifications } from "@/lib/notifications";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { Countdown } from "@/components/platform/countdown";
 import { ACTIVITY_TYPES, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_PLURAL, ACTIVITY_LEVEL_LABELS, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
 import { getSessionState, decideRegistration } from "@/lib/activities";
@@ -176,11 +175,12 @@ export default async function ActivitiesPage({
   } = { name: "", email: "" };
   let unreadCount = 0;
   let unreadMessagesCount = 0;
+  let openTaskCount = 0;
+  let pendingCount = 0;
   if (isStudent && user) {
-    const [progress, notifs, socialCounters] = await Promise.all([
+    const [progress, badges] = await Promise.all([
       getStudentProgress(user.id),
-      getStudentNotifications(user),
-      getSocialCounters(user.id),
+      getStudentBadges(user),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -189,35 +189,37 @@ export default async function ActivitiesPage({
       avatarFrameId: user.avatarFrameId,
       level: progress.level,
     };
-    unreadCount = notifs.unreadCount;
-    unreadMessagesCount = socialCounters.totalSocialAlerts;
+    unreadCount = badges.unreadCount;
+    unreadMessagesCount = badges.unreadMessagesCount;
+    openTaskCount = badges.openTaskCount;
+    pendingCount = badges.pendingCount;
   }
 
   const activitiesContent = (
     <>
       {/* ── البرامج ── */}
       <section aria-label="البرامج">
-        <h2 className="mb-3 text-base font-extrabold text-gold-light">البرامج</h2>
+        <h2 className="mb-3 text-base font-extrabold text-gold-deep dark:text-gold-light">البرامج</h2>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           <Link href={qs(typeFilter)}
             className={`flex items-center gap-2.5 rounded-2xl border p-3.5 transition-colors ${
-              !sp.program ? "border-gold/40 bg-gold/[0.10]" : "border-white/[0.07] bg-surface hover:border-gold/25"
+              !sp.program ? "border-gold/40 bg-gold/[0.10]" : "border-border bg-card hover:border-gold/30 shadow-xs"
             }`}>
             <span className="text-xl leading-none">✨</span>
             <div className="min-w-0">
-              <p className="truncate text-xs font-extrabold text-zinc-100">كل البرامج</p>
-              <p className="text-[10px] text-zinc-500">{activities.length} نشاطًا</p>
+              <p className="truncate text-xs font-extrabold text-foreground">كل البرامج</p>
+              <p className="text-[10px] text-muted-foreground">{activities.length} نشاطًا</p>
             </div>
           </Link>
           {programs.map((p) => (
             <Link key={p.id} href={qs(typeFilter, p.id)}
               className={`flex items-center gap-2.5 rounded-2xl border p-3.5 transition-colors ${
-                sp.program === p.id ? "border-gold/40 bg-gold/[0.10]" : "border-white/[0.07] bg-surface hover:border-gold/25"
+                sp.program === p.id ? "border-gold/40 bg-gold/[0.10]" : "border-border bg-card hover:border-gold/30 shadow-xs"
               }`}>
               <span className="text-xl leading-none">{p.icon}</span>
               <div className="min-w-0">
-                <p className="truncate text-xs font-extrabold text-zinc-100">{p.name}</p>
-                <p className="text-[10px] text-zinc-500">{p._count.activities} نشاطًا</p>
+                <p className="truncate text-xs font-extrabold text-foreground">{p.name}</p>
+                <p className="text-[10px] text-muted-foreground">{p._count.activities} نشاطًا</p>
               </div>
             </Link>
           ))}
@@ -239,17 +241,17 @@ export default async function ActivitiesPage({
       </div>
 
       {activities.length === 0 && (
-        <div className="mt-8 rounded-3xl border border-white/[0.07] bg-surface p-10 text-center">
+        <div className="mt-8 rounded-3xl border border-border bg-card p-10 text-center shadow-xs">
           <p className="text-3xl">🗂️</p>
-          <p className="mt-3 text-sm font-bold text-zinc-300">لا توجد أنشطة في هذا التصنيف حاليًا</p>
-          <p className="mt-1 text-xs text-zinc-500">تابعنا — أنشطة جديدة تُفتح باستمرار خلال العام</p>
+          <p className="mt-3 text-sm font-extrabold text-foreground">لا توجد أنشطة في هذا التصنيف حاليًا</p>
+          <p className="mt-1 text-xs text-muted-foreground">تابعنا — أنشطة جديدة تُفتح باستمرار خلال العام</p>
         </div>
       )}
 
       {/* ── التسجيل مفتوح الآن ── */}
       {openNow.length > 0 && (
         <section className="mt-8" aria-label="التسجيل مفتوح الآن">
-          <h2 className="mb-3 text-base font-extrabold text-gold-light">🔥 التسجيل مفتوح الآن — لا تفوّتها</h2>
+          <h2 className="mb-3 text-base font-extrabold text-emerald-700 dark:text-emerald-400">🔥 التسجيل مفتوح الآن — لا تفوّتها</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {openNow.map((a) => <ActivityCard key={a.id} a={a} state="OPEN" now={now} />)}
           </div>
@@ -259,7 +261,7 @@ export default async function ActivitiesPage({
       {/* ── قادم ── */}
       {upcoming.length > 0 && (
         <section className="mt-8" aria-label="أنشطة قادمة">
-          <h2 className="mb-3 text-base font-extrabold text-gold-light">⏳ قادم قريبًا</h2>
+          <h2 className="mb-3 text-base font-extrabold text-gold-deep dark:text-gold-light">⏳ قادم قريبًا</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {upcoming.map((a) => <ActivityCard key={a.id} a={a} state="UPCOMING" now={now} />)}
           </div>
@@ -269,7 +271,7 @@ export default async function ActivitiesPage({
       {/* ── الأرشيف ── */}
       {past.length > 0 && (
         <section className="mt-8" aria-label="أنشطة منتهية">
-          <h2 className="mb-3 text-base font-extrabold text-zinc-400">📚 من الأرشيف — فاتتك؟</h2>
+          <h2 className="mb-3 text-base font-extrabold text-foreground">📚 من الأرشيف — فاتتك؟</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {past.map((a) => <ActivityCard key={a.id} a={a} state="PAST" now={now} />)}
           </div>
@@ -285,12 +287,14 @@ export default async function ActivitiesPage({
         active="activities"
         unreadCount={unreadCount}
         unreadMessagesCount={unreadMessagesCount}
+        openTaskCount={openTaskCount}
+        pendingCount={pendingCount}
       >
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-50">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">
             <span className="text-gold-gradient">اكتشف الأنشطة والبرامج</span>
           </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-400">
+          <p className="mt-2 text-sm leading-6 text-muted-foreground font-medium">
             تصفح الكورسات وورش العمل والفعاليات المتاحة وسجّل مقعدك فورًا.
           </p>
         </div>
@@ -407,7 +411,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
               ⏳ قريباً
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.08] px-2.5 py-1 text-[10px] font-bold text-zinc-400 backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/60 px-2.5 py-1 text-[10px] font-bold text-zinc-200 backdrop-blur">
               انتهى
             </span>
           )}

@@ -8,7 +8,7 @@ import {
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
-import { getStudentNotifications } from "@/lib/notifications";
+import { getStudentBadges } from "@/lib/student-badges";
 import { StudentShell } from "@/components/student/student-shell";
 import { SitePageShell } from "@/components/platform/site-page-shell";
 import { SessionRegisterForm, type DynField } from "@/components/platform/session-register-form";
@@ -109,10 +109,13 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     level?: number;
   } = { name: "", email: "" };
   let unreadCount = 0;
+  let unreadMessagesCount = 0;
+  let openTaskCount = 0;
+  let pendingCount = 0;
   if (isStudent && user) {
-    const [progress, notifs] = await Promise.all([
+    const [progress, badges] = await Promise.all([
       getStudentProgress(user.id),
-      getStudentNotifications(user),
+      getStudentBadges(user),
     ]);
     shellUser = {
       name: user.profile?.fullName ?? user.email,
@@ -121,26 +124,29 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       avatarFrameId: user.avatarFrameId,
       level: progress.level,
     };
-    unreadCount = notifs.unreadCount;
+    unreadCount = badges.unreadCount;
+    unreadMessagesCount = badges.unreadMessagesCount;
+    openTaskCount = badges.openTaskCount;
+    pendingCount = badges.pendingCount;
   }
 
   const sessionContent = (
     <>
       {/* مسار التنقل */}
-      <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500" aria-label="مسار التنقل">
-        <Link href="/activities" className="hover:text-gold-light">الأنشطة</Link>
+      <nav className="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground" aria-label="مسار التنقل">
+        <Link href="/activities" className="hover:text-gold-deep dark:hover:text-gold-light">الأنشطة</Link>
         <ChevronRight className="h-3 w-3" />
         {activity.program && (
           <>
-            <span className="text-zinc-600">{activity.program.icon} {activity.program.name}</span>
+            <span className="text-muted-foreground">{activity.program.icon} {activity.program.name}</span>
             <ChevronRight className="h-3 w-3" />
           </>
         )}
-        <Link href={`/activities/${activity.id}`} className="font-bold text-zinc-300 hover:text-gold-light">
+        <Link href={`/activities/${activity.id}`} className="font-bold text-foreground hover:text-gold-deep dark:hover:text-gold-light">
           {activity.title}
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-gold-light">{sessionLabel}</span>
+        <span className="text-gold-deep dark:text-gold-light font-bold">{sessionLabel}</span>
       </nav>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -202,7 +208,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                 {ACTIVITY_TYPE_ICONS[activity.type]} {typeWord}
                 {activity.program ? ` · ${activity.program.name}` : ""}
               </p>
-              <h2 className="text-2xl font-extrabold leading-relaxed text-zinc-50 sm:text-3xl">
+              <h2 className="text-2xl font-extrabold leading-relaxed text-white sm:text-3xl">
                 {isCourse ? `${activity.title} — ${sessionLabel}` : isTeaserOnly ? activity.teaser : activity.title}
               </h2>
             </div>
@@ -316,9 +322,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
 
           {/* الوصف */}
           {!isTeaserOnly && (
-            <section className="mt-6 rounded-3xl border border-black/[0.06] dark:border-white/[0.06] bg-surface p-5 sm:p-6">
+            <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
               <h3 className="mb-3 text-base font-extrabold text-gold-deep dark:text-gold-light">عن {isCourse ? "المحاضرة" : typeWord === "فعالية" ? "الفعالية" : "الورشة"}</h3>
-              <p className="whitespace-pre-line text-sm leading-8 text-zinc-700 dark:text-zinc-300">
+              <p className="whitespace-pre-line text-sm leading-8 text-foreground/90 dark:text-zinc-200">
                 {session.description || activity.description}
               </p>
               {(session.materialUrl || session.onlineUrl) && (
@@ -468,6 +474,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         user={shellUser}
         active="activities"
         unreadCount={unreadCount}
+        unreadMessagesCount={unreadMessagesCount}
+        openTaskCount={openTaskCount}
+        pendingCount={pendingCount}
       >
         {sessionContent}
       </StudentShell>

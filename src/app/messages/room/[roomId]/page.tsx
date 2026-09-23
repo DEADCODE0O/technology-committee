@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getChatRoomMessages } from "@/actions/chat";
-import { getSocialCounters } from "@/actions/messaging";
+import { getStudentBadges } from "@/lib/student-badges";
 import { GroupChatRoom } from "@/components/social/group-chat-room";
 import { StudentShell } from "@/components/student/student-shell";
 
@@ -62,9 +62,9 @@ export default async function ChatRoomPage(props: RoomPageProps) {
     }
   }
 
-  const [initialMessages, socialCounters] = await Promise.all([
+  const [initialMessages, badges] = await Promise.all([
     getChatRoomMessages(room.id, 80),
-    getSocialCounters(user.id),
+    getStudentBadges(user),
   ]);
 
   return (
@@ -76,7 +76,10 @@ export default async function ChatRoomPage(props: RoomPageProps) {
         avatarFrameId: user.avatarFrameId,
       }}
       active="messages"
-      unreadMessagesCount={socialCounters.totalSocialAlerts}
+      unreadCount={badges.unreadCount}
+      openTaskCount={badges.openTaskCount}
+      unreadMessagesCount={badges.unreadMessagesCount}
+      pendingCount={badges.pendingCount}
       chatMode={true}
     >
       <div className="w-full flex-1 flex flex-col h-full min-h-0">
