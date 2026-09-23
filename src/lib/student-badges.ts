@@ -31,18 +31,13 @@ export async function getStudentBadges(user: {
       })
       .catch(() => null);
 
-    const [notificationsRes, socialRes, assignments, pendingDataCount] = await Promise.all([
+    const [notificationsRes, assignments, pendingDataCount] = await Promise.all([
       getStudentNotifications(user as any).catch(() => ({
         notifications: [],
         unreadCount: 0,
         pinnedBanner: null,
         pinnedBanners: [],
         pendingImportant: 0,
-      })),
-      getSocialCounters(user.id).catch(() => ({
-        unreadMessagesCount: 0,
-        pendingFriendRequestsCount: 0,
-        totalSocialAlerts: 0,
       })),
       db.taskAssignment
         .findMany({
@@ -84,7 +79,7 @@ export async function getStudentBadges(user: {
     return {
       unreadCount: notificationsRes.unreadCount,
       openTaskCount,
-      unreadMessagesCount: socialRes.totalSocialAlerts,
+      unreadMessagesCount: 0,
       pendingCount: pendingDataCount,
       notifications: notificationsRes.notifications,
       pinnedBanners: notificationsRes.pinnedBanners,

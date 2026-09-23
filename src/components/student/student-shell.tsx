@@ -19,11 +19,10 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 const NAV = [
   { key: "dashboard", label: "الرئيسية", href: "/panel", icon: LayoutDashboard, bottom: true },
   { key: "activities", label: "استكشف", href: "/activities", icon: Compass, bottom: true },
-  { key: "messages", label: "الرسائل", href: "/messages", icon: MessageCircle, bottom: true },
   { key: "tasks", label: "مهامي", href: "/tasks", icon: ClipboardList, bottom: true },
+  { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: true },
   { key: "settings", label: "الإعدادات", href: "/settings", icon: Settings, bottom: true },
   { key: "profile", label: "حسابي", href: "/profile", icon: Users, bottom: false },
-  { key: "leaderboard", label: "المتصدرون", href: "/leaderboard", icon: Trophy, bottom: false },
 ];
 
 export function StudentShell({
@@ -232,11 +231,6 @@ export function StudentShell({
                       {n.key === "tasks" && openTaskCount > 0 && (
                         <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[8px] font-black text-night ring-1 ring-night">
                           {openTaskCount > 9 ? "9+" : openTaskCount}
-                        </span>
-                      )}
-                      {n.key === "messages" && unreadMessagesCount > 0 && (
-                        <span className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 text-white px-1 text-[8px] font-black shadow-sm ring-1 ring-background animate-pulse">
-                          {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
                         </span>
                       )}
                       {n.key === "dashboard" && pendingCount > 0 && (

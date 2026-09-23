@@ -59,6 +59,87 @@ function refresh(sessionId: string, activityId?: string) {
   revalidatePath("/leaderboard");
 }
 
+// ─── إدارة إنذارات الغياب وعقوبة الـ 3 غيابات ─────────────────
+async function handleAbsenceStrikes(userId: string, sessionTitle: string, adminId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { unexcusedAbsences: true, absenceWarnings: true, attendanceRestricted: true },
+    });
+    if (!user) return;
+
+    const newAbsences = user.unexcusedAbsences + 1;
+    const newWarnings = user.absenceWarnings + 1;
+    const isNowRestricted = newAbsences >= 3;
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        unexcusedAbsences: newAbsences,
+        absenceWarnings: newWarnings,
+        attendanceRestricted: isNowRestricted ? true : user.attendanceRestricted,
+      },
+    });
+
+    const { createNotificationForUsers } = await import("@/lib/notifications");
+    const { DEFAULT_TARGET } = await import("@/lib/targeting");
+
+    if (newAbsences === 1) {
+      await createNotificationForUsers({
+        type: "IMPORTANT",
+        title: "إنذار غياب أول ⚠️",
+        body: `تم تسجيل غيابك عن ورشة «${sessionTitle}». يرجى العلم بأن تكرار الغياب (3 مرات) بدون عذر مسبق يؤدي إلى تقييد حسابك وتحويلك لقائمة الانتظار في الورش القادمة لإتاحة الفرصة للطلاب الملتزمين.`,
+        target: { ...DEFAULT_TARGET, userIds: [userId] },
+        createdById: adminId,
+        pinned: true,
+      });
+    } else if (newAbsences === 2) {
+      await createNotificationForUsers({
+        type: "IMPORTANT",
+        title: "إنذار غياب ثانٍ ⚠️⚠️",
+        body: `لقد تم تسجيل الغياب الثاني لك عن الورش (آخرها: «${sessionTitle}»). نلفت انتباهك إلى أنه في حال الغياب لمرة ثالثة سيتم تقييد حسابك تلقائياً ونقلك لقائمة الانتظار في جميع الورش القادمة.`,
+        target: { ...DEFAULT_TARGET, userIds: [userId] },
+        createdById: adminId,
+        pinned: true,
+      });
+    } else if (newAbsences >= 3) {
+      await createNotificationForUsers({
+        type: "IMPORTANT",
+        title: "تنبيه هام: تقييد أولوية التسجيل 🚫",
+        body: `لقد بلغت غياباتك 3 ورش (آخرها: «${sessionTitle}»). نظراً لعدم الالتزام، تم تقييد أولوية حسابك وتحويلك لقائمة الانتظار في جميع الورش القادمة لإعطاء الأولوية للطلاب الأكثر نشاطاً والتزاماً. يمكنك مراجعة الإدارة في حال وجود عذر قهري.`,
+        target: { ...DEFAULT_TARGET, userIds: [userId] },
+        createdById: adminId,
+        pinned: true,
+      });
+    }
+  } catch (err) {
+    console.error("handleAbsenceStrikes error:", err);
+  }
+}
+
+async function handleAbsenceUndo(userId: string) {
+  try {
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { unexcusedAbsences: true, attendanceRestricted: true },
+    });
+    if (!user || user.unexcusedAbsences <= 0) return;
+
+    const newAbsences = Math.max(0, user.unexcusedAbsences - 1);
+    const shouldUnrestrict = newAbsences < 3;
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        unexcusedAbsences: newAbsences,
+        attendanceRestricted: shouldUnrestrict ? false : user.attendanceRestricted,
+      },
+    });
+  } catch (err) {
+    console.error("handleAbsenceUndo error:", err);
+  }
+}
+
 // ─── تحديد حضور يدوي (حضر / لم يحضر) — لجلسة محددة ──────────
 
 export async function setAttendance(
@@ -83,6 +164,8 @@ export async function setAttendance(
     }
 
     const existing = reg.attendance.find((a) => a.sessionId === reg.sessionId) ?? null;
+    const wasPresent = existing ? existing.present : null;
+
     if (existing) {
       await db.attendance.update({
         where: { id: existing.id },
@@ -99,6 +182,16 @@ export async function setAttendance(
           markedAt: new Date(),
         },
       });
+    }
+
+    // إدارة إنذارات الغياب وتقييد الأولوية
+    if (reg.userId) {
+      const sessionTitle = `${reg.session.activity.title} — ${reg.session.title}`;
+      if (present === false && wasPresent !== false) {
+        await handleAbsenceStrikes(reg.userId, sessionTitle, admin.id);
+      } else if (present === true && wasPresent === false) {
+        await handleAbsenceUndo(reg.userId);
+      }
     }
 
     // نقاط الحضور: تُمنح عند الحضور وتُعكس عند الغياب
@@ -178,6 +271,127 @@ export async function markAllPresent(sessionId: string): Promise<{ ok: boolean; 
     });
 
     refresh(sessionId, session.activityId);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+// ─── تسجيل الباقي غياب (دون المساس بمن حضر بالباركود أو يدوياً) ──
+export async function markRestAbsent(sessionId: string): Promise<{ ok: boolean; count?: number; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.ATTENDANCE, "manage");
+    const session = await db.session.findUnique({ where: { id: sessionId }, include: { activity: true } });
+    if (!session) return { ok: false, error: "الجلسة غير موجودة" };
+    if (getSessionState(session) === "UPCOMING") return { ok: false, error: "الجلسة لم تبدأ بعد" };
+
+    const regs = await db.registration.findMany({
+      where: { sessionId, status: "REGISTERED" },
+      include: { attendance: true },
+    });
+
+    let markedCount = 0;
+    const sessionTitle = `${session.activity.title} — ${session.title}`;
+
+    for (const reg of regs) {
+      const existing = reg.attendance.find((a) => a.sessionId === sessionId) ?? null;
+      // الطالب حاضر بالفعل (سواء بـ QR أو يدوي) — نحافظ على حضوره تماماً دون أي مساس!
+      if (existing?.present === true) {
+        continue;
+      }
+
+      // إذا كان قد سُجل غائبًا بالفعل من قبل، لا نكرر الإنذار
+      if (existing && existing.present === false) {
+        continue;
+      }
+
+      if (existing) {
+        await db.attendance.update({
+          where: { id: existing.id },
+          data: { present: false, method: "MANUAL", markedById: admin.id, markedAt: new Date() },
+        });
+      } else {
+        await db.attendance.create({
+          data: {
+            registrationId: reg.id,
+            sessionId,
+            present: false,
+            method: "MANUAL",
+            markedById: admin.id,
+            markedAt: new Date(),
+          },
+        });
+      }
+
+      markedCount++;
+
+      // تطبيق نظام الـ 3 غيابات والإنذارات وعكس أي نقاط
+      if (reg.userId) {
+        await handleAbsenceStrikes(reg.userId, sessionTitle, admin.id);
+        await reverseAttendancePoints(sessionId, reg.userId);
+      }
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "ATTENDANCE_REST_ABSENT",
+      entity: "SESSION",
+      entityId: sessionId,
+      summary: `تسجيل الباقي غياب (${markedCount} طالبًا) في «${session.activity.title}» / ${session.title} مع الحفاظ على الحاضرين بالباركود`,
+      details: { sessionId, markedCount },
+    });
+
+    refresh(sessionId, session.activityId);
+    return { ok: true, count: markedCount };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+// ─── تصفير غيابات الطالب ورفع التقييد (قبول عذر إداري) ───────────
+export async function resetAbsences(
+  userId: string,
+  reason?: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.ATTENDANCE, "manage");
+    const user = await db.user.findUnique({ where: { id: userId }, include: { profile: true } });
+    if (!user) return { ok: false, error: "المستخدم غير موجود" };
+
+    await db.user.update({
+      where: { id: userId },
+      data: {
+        unexcusedAbsences: 0,
+        attendanceRestricted: false,
+        absenceWarnings: 0,
+      },
+    });
+
+    const { createNotificationForUsers } = await import("@/lib/notifications");
+    const { DEFAULT_TARGET } = await import("@/lib/targeting");
+
+    await createNotificationForUsers({
+      type: "IMPORTANT",
+      title: "قبول العذر ورفع تقييد الحضور ✨",
+      body: reason
+        ? `تم قبول عذرك (${reason}) وإعادة تفعيل أولوية التسجيل لك في الورش القادمة. نتمنى لك التوفيق والالتزام دائماً!`
+        : `تم قبول عذرك ورفع تقييد الحضور عن حسابك بنجاح، واستعادة أولوية التسجيل في الورش. نتمنى لك دوام الالتزام!`,
+      target: { ...DEFAULT_TARGET, userIds: [userId] },
+      createdById: admin.id,
+      pinned: true,
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "ABSENCES_RESET",
+      entity: "USER",
+      entityId: userId,
+      summary: `تصفير غيابات ورفع تقييد الحضور عن ${user.profile?.fullName ?? user.email}${reason ? ` (السبب: ${reason})` : ""}`,
+      details: { userId, reason },
+    });
+
+    revalidatePath("/panel");
+    revalidatePath("/admin");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };

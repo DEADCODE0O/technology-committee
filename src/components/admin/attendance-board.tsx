@@ -8,8 +8,8 @@
 import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, QrCode, Users2, CheckCircle2, XCircle, Printer, RefreshCw } from "lucide-react";
-import { setAttendance, markAllPresent } from "@/actions/attendance";
+import { Loader2, QrCode, Users2, CheckCircle2, XCircle, Printer, RefreshCw, UserX } from "lucide-react";
+import { setAttendance, markAllPresent, markRestAbsent } from "@/actions/attendance";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { GRADE_LABELS } from "@/lib/constants";
@@ -120,22 +120,43 @@ export function AttendanceBoard({
       </div>
 
       {canManage && rows.length > 0 && sessionState !== "UPCOMING" && (
-        <Button
-          onClick={() => {
-            if (!confirm(`تحديد الجميع المسجلين كحاضرين في «${sessionTitle}»؟ النقاط هتتضاف تلقائيًا لمن لم تُمنح له.`)) return;
-            startTransition(async () => {
-              const res = await markAllPresent(sessionId);
-              if (res.ok) { toast.success("تم تحديد حضور الجميع"); router.refresh(); }
-              else toast.error(res.error || "تعذر التحديد");
-            });
-          }}
-          disabled={pending}
-          variant="outline"
-          className="h-11 w-full rounded-xl border-gold/40 bg-gold/[0.08] text-sm font-extrabold text-gold-light hover:bg-gold/[0.15]"
-        >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users2 className="h-4 w-4" />}
-          تحديد الجميع كحاضرين
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <Button
+            onClick={() => {
+              if (!confirm(`تحديد الجميع المسجلين كحاضرين في «${sessionTitle}»؟ النقاط هتتضاف تلقائيًا لمن لم تُمنح له.`)) return;
+              startTransition(async () => {
+                const res = await markAllPresent(sessionId);
+                if (res.ok) { toast.success("تم تحديد حضور الجميع"); router.refresh(); }
+                else toast.error(res.error || "تعذر التحديد");
+              });
+            }}
+            disabled={pending}
+            variant="outline"
+            className="h-11 w-full rounded-xl border-gold/40 bg-gold/[0.08] text-sm font-extrabold text-gold-light hover:bg-gold/[0.15]"
+          >
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users2 className="h-4 w-4" />}
+            تحديد الجميع كحاضرين
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (!confirm(`هل أنت متأكد من تسجيل الباقي (${pendingCount} طالبًا) كغائبين؟\n\n✓ لن يتم المساس بالطلاب الذين سجلوا حضورهم بالباركود أو يدوياً.\n✓ سيتم إرسال إنذار غياب وتطبيق قواعد الالتزام على الغائبين.`)) return;
+              startTransition(async () => {
+                const res = await markRestAbsent(sessionId);
+                if (res.ok) {
+                  toast.success(`تم تسجيل ${res.count ?? 0} طالبًا كغائبين بنجاح دون المساس بالحاضرين`);
+                  router.refresh();
+                } else toast.error(res.error || "تعذر تسجيل الغياب");
+              });
+            }}
+            disabled={pending || pendingCount === 0}
+            variant="outline"
+            className="h-11 w-full rounded-xl border-red-500/30 bg-red-500/[0.06] text-sm font-extrabold text-red-300 hover:bg-red-500/[0.12] disabled:opacity-50"
+          >
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+            تسجيل الباقي غياب ({pendingCount})
+          </Button>
+        </div>
       )}
 
       {sessionState === "UPCOMING" && (

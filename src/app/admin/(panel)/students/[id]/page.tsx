@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft, Mail, Phone, GraduationCap, Users, IdCard, HelpCircle, CalendarDays, LogIn,
-  Zap, Medal, Palette, CheckCircle2, XCircle, ScrollText,
+  Zap, Medal, Palette, CheckCircle2, XCircle, ScrollText, AlertTriangle, ShieldCheck,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
@@ -12,7 +12,7 @@ import {
   levelFromPoints, TALENT_STATUS_LABELS, talentLabel, REGISTRATION_STATUS_LABELS,
   REGISTRATION_SOURCE_LABELS,
 } from "@/lib/constants";
-import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, DeleteStudentButton, ImpersonateStudentButton } from "@/components/admin/student-actions";
+import { SuspendToggle, AddPointsButton, AwardBadgeButton, ResetPasswordButton, DeleteStudentButton, ImpersonateStudentButton, ResetStudentAbsencesButton } from "@/components/admin/student-actions";
 import { ReversePointEventButton, DeletePointEventButton } from "@/components/admin/points-tools";
 import { EditStudentButton } from "@/components/admin/edit-student-form";
 import { SetTalentStatusButtons } from "@/components/admin/talent-actions";
@@ -74,6 +74,11 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
               <h1 className="text-2xl font-extrabold text-zinc-50">{student.profile?.fullName ?? student.email}</h1>
               <p className="mt-1 text-sm text-zinc-500">
                 {points} نقطة · مستوى {level} · حضر {attendedCount} ورشة · انضم {formatDateAr(student.createdAt)}
+                {student.unexcusedAbsences > 0 && (
+                  <span className={`ms-2 font-bold ${student.attendanceRestricted ? "text-amber-400" : "text-rose-400"}`}>
+                    · {student.unexcusedAbsences} غيابات {student.attendanceRestricted ? "⚠️ (أولوية مقيدة)" : ""}
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -99,6 +104,14 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 gender: student.profile?.gender ?? "MALE",
                 studentCode: student.profile?.studentCode ?? "",
               }}
+            />
+          )}
+          {canManage && (student.unexcusedAbsences > 0 || student.attendanceRestricted) && (
+            <ResetStudentAbsencesButton
+              userId={student.id}
+              studentName={student.profile?.fullName ?? student.email}
+              absencesCount={student.unexcusedAbsences}
+              restricted={student.attendanceRestricted}
             />
           )}
           {canPoints && <AddPointsButton userId={student.id} studentName={student.profile?.fullName ?? student.email} pointRules={pointRules} />}
@@ -131,6 +144,17 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
                 icon={<CheckCircle2 className="h-4 w-4" />}
                 label="حالة الملف"
                 value={student.profile ? "مكتمل ✓" : "غير مكتمل (ينقصه استكمال البيانات)"}
+              />
+              <Info
+                icon={<AlertTriangle className="h-4 w-4" />}
+                label="الالتزام بالورش"
+                value={
+                  student.attendanceRestricted
+                    ? `أولوية مقيدة ⚠️ (${student.unexcusedAbsences} غيابات غير مبررة)`
+                    : student.unexcusedAbsences > 0
+                    ? `ملتزم (${student.unexcusedAbsences} غياب مسجل)`
+                    : "ملتزم تماماً (0 غيابات) ✓"
+                }
               />
               {student.googleId && (
                 <Info

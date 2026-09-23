@@ -131,6 +131,8 @@ export type ActivityInput = {
   presenter?: string;
   level?: string;
   publish: string; // DRAFT | PUBLISHED | ARCHIVED
+  whatsappUrl?: string;
+  telegramUrl?: string;
 };
 
 export async function saveActivity(input: ActivityInput): Promise<{ ok: boolean; id?: string; error?: string }> {
@@ -159,6 +161,8 @@ export async function saveActivity(input: ActivityInput): Promise<{ ok: boolean;
       presenter: (input.presenter || "").trim() || null,
       level: (input.level || "").trim() || null,
       publish: input.publish,
+      whatsappUrl: (input.whatsappUrl || "").trim() || null,
+      telegramUrl: (input.telegramUrl || "").trim() || null,
     };
 
     if (input.id) {
@@ -263,6 +267,8 @@ export type SessionInput = {
   onlineLabel?: string;
   materialUrl?: string;
   materialLabel?: string;
+  whatsappUrl?: string;
+  telegramUrl?: string;
   status?: string;
   // ── التسجيل (معاملة الورشة) ──
   seats?: number;
@@ -317,6 +323,8 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
       onlineLabel: (input.onlineLabel || "").trim() || null,
       materialUrl: (input.materialUrl || "").trim() || null,
       materialLabel: (input.materialLabel || "").trim() || null,
+      whatsappUrl: (input.whatsappUrl || "").trim() || null,
+      telegramUrl: (input.telegramUrl || "").trim() || null,
       status: input.status || "SCHEDULED",
       seats,
       registrationOpensAt,

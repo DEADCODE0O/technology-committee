@@ -18,6 +18,13 @@ export async function updateSession(request: NextRequest) {
 
   let response = NextResponse.next({ request });
 
+  // فحص الكوكيز: إذا لم يكن هناك أي كوكي جلسة خاص بـ Supabase، لا تتصل بالسيرفر أبداً (0 بايت Egress للزوار)
+  const allCookies = request.cookies.getAll();
+  const hasAuthCookie = allCookies.some((c) => c.name.startsWith("sb-") || c.name.includes("auth-token"));
+  if (!hasAuthCookie) {
+    return response;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -39,8 +46,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // تحديث الجلسة إن كانت قريبة من الانتهاء — بلا تحويلات
-  await supabase.auth.getUser();
+  // تحديث الجلسة إن كانت قريبة من الانتهاء
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    // تجاهل أي خطأ بهدوء دون التأثير على التصفح
+  }
 
   return response;
 }

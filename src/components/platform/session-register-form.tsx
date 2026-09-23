@@ -176,7 +176,11 @@ export function SessionRegisterForm({
       if (res.ok) {
         setResult(res.waitlisted ? "waitlisted" : "registered");
         router.refresh();
-        toast.success(res.waitlisted ? "أُضفت لقائمة الانتظار" : "تم حجز مقعدك!");
+        if (res.restrictedNotice) {
+          toast.warning(res.restrictedNotice, { duration: 7000 });
+        } else {
+          toast.success(res.waitlisted ? "أُضفت لقائمة الانتظار" : "تم حجز مقعدك!");
+        }
       } else {
         toast.error(res.error || "تعذر التسجيل");
       }

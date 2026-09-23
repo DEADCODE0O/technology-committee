@@ -29,6 +29,8 @@ export type ActivityFormValues = {
   presenter: string;
   level: string; // "" = بدون
   publish: string;
+  whatsappUrl?: string;
+  telegramUrl?: string;
 };
 
 export function ActivityForm({
@@ -43,7 +45,7 @@ export function ActivityForm({
   const [uploading, setUploading] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [v, setV] = useState<ActivityFormValues>(
-    initial ?? { type: "WORKSHOP", programId: "", title: "", teaser: "", description: "", image: "", presenter: "", level: "", publish: "PUBLISHED" }
+    initial ?? { type: "WORKSHOP", programId: "", title: "", teaser: "", description: "", image: "", presenter: "", level: "", publish: "PUBLISHED", whatsappUrl: "", telegramUrl: "" }
   );
 
   // رفع صورة على السيرفر
@@ -82,6 +84,8 @@ export function ActivityForm({
         presenter: v.presenter || undefined,
         level: v.level || undefined,
         publish: v.publish,
+        whatsappUrl: v.whatsappUrl || undefined,
+        telegramUrl: v.telegramUrl || undefined,
       };
       const res = await saveActivity(input);
       if (res.ok && res.id) {
@@ -237,6 +241,37 @@ export function ActivityForm({
               لصور درايف: شارك الملف «أي شخص لديه الرابط» ثم الصق الرابط هنا
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* روابط مجموعات التواصل (واتساب وتليجرام) — تظهر للمقبولين فقط */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] p-4">
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+            رابط مجموعة WhatsApp (اختياري)
+          </Label>
+          <Input
+            dir="ltr"
+            value={v.whatsappUrl || ""}
+            onChange={(e) => setV((p) => ({ ...p, whatsappUrl: e.target.value }))}
+            placeholder="https://chat.whatsapp.com/..."
+            className="text-xs"
+          />
+          <p className="text-[10px] text-zinc-500">يظهر فقط للطلاب المقبولين في الورشة للانضمام</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
+            رابط قناة/مجموعة Telegram (اختياري)
+          </Label>
+          <Input
+            dir="ltr"
+            value={v.telegramUrl || ""}
+            onChange={(e) => setV((p) => ({ ...p, telegramUrl: e.target.value }))}
+            placeholder="https://t.me/..."
+            className="text-xs"
+          />
+          <p className="text-[10px] text-zinc-500">يظهر فقط للطلاب المقبولين في الورشة للانضمام</p>
         </div>
       </div>
 

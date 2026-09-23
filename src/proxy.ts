@@ -12,16 +12,26 @@ import { updateSession } from "@/lib/supabase/middleware";
 // ═══════════════════════════════════════════════════════════════
 
 export async function proxy(request: NextRequest) {
-  // استثناء مسار فحص الشات الدوري من تحديث جلسة Supabase لمنع استهلاك Egress المصادقة
-  if (request.nextUrl.pathname.startsWith("/api/chat/poll")) {
+  // 1) تجاوز أي طلبات تحميل مسبق في الخلفية (Prefetch) لحماية Egress المصادقة تماماً
+  const purpose =
+    request.headers.get("purpose") ||
+    request.headers.get("x-purpose") ||
+    request.headers.get("next-router-prefetch");
+  if (purpose === "prefetch" || purpose === "1") {
     return NextResponse.next();
   }
+
+  // 2) استثناء مسارات API من تحديث الكوكيز في الـ Middleware
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   return updateSession(request);
 }
 
 export const config = {
-  // كل الصفحات والأكشنات ما عدا الملفات الثابتة والوسائط وفحص الشات الدوري
+  // كل الصفحات ما عدا الملفات الثابتة والوسائط وAPI
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/qr|api/uploads|api/chat/poll|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
   ],
 };

@@ -281,14 +281,7 @@ export function FriendsManager({
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
-                    <Link
-                      href={`/messages/${friend.userId}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-gold/15 border border-gold/30 px-3 py-1.5 text-xs font-extrabold text-gold hover:bg-gold hover:text-night transition-all"
-                    >
-                      <MessageSquare className="h-3.5 w-3.5" />
-                      مراسلة
-                    </Link>
+                  <div className="mt-4 flex items-center justify-end border-t border-border/60 pt-3">
 
                     <div className="flex items-center gap-1">
                       <Link
@@ -506,13 +499,9 @@ export function FriendsManager({
                     </Link>
 
                     {student.friendship?.status === "ACCEPTED" ? (
-                      <Link
-                        href={`/messages/${student.id}`}
-                        className="inline-flex items-center gap-1 rounded-xl bg-gold/15 px-3 py-1 text-[11px] font-extrabold text-gold"
-                      >
-                        <MessageSquare className="h-3 w-3" />
+                      <span className="inline-flex items-center gap-1 rounded-xl bg-gold/15 px-3 py-1 text-[11px] font-extrabold text-gold">
                         أصدقاء ✓
-                      </Link>
+                      </span>
                     ) : student.friendship?.status === "PENDING" ? (
                       <span className="text-[11px] font-bold text-amber-500">
                         معلق...

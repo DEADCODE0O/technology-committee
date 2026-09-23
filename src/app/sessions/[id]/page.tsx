@@ -21,6 +21,7 @@ import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/a
 import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 import { formatCairoDate } from "@/lib/dates";
+import { CommunityLinksCard } from "@/components/platform/community-links-card";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,10 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       myAttended = reg.attendance.some((a) => a.present);
     }
   }
+
+  const isRegisteredInSession = existing?.status === "REGISTERED" || (!!user && isAdminRole(user.role));
+  const whatsappUrl = session.whatsappUrl || activity.whatsappUrl;
+  const telegramUrl = session.telegramUrl || activity.telegramUrl;
 
   // الصورة: المرفوعة على السيرفر أو من الرابط (درايف/خارجي) للمحاضرة أو النشاط
   const sessionImg = session.image || activity.image;
@@ -317,6 +322,19 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                   <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">سجّل حضورك بمسح كود الـ QR عند الدخول لحصد النقاط والشارات.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* مجتمعات واتساب وتليجرام للجلسة */}
+          {(whatsappUrl || telegramUrl) && (
+            <div className="mt-6">
+              <CommunityLinksCard
+                whatsappUrl={whatsappUrl}
+                telegramUrl={telegramUrl}
+                isRegistered={isRegisteredInSession}
+                itemTitle={sessionLabel}
+                type={isCourse ? "محاضرة" : typeWord}
+              />
             </div>
           )}
 

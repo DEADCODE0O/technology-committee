@@ -46,6 +46,8 @@ export default async function ProfilePage() {
         displayName: true,
         username: true,
         bio: true,
+        unexcusedAbsences: true,
+        attendanceRestricted: true,
       },
     }),
     getStudentProgress(user.id),
@@ -202,6 +204,24 @@ export default async function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* ── بنر التزام الحضور ومؤشر الغيابات ── */}
+        {userRow?.attendanceRestricted ? (
+          <div className="rounded-3xl border border-amber-500/30 bg-amber-500/[0.08] dark:bg-amber-950/20 p-4 sm:p-5 text-sm text-foreground flex items-start gap-3">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500 font-bold">⚠️</span>
+            <div>
+              <p className="font-extrabold text-amber-600 dark:text-amber-400">تنبيه: أولوية القبول في الورش مقيدة مؤقتاً</p>
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                نظراً لتسجيل 3 غيابات بدون عذر مسبق، يتم إدراج تسجيلاتك القادمة في قائمة الانتظار تلقائياً لإعطاء الأولوية للطلاب الملتزمين. يمكنك التوجه لمسؤول اللجنة لتقديم عذر رسمي لرفع التقييد.
+              </p>
+            </div>
+          </div>
+        ) : (userRow?.unexcusedAbsences ?? 0) > 0 ? (
+          <div className="rounded-2xl border border-border/80 bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-3">
+            <span className="font-bold text-foreground">سجل الالتزام: لديك {userRow?.unexcusedAbsences} غياب مسجل بدون عذر</span>
+            <span className="text-[11px] text-amber-500 font-bold">تنبيه: الوصول لـ 3 غيابات ينقلك لقائمة الانتظار تلقائياً</span>
+          </div>
+        ) : null}
 
         {/* ── 2. التبويبات التفاعلية الذكية المخصصة للهاتف (ProfileTabs) ── */}
         <ProfileTabs

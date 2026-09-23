@@ -14,9 +14,9 @@ import {
 import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
 import { resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
-import { ChevronRight, MapPin, Users, CalendarDays, Clock, MessageCircle } from "lucide-react";
+import { ChevronRight, MapPin, Users, CalendarDays, Clock } from "lucide-react";
 import { formatCairoDate } from "@/lib/dates";
-import { getOrCreateActivityChatRoom } from "@/actions/chat";
+import { CommunityLinksCard } from "@/components/platform/community-links-card";
 
 export const dynamic = "force-dynamic";
 
@@ -108,11 +108,6 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   }
 
   const isRegisteredForActivity = !!user && activity.sessions.some((s) => s.registrations.some((r) => r.userId === user.id));
-  let activityChatRoomId: string | null = null;
-  if (user && (isRegisteredForActivity || user.role === "SUPER_ADMIN" || user.role === "ADMIN")) {
-    const room = await getOrCreateActivityChatRoom(activity.id);
-    activityChatRoomId = room?.id || null;
-  }
 
   const detailContent = (
     <>
@@ -153,30 +148,16 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
             </div>
           </div>
 
-          {/* شات النشاط للمشاركين */}
-          {activityChatRoomId && (
-            <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-3xl border border-gold/30 bg-gold/[0.08] p-5 shadow-sm">
-              <div className="flex items-center gap-3.5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gold/20 text-gold border border-gold/30 shadow-inner">
-                  <MessageCircle className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-foreground">
-                    شات {typeWord} المباشر 💬
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    غرفة محادثة حصرية للمشاركين والمدربين لتبادل الملفات والأسئلة والواجبات.
-                  </p>
-                </div>
-              </div>
-
-              <Link
-                href={`/messages/room/${activityChatRoomId}`}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gold px-5 py-2.5 text-xs font-black text-night hover:bg-gold-light transition-all shadow shrink-0"
-              >
-                <MessageCircle className="h-4 w-4" />
-                دخول الشات المباشر
-              </Link>
+          {/* مجتمعات واتساب وتليجرام للنشاط */}
+          {(activity.whatsappUrl || activity.telegramUrl) && (
+            <div className="mt-6">
+              <CommunityLinksCard
+                whatsappUrl={activity.whatsappUrl}
+                telegramUrl={activity.telegramUrl}
+                isRegistered={isRegisteredForActivity || (!!user && (user.role === "SUPER_ADMIN" || user.role === "ADMIN"))}
+                itemTitle={activity.title}
+                type={typeWord}
+              />
             </div>
           )}
 

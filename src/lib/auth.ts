@@ -239,14 +239,20 @@ export async function resolveSupabaseAppUser(
   if (email) {
     const byEmail = await db.user.findUnique({ where: { email } });
     if (byEmail) {
-      return db.user.update({
-        where: { id: byEmail.id },
-        data: {
-          googleId: googleSub ?? byEmail.googleId,
-          provider: userProvider !== "EMAIL" ? userProvider : byEmail.provider,
-          avatarUrl: avatar ?? byEmail.avatarUrl,
-        },
-      });
+      const needsGoogleId = googleSub && byEmail.googleId !== googleSub;
+      const needsProvider = userProvider !== "EMAIL" && byEmail.provider !== userProvider;
+      const needsAvatar = !byEmail.avatarUrl && Boolean(avatar);
+      if (needsGoogleId || needsProvider || needsAvatar) {
+        return db.user.update({
+          where: { id: byEmail.id },
+          data: {
+            googleId: googleSub ?? byEmail.googleId,
+            provider: userProvider !== "EMAIL" ? userProvider : byEmail.provider,
+            avatarUrl: avatar ?? byEmail.avatarUrl,
+          },
+        });
+      }
+      return byEmail;
     }
   }
 
@@ -296,6 +302,9 @@ export type SessionUser = {
   profileThemeId?: string | null;
   isImpersonated?: boolean;
   impersonatedByAdminEmail?: string;
+  unexcusedAbsences?: number;
+  attendanceRestricted?: boolean;
+  absenceWarnings?: number;
   profile: {
     id: string;
     fullName: string;
@@ -328,6 +337,9 @@ type DbUserWithProfile = {
   profileThemeId?: string | null;
   isImpersonated?: boolean;
   impersonatedByAdminEmail?: string;
+  unexcusedAbsences?: number;
+  attendanceRestricted?: boolean;
+  absenceWarnings?: number;
   profile: {
     id: string;
     fullName: string;
@@ -361,6 +373,9 @@ function toSessionUser(user: DbUserWithProfile): SessionUser {
     profileThemeId: user.profileThemeId ?? null,
     isImpersonated: user.isImpersonated,
     impersonatedByAdminEmail: user.impersonatedByAdminEmail,
+    unexcusedAbsences: user.unexcusedAbsences ?? 0,
+    attendanceRestricted: user.attendanceRestricted ?? false,
+    absenceWarnings: user.absenceWarnings ?? 0,
     profile: user.profile
       ? {
           id: user.profile.id,

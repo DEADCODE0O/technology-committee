@@ -99,18 +99,11 @@ export function ProfileSocialActions({
   if (friendship?.status === "ACCEPTED") {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={`/messages/${targetUserId}`}
-          className="inline-flex items-center gap-2 rounded-2xl bg-gold px-4 py-2 text-xs font-extrabold text-night hover:bg-gold-light transition-all shadow-md"
-        >
-          <MessageSquare className="h-4 w-4" />
-          مراسلة خاصة
-        </Link>
         <button
           type="button"
           disabled={isPending}
           onClick={handleRemoveFriend}
-          className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-card/60 px-3 py-2 text-xs font-bold text-muted-foreground hover:text-red-500 hover:border-red-500/30 transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-card/60 px-3.5 py-2 text-xs font-bold text-muted-foreground hover:text-red-500 hover:border-red-500/30 transition-colors"
           title="إزالة من الأصدقاء"
         >
           {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserMinus className="h-3.5 w-3.5" />}

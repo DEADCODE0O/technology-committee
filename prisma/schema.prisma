@@ -36,11 +36,16 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  // ── الحقول الاجتماعية الجديدة ──
+  // ── الحقول الاجتماعية ومؤشرات الالتزام ──
   username          String?   @unique // اسم مستخدم فريد للبحث والمنشن @handle
   displayName       String?   // الاسم المستعار المفضل للعرض
   bio               String?   // نبذة تعريفية قصيرة (حد 160 حرف)
   lastActiveAt      DateTime? // آخر نشاط للطالب (لحالة الاتصال والـ streak)
+
+  // ── مؤشرات الالتزام والغياب ──
+  unexcusedAbsences    Int      @default(0) // عدد الغيابات غير المبررة
+  attendanceRestricted Boolean  @default(false) // تقييد أولوية التسجيل ونقله لقائمة الانتظار عند الوصول لـ 3 غيابات
+  absenceWarnings      Int      @default(0) // عدد إنذارات الغياب المرسلة للطالب
 
   profile              StudentProfile?
   registrations        Registration[]
@@ -191,6 +196,9 @@ model Activity {
   publish          String   @default("DRAFT") // DRAFT | PUBLISHED | ARCHIVED
   // روابط خارجية موصوفة: JSON [{label, url, newTab}]
   links            String?
+  // روابط مجتمعات التواصل المخصصة للمقبولين فقط
+  whatsappUrl      String? // رابط مجموعة واتساب للنشاط/الورشة
+  telegramUrl      String? // رابط قناة/مجموعة تليجرام للنشاط/الورشة
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -254,6 +262,8 @@ model Session {
   onlineLabel   String?
   materialUrl   String?
   materialLabel String?
+  whatsappUrl   String? // رابط مجموعة واتساب خاصة بهذه الجلسة تحديداً
+  telegramUrl   String? // رابط قناة/مجموعة تليجرام خاصة بهذه الجلسة
   status        String    @default("SCHEDULED") // SCHEDULED | DONE | CANCELLED
 
   // ── التسجيل (معاملة الورشة لكل جلسة) ──

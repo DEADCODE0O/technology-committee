@@ -27,7 +27,7 @@ async function countRegistered(sessionId: string): Promise<number> {
   return db.registration.count({ where: { sessionId, status: "REGISTERED" } });
 }
 
-// ترقية أول قائمة الانتظار عند توفر مقعد
+// ترقية أول قائمة الانتظار عند توفر مقعد — مع إعطاء الأولوية للطلاب الملتزمين غير المقيدين
 async function promoteFromWaitlist(
   sessionId: string,
   adminId?: string
@@ -38,10 +38,27 @@ async function promoteFromWaitlist(
     const registered = await countRegistered(sessionId);
     if (registered >= session.seats) return null;
 
-    const next = await db.registration.findFirst({
-      where: { sessionId, status: "WAITLISTED" },
+    // الأولوية الأولى: الطلاب الملتزمون الذين لم يُقيد حضورهم
+    let next = await db.registration.findFirst({
+      where: {
+        sessionId,
+        status: "WAITLISTED",
+        OR: [
+          { user: null },
+          { user: { attendanceRestricted: false } },
+        ],
+      },
       orderBy: [{ waitlistOrder: "asc" }, { createdAt: "asc" }],
     });
+
+    // في حال عدم وجود طلاب ملتزمين في الانتظار، يتم ترقية الباقين
+    if (!next) {
+      next = await db.registration.findFirst({
+        where: { sessionId, status: "WAITLISTED" },
+        orderBy: [{ waitlistOrder: "asc" }, { createdAt: "asc" }],
+      });
+    }
+
     if (!next) return null;
 
     await db.registration.update({
@@ -66,7 +83,7 @@ async function promoteFromWaitlist(
 export async function registerToSession(
   sessionId: string,
   answers: Record<string, string | string[]>
-): Promise<{ ok: boolean; error?: string; waitlisted?: boolean }> {
+): Promise<{ ok: boolean; error?: string; waitlisted?: boolean; restrictedNotice?: string }> {
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "سجّل دخولك أولًا" };
@@ -131,7 +148,9 @@ export async function registerToSession(
       return { ok: false, error: existing.status === "WAITLISTED" ? "أنت بالفعل في قائمة الانتظار" : "أنت مسجل بالفعل في هذه الجلسة" };
     }
 
-    const willWaitlist = !adminBypass && registered >= session.seats;
+    // فحص تقييد الحضور (3 غيابات بدون عذر)
+    const isAttendanceRestricted = user.attendanceRestricted || (user.unexcusedAbsences ?? 0) >= 3;
+    const willWaitlist = !adminBypass && (registered >= session.seats || isAttendanceRestricted);
     const waitlistOrder = willWaitlist
       ? (await db.registration.count({ where: { sessionId, status: "WAITLISTED" } })) + 1
       : null;
@@ -167,11 +186,18 @@ export async function registerToSession(
       action: willWaitlist ? "WAITLIST_JOINED" : "SESSION_REGISTERED",
       entity: "REGISTRATION",
       entityId: sessionId,
-      summary: `${data.fullName} — ${willWaitlist ? "انضم لقائمة انتظار" : "سجل في"} «${session.activity.title} — ${session.title}»`,
+      summary: `${data.fullName} — ${willWaitlist ? (isAttendanceRestricted ? "انضم لقائمة الانتظار (تقييد بسبب 3 غيابات)" : "انضم لقائمة انتظار") : "سجل في"} «${session.activity.title} — ${session.title}»`,
     });
 
     refresh(sessionId, session.activityId);
-    return { ok: true, waitlisted: willWaitlist };
+    return {
+      ok: true,
+      waitlisted: willWaitlist,
+      restrictedNotice:
+        willWaitlist && isAttendanceRestricted && registered < session.seats
+          ? "نظراً لوجود 3 غيابات سابقة في الورش بدون عذر، تم نقلك لقائمة الانتظار تلقائياً لإعطاء الأولوية للطلاب الملتزمين."
+          : undefined,
+    };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }

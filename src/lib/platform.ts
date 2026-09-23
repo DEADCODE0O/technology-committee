@@ -45,7 +45,30 @@ export async function logAudit(params: {
   }
 }
 
-// ─── الإعدادات (مفتاح/قيمة JSON مع قيم افتراضية) ─────────────
+// ─── الإعدادات (مفتاح/قيمة JSON مع قيم افتراضية + كاش ذاكرة 60 ثانية) ─────
+
+const settingsCache = new Map<string, { value: string | null; expiry: number }>();
+const SETTINGS_CACHE_TTL_MS = 60_000;
+
+export async function getSettingCached(key: string): Promise<string | null> {
+  const cached = settingsCache.get(key);
+  if (cached && Date.now() < cached.expiry) {
+    return cached.value;
+  }
+  try {
+    const row = await db.setting.findUnique({ where: { key } });
+    const val = row?.value ?? null;
+    settingsCache.set(key, { value: val, expiry: Date.now() + SETTINGS_CACHE_TTL_MS });
+    return val;
+  } catch {
+    return null;
+  }
+}
+
+export function invalidateSettingCache(key?: string) {
+  if (key) settingsCache.delete(key);
+  else settingsCache.clear();
+}
 
 export type StudentCodeConfig = {
   requiredGrades: string[]; // ["SECOND","THIRD"] مثلاً — فارغة = معطل تمامًا
@@ -61,9 +84,9 @@ const DEFAULT_STUDENT_CODE: StudentCodeConfig = {
 
 export async function getStudentCodeConfig(): Promise<StudentCodeConfig> {
   try {
-    const row = await db.setting.findUnique({ where: { key: "student_code" } });
-    if (!row) return DEFAULT_STUDENT_CODE;
-    const parsed = JSON.parse(row.value) as Partial<StudentCodeConfig>;
+    const val = await getSettingCached("student_code");
+    if (!val) return DEFAULT_STUDENT_CODE;
+    const parsed = JSON.parse(val) as Partial<StudentCodeConfig>;
     return { ...DEFAULT_STUDENT_CODE, ...parsed };
   } catch {
     return DEFAULT_STUDENT_CODE;
@@ -71,6 +94,7 @@ export async function getStudentCodeConfig(): Promise<StudentCodeConfig> {
 }
 
 export async function saveStudentCodeConfig(config: StudentCodeConfig): Promise<void> {
+  invalidateSettingCache("student_code");
   await db.setting.upsert({
     where: { key: "student_code" },
     create: { key: "student_code", value: JSON.stringify(config) },
@@ -84,9 +108,9 @@ const DEFAULT_TALENTS_SECTION = { visible: false }; // مخفي افتراضيً
 
 export async function getTalentsSectionVisible(): Promise<boolean> {
   try {
-    const row = await db.setting.findUnique({ where: { key: "talents_section" } });
-    if (!row) return DEFAULT_TALENTS_SECTION.visible;
-    const parsed = JSON.parse(row.value) as { visible?: boolean };
+    const val = await getSettingCached("talents_section");
+    if (!val) return DEFAULT_TALENTS_SECTION.visible;
+    const parsed = JSON.parse(val) as { visible?: boolean };
     return typeof parsed.visible === "boolean" ? parsed.visible : DEFAULT_TALENTS_SECTION.visible;
   } catch {
     return DEFAULT_TALENTS_SECTION.visible;
@@ -94,6 +118,7 @@ export async function getTalentsSectionVisible(): Promise<boolean> {
 }
 
 export async function saveTalentsSectionVisible(visible: boolean): Promise<void> {
+  invalidateSettingCache("talents_section");
   await db.setting.upsert({
     where: { key: "talents_section" },
     create: { key: "talents_section", value: JSON.stringify({ visible }) },
@@ -106,9 +131,9 @@ const DEFAULT_AVATAR_FRAMES_SETTING = { visible: true };
 
 export async function getAvatarFramesVisible(): Promise<boolean> {
   try {
-    const row = await db.setting.findUnique({ where: { key: "avatar_frames_visible" } });
-    if (!row) return DEFAULT_AVATAR_FRAMES_SETTING.visible;
-    const parsed = JSON.parse(row.value) as { visible?: boolean };
+    const val = await getSettingCached("avatar_frames_visible");
+    if (!val) return DEFAULT_AVATAR_FRAMES_SETTING.visible;
+    const parsed = JSON.parse(val) as { visible?: boolean };
     return typeof parsed.visible === "boolean" ? parsed.visible : DEFAULT_AVATAR_FRAMES_SETTING.visible;
   } catch {
     return DEFAULT_AVATAR_FRAMES_SETTING.visible;
@@ -116,6 +141,7 @@ export async function getAvatarFramesVisible(): Promise<boolean> {
 }
 
 export async function saveAvatarFramesVisible(visible: boolean): Promise<void> {
+  invalidateSettingCache("avatar_frames_visible");
   await db.setting.upsert({
     where: { key: "avatar_frames_visible" },
     create: { key: "avatar_frames_visible", value: JSON.stringify({ visible }) },
@@ -129,6 +155,7 @@ export async function getBadgesVisible(): Promise<boolean> {
 }
 
 export async function saveBadgesVisible(visible: boolean): Promise<void> {
+  invalidateSettingCache("badges_visible");
   await db.setting.upsert({
     where: { key: "badges_visible" },
     create: { key: "badges_visible", value: JSON.stringify({ visible }) },
@@ -141,9 +168,9 @@ const DEFAULT_HEARTS_SETTING = { visible: true };
 
 export async function getCharmHeartsVisible(): Promise<boolean> {
   try {
-    const row = await db.setting.findUnique({ where: { key: "hearts_visible" } });
-    if (!row) return DEFAULT_HEARTS_SETTING.visible;
-    const parsed = JSON.parse(row.value) as { visible?: boolean };
+    const val = await getSettingCached("hearts_visible");
+    if (!val) return DEFAULT_HEARTS_SETTING.visible;
+    const parsed = JSON.parse(val) as { visible?: boolean };
     return typeof parsed.visible === "boolean" ? parsed.visible : DEFAULT_HEARTS_SETTING.visible;
   } catch {
     return DEFAULT_HEARTS_SETTING.visible;
@@ -151,6 +178,7 @@ export async function getCharmHeartsVisible(): Promise<boolean> {
 }
 
 export async function saveCharmHeartsVisible(visible: boolean): Promise<void> {
+  invalidateSettingCache("hearts_visible");
   await db.setting.upsert({
     where: { key: "hearts_visible" },
     create: { key: "hearts_visible", value: JSON.stringify({ visible }) },

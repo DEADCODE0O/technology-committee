@@ -5,7 +5,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle, LogIn, Copy } from "lucide-react";
+import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle, LogIn, Copy, ShieldCheck } from "lucide-react";
 import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently, impersonateStudentAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -509,4 +509,105 @@ export function DeleteStudentButton({ userId, studentName }: { userId: string; s
     </>
   );
 }
+
+// تصفير غيابات الطالب ورفع تقييد الحضور (قبول عذر)
+export function ResetStudentAbsencesButton({
+  userId,
+  studentName,
+  absencesCount,
+  restricted,
+}: {
+  userId: string;
+  studentName: string;
+  absencesCount: number;
+  restricted: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleReset = () => {
+    startTransition(async () => {
+      const { resetAbsences } = await import("@/actions/attendance");
+      const res = await resetAbsences(userId, reason.trim() || undefined);
+      if (res.ok) {
+        toast.success("تم تصفير غيابات الطالب ورفع التقييد بنجاح ✓");
+        setOpen(false);
+        setReason("");
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر تصفير الغيابات");
+      }
+    });
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        onClick={() => setOpen(true)}
+        variant="outline"
+        className={`h-9 rounded-lg px-3 text-xs font-extrabold transition-colors ${
+          restricted
+            ? "border-amber-500/40 bg-amber-500/[0.1] text-amber-300 hover:bg-amber-500/[0.18]"
+            : "border-white/15 bg-white/[0.03] text-zinc-300 hover:border-gold/30"
+        }`}
+      >
+        <ShieldCheck className="h-3.5 w-3.5" />
+        {restricted ? "رفع التقييد وقبول عذر" : "تصفير الغيابات"}
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent dir="rtl" className="max-w-md rounded-3xl border-white/10 bg-surface">
+          <DialogHeader>
+            <DialogTitle className="text-base font-extrabold text-gold-light">
+              قبول عذر وتصفير غيابات الطالب
+            </DialogTitle>
+            <DialogDescription className="text-xs text-zinc-400">
+              الطالب «{studentName}» لديه حالياً <span className="font-bold text-red-300">{absencesCount}</span> غياب غير مبرر
+              {restricted && " (حسابه مقيد وينتقل لقائمة الانتظار تلقائياً)"}.
+              تصفير الغيابات سيعيد له أولوية التسجيل المباشر ويرسل له إشعاراً بقبول العذر.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-zinc-300">
+                سبب قبول العذر (اختياري — يظهر في سجل العمليات والإشعار)
+              </Label>
+              <Input
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="مثال: عذر طبي معتمد / ظرف سفر / خطأ في التسجيل"
+                className="h-11 rounded-xl"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="h-11 flex-1 rounded-xl border-white/10 text-xs font-bold text-zinc-300"
+              >
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                onClick={handleReset}
+                disabled={pending}
+                className="h-11 flex-1 rounded-xl bg-gradient-to-b from-emerald-500 to-emerald-600 text-xs font-extrabold text-white shadow-lg shadow-emerald-900/30"
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                تأكيد رفع التقييد
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 
