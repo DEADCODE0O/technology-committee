@@ -14,12 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ returnTo?: string }>;
+  searchParams?: Promise<{ returnTo?: string }> | { returnTo?: string };
 }) {
   const user = await getCurrentUser();
   if (user) redirect(isAdminRole(user.role) ? "/admin" : "/panel");
 
-  const [codeConfig, { returnTo }] = await Promise.all([getStudentCodeConfig(), searchParams]);
+  const [codeConfig, sp] = await Promise.all([
+    getStudentCodeConfig(),
+    searchParams ? Promise.resolve(searchParams) : Promise.resolve({} as { returnTo?: string }),
+  ]);
+  const returnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-background px-4 py-10">

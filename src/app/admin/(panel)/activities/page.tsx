@@ -11,11 +11,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminActivitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; program?: string }>;
+  searchParams?: Promise<{ type?: string; program?: string }> | { type?: string; program?: string };
 }) {
   const user = await requireAdmin();
   const canManage = canUser(user, MODULES.WORKSHOPS, "manage");
-  const sp = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
 
   const [activities, programs] = await Promise.all([
     db.activity.findMany({

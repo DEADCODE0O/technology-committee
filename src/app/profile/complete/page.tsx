@@ -16,17 +16,19 @@ export const dynamic = "force-dynamic";
 export default async function CompleteProfilePage({
   searchParams,
 }: {
-  searchParams?: Promise<{ returnTo?: string }>;
+  searchParams?: Promise<{ returnTo?: string }> | { returnTo?: string };
 }) {
-  const [user, codeConfig, resolvedSearchParams] = await Promise.all([
+  const [user, codeConfig, sp] = await Promise.all([
     getCurrentUser(),
     getStudentCodeConfig(),
-    searchParams ? searchParams : Promise.resolve({ returnTo: undefined }),
+    searchParams ? Promise.resolve(searchParams) : Promise.resolve({} as { returnTo?: string }),
   ]);
 
   if (!user) redirect("/login");
   if (user.role !== "STUDENT") redirect("/admin");
   if (user.profile) redirect("/panel");
+
+  const returnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-background px-4 py-10">
@@ -62,7 +64,7 @@ export default async function CompleteProfilePage({
           suggestedName={user.suggestedName || user.email.split("@")[0]}
           avatarUrl={user.avatarUrl}
           codeConfig={codeConfig}
-          returnTo={resolvedSearchParams?.returnTo}
+          returnTo={returnTo}
         />
       </div>
     </div>

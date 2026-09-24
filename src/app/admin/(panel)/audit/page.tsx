@@ -182,12 +182,12 @@ function parseJsonSafe(raw: string | null): unknown {
 export default async function AdminAuditPage({
   searchParams,
 }: {
-  searchParams: Promise<Filters>;
+  searchParams?: Promise<Filters> | Filters;
 }) {
   const admin = await requireAdmin();
   const canUndo = admin.role === "SUPER_ADMIN" || admin.role === "ADMIN";
 
-  const f = await searchParams;
+  const f = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
   const page = Math.max(1, Number(f.page ?? 1) || 1);
   const PAGE_SIZE = 30;
   const where = buildWhere(f);

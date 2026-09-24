@@ -20,9 +20,10 @@ export const dynamic = "force-dynamic";
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ code?: string }>;
+  searchParams?: Promise<{ code?: string }> | { code?: string };
 }) {
-  const { code } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const code = typeof sp.code === "string" ? sp.code : undefined;
 
   // 1) استبدال كود الاستعادة بجلسة (ثم إزالة الكود من الرابط)
   if (code && isSupabaseConfigured()) {

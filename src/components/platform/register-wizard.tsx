@@ -1,9 +1,8 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════
-//  معالج التسجيل — 3 خطوات:
-//  1) الحساب  2) البيانات الأساسية  3) بيانات إضافية
-//  المواهب لم تعد تُطلب من الطالب — الإدارة وحدها تضيفها من لوحة التحكم
+//  معالج التسجيل — 4 خطوات تفاعلية:
+//  1) الحساب  2) البيانات الأساسية  3) مواهبك ورغباتك  4) بيانات إضافية
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useTransition, useEffect } from "react";
@@ -13,28 +12,27 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, ChevronRight, ChevronLeft, Mail, Lock, User as UserIcon, Phone, IdCard,
-  HelpCircle, Heart, PartyPopper, Check, Eye, EyeOff, Sparkles, Plus, Trash2,
+  HelpCircle, Heart, PartyPopper, Check, Eye, EyeOff, Sparkles,
 } from "lucide-react";
-import { registerStudent, type RegisterData, type TalentEntry } from "@/actions/auth";
+import { registerStudent, type RegisterData } from "@/actions/auth";
 import { validateRegistrationEmail } from "@/lib/email-domains";
 import { validateStudentCodeFormat } from "@/lib/validation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   GRADES, SECTIONS, GENDERS, DISCOVERY_SOURCES, JOIN_REASONS,
-  TALENT_CATEGORIES, TALENT_OPTIONS, MAX_TALENTS,
+  MAX_TALENTS,
 } from "@/lib/constants";
+import { TalentSelectorField, type SelectedTalent } from "@/components/platform/talent-selector-field";
 
 const STEPS = [
   { title: "حسابك", icon: Mail },
   { title: "بياناتك الأساسية", icon: UserIcon },
-  { title: "مواهبك", icon: Sparkles },
+  { title: "مواهبك ورغباتك", icon: Sparkles },
   { title: "بيانات إضافية", icon: HelpCircle },
 ];
 
@@ -59,11 +57,8 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
   const [joinReasons, setJoinReasons] = useState<string[]>([]);
   const [joinReasonOther, setJoinReasonOther] = useState("");
 
-  // المواهب (يدعم حتى MAX_TALENTS)
-  const [hasTalent, setHasTalent] = useState(false);
-  const [talents, setTalents] = useState<
-    Array<{ category: string; name: string; customName: string; description: string }>
-  >([]);
+  // المواهب والرغبات (اختيار سلس بنقرة واحدة)
+  const [talents, setTalents] = useState<SelectedTalent[]>([]);
 
   // إظهار/إخفاء كلمات السر
   const [showPassword, setShowPassword] = useState(false);
@@ -72,44 +67,9 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
   const codeNeeded = codeConfig.requiredGrades.includes(grade);
 
   // أسئلة التعارف — التنسيق للفرقة الأولى فقط
-  const discoveryOptions = DISCOVERY_SOURCES.filter((d) => !("firstYearOnly" in d && d.firstYearOnly) || grade === "FIRST");
-
-  const toggleHasTalent = (checked: boolean) => {
-    setHasTalent(checked);
-    if (checked && talents.length === 0) {
-      setTalents([{ category: "", name: "", customName: "", description: "" }]);
-    }
-  };
-
-  const handleAddTalentSlot = () => {
-    if (talents.length >= MAX_TALENTS) {
-      toast.error(`الحد الأقصى للمواهب هو ${MAX_TALENTS}`);
-      return;
-    }
-    setTalents((prev) => [...prev, { category: "", name: "", customName: "", description: "" }]);
-  };
-
-  const handleRemoveTalentSlot = (index: number) => {
-    setTalents((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateTalent = (
-    index: number,
-    field: "category" | "name" | "customName" | "description",
-    val: string
-  ) => {
-    setTalents((prev) => {
-      const next = [...prev];
-      if (field === "category") {
-        next[index] = { ...next[index], category: val, name: "", customName: "" };
-      } else if (field === "name") {
-        next[index] = { ...next[index], name: val, customName: val === "OTHER" ? next[index].customName : "" };
-      } else {
-        next[index] = { ...next[index], [field]: val };
-      }
-      return next;
-    });
-  };
+  const discoveryOptions = DISCOVERY_SOURCES.filter(
+    (d) => !("firstYearOnly" in d && d.firstYearOnly) || grade === "FIRST"
+  );
 
   // ── التحقق لكل خطوة ──
   const validateStep = (s: number): string | null => {
@@ -120,38 +80,31 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
       if (password !== confirmPassword) return "كلمتا السر غير متطابقتين";
     }
     if (s === 1) {
-      if (!/^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFEFF\s]+$/u.test(fullName.trim().replace(/\s+/g, " ")) || fullName.trim().replace(/\s+/g, " ").split(" ").filter((w) => w.length >= 2).length < 3) return "الاسم يجب أن يكون باللغة العربية ومن 3 أسماء على الأقل";
+      if (
+        !/^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFEFF\s]+$/u.test(fullName.trim().replace(/\s+/g, " ")) ||
+        fullName.trim().replace(/\s+/g, " ").split(" ").filter((w) => w.length >= 2).length < 3
+      ) {
+        return "الاسم يجب أن يكون باللغة العربية ومن 3 أسماء على الأقل";
+      }
       if (!grade) return "اختر فرقتك";
       if (!section) return "اختر شعبتك";
       if (!gender) return "اختر الجنس";
-      if (!/^01[0125][0-9]{8}$/.test(phone.replace(/[\s-]/g, ""))) return "رقم هاتف مصري غير صحيح — مثال: 01012345678";
+      if (!/^01[0125][0-9]{8}$/.test(phone.replace(/[\s-]/g, ""))) {
+        return "رقم هاتف مصري غير صحيح — مثال: 01012345678";
+      }
       if (codeNeeded) {
         const check = validateStudentCodeFormat(studentCode.trim(), grade);
         if (!check.ok) return check.error!;
       }
     }
     if (s === 2) {
-      if (hasTalent) {
-        if (talents.length === 0) {
-          return "أضف موهبتك أو قم بإلغاء التفعيل إن لم تكن ترغب في إضافة موهبة";
-        }
-        for (let i = 0; i < talents.length; i++) {
-          const t = talents[i];
-          const prefix = talents.length > 1 ? `الموهبة (${i + 1}): ` : "";
-          if (!t.category) return `${prefix}يرجى اختيار تصنيف الموهبة`;
-          if (!t.name) return `${prefix}يرجى اختيار اسم الموهبة من القائمة`;
-          if (t.name === "OTHER" && (!t.customName || t.customName.trim().length < 2)) {
-            return `${prefix}يرجى كتابة اسم الموهبة`;
-          }
-        }
-        const keys = talents.map((t) => `${t.category}|${t.name}|${t.customName.trim()}`.toLowerCase());
-        if (new Set(keys).size !== keys.length) {
-          return "يوجد تكرار في المواهب المختارة — اختر موهبة مختلفة";
-        }
-      }
+      // المواهب اختيارية وسلسة — لا قيود تمنع الانتقال
+      return null;
     }
     if (s === 3) {
-      if (joinReasons.includes("OTHER") && joinReasonOther.trim().length < 3) return "اكتب سببك في خانة «أخرى»";
+      if (joinReasons.includes("OTHER") && joinReasonOther.trim().length < 3) {
+        return "اكتب سببك في خانة «أخرى»";
+      }
     }
     return null;
   };
@@ -183,8 +136,8 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
       discoverySource: discoverySource || undefined,
       joinReasons: joinReasons.length ? joinReasons : undefined,
       joinReasonOther: joinReasons.includes("OTHER") ? joinReasonOther.trim() : undefined,
-      hasTalent,
-      talents: hasTalent
+      hasTalent: talents.length > 0,
+      talents: talents.length > 0
         ? talents.map((t) => ({
             category: t.category,
             name: t.name,
@@ -261,52 +214,25 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
           {/* ── الخطوة 1: الحساب ── */}
           {step === 0 && (
             <>
-              <StepIntro icon={<Mail className="h-5 w-5" />} title="ابدأ بحسابك" hint="البريد وكلمة السر — مفتاحك للمنصة" />
+              <StepIntro icon={<Mail className="h-5 w-5" />} title="بيانات حسابك" hint="تُستخدم لتسجيل دخولك ومتابعة أنشطتك" />
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-200">البريد الإلكتروني</Label>
-                <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="student@example.com" className="h-12 rounded-xl text-start" autoComplete="email" />
+                <Label className="text-sm font-bold text-zinc-200">البريد الإلكتروني <span className="text-gold">*</span></Label>
+                <Input dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="h-12 rounded-xl text-start" autoComplete="email" />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-200">كلمة السر</Label>
+                <Label className="text-sm font-bold text-zinc-200">كلمة السر <span className="text-gold">*</span></Label>
                 <div className="relative">
-                  <Input
-                    dir="ltr"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="8 أحرف على الأقل"
-                    className="h-12 rounded-xl pr-11 ps-4 text-left font-mono tracking-wider"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "إخفاء كلمة السر" : "إظهار كلمة السر"}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
+                  <Input dir="ltr" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8 أحرف على الأقل" className="h-12 rounded-xl text-start pe-10" autoComplete="new-password" />
+                  <button type="button" onClick={() => setShowPassword((p) => !p)} className="absolute end-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200" tabIndex={-1} aria-label={showPassword ? "إخفاء كلمة السر" : "إظهار كلمة السر"}>
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-                <p className="flex items-center gap-1.5 text-xs text-zinc-600"><Lock className="h-3.5 w-3.5" /> كلمة السر مشفرة ولا نراها أبدًا</p>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-200">تأكيد كلمة السر</Label>
+                <Label className="text-sm font-bold text-zinc-200">تأكيد كلمة السر <span className="text-gold">*</span></Label>
                 <div className="relative">
-                  <Input
-                    dir="ltr"
-                    type={showConfirm ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="أعد كتابة كلمة السر"
-                    className="h-12 rounded-xl pr-11 ps-4 text-left font-mono tracking-wider"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((v) => !v)}
-                    aria-label={showConfirm ? "إخفاء كلمة السر" : "إظهار كلمة السر"}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
+                  <Input dir="ltr" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="أعد إدخال كلمة السر" className="h-12 rounded-xl text-start pe-10" autoComplete="new-password" />
+                  <button type="button" onClick={() => setShowConfirm((p) => !p)} className="absolute end-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200" tabIndex={-1} aria-label={showConfirm ? "إخفاء كلمة السر" : "إظهار كلمة السر"}>
                     {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -342,10 +268,18 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
                 <Label className="text-sm font-bold text-zinc-200">الجنس <span className="text-gold">*</span></Label>
                 <RadioGroup dir="rtl" value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
                   {GENDERS.map((g) => (
-                    <label key={g.value} className="flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm font-bold text-zinc-200 transition-colors has-[button[data-state=checked]]:border-gold/60 has-[button[data-state=checked]]:bg-gold/[0.1] has-[button[data-state=checked]]:text-gold-light">
+                    <div
+                      key={g.value}
+                      onClick={() => setGender(g.value)}
+                      className={`flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl border text-sm font-bold transition-colors select-none ${
+                        gender === g.value
+                          ? "border-gold/60 bg-gold/[0.1] text-gold-light shadow-[0_0_15px_-3px_rgba(201,164,92,0.3)]"
+                          : "border-white/[0.08] bg-white/[0.02] text-zinc-200 hover:border-gold/30 hover:bg-white/[0.05]"
+                      }`}
+                    >
                       <RadioGroupItem value={g.value} id={`g-${g.value}`} />
-                      {g.label}
-                    </label>
+                      <span>{g.label}</span>
+                    </div>
                   ))}
                 </RadioGroup>
               </div>
@@ -368,122 +302,19 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
             </>
           )}
 
-          {/* ── الخطوة 3: المواهب ── */}
+          {/* ── الخطوة 3: المواهب والرغبات ── */}
           {step === 2 && (
             <>
-              <StepIntro icon={<Sparkles className="h-5 w-5" />} title="مواهبك واهتماماتك" hint="شاركنا مواهبك لنساعدك في تطويرها وتوجيهك للأنشطة المناسبة" />
-              
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label className="text-sm font-bold text-zinc-100">هل لديك موهبة تحب تشاركها معنا؟</Label>
-                    <p className="text-xs text-zinc-500">تقدر تضيف حتى {MAX_TALENTS} مواهب، أو تتخطاها وتضيفها لاحقًا من ملفك</p>
-                  </div>
-                  <Switch checked={hasTalent} onCheckedChange={toggleHasTalent} />
-                </div>
-              </div>
-
-              {hasTalent && (
-                <div className="space-y-4">
-                  {talents.map((t, idx) => {
-                    const availableOptions = TALENT_OPTIONS[t.category] || [];
-                    return (
-                      <div key={idx} className="relative space-y-3 rounded-2xl border border-gold/20 bg-gold/[0.03] p-4 sm:p-5">
-                        <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                          <span className="text-xs font-bold text-gold flex items-center gap-1.5">
-                            <Sparkles className="h-3.5 w-3.5" />
-                            الموهبة {idx + 1} من {MAX_TALENTS}
-                          </span>
-                          {talents.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTalentSlot(idx)}
-                              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              حذف
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-zinc-300">تصنيف الموهبة <span className="text-gold">*</span></Label>
-                            <Select
-                              dir="rtl"
-                              value={t.category}
-                              onValueChange={(val) => handleUpdateTalent(idx, "category", val)}
-                            >
-                              <SelectTrigger className="h-11 w-full rounded-xl bg-surface">
-                                <SelectValue placeholder="اختر المجال" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TALENT_CATEGORIES.map((c) => (
-                                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-zinc-300">الموهبة المحددة <span className="text-gold">*</span></Label>
-                            <Select
-                              dir="rtl"
-                              value={t.name}
-                              disabled={!t.category}
-                              onValueChange={(val) => handleUpdateTalent(idx, "name", val)}
-                            >
-                              <SelectTrigger className="h-11 w-full rounded-xl bg-surface">
-                                <SelectValue placeholder={t.category ? "اختر الموهبة" : "اختر المجال أولاً"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableOptions.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {t.name === "OTHER" && (
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gold-light">اسم الموهبة بالتفصيل <span className="text-gold">*</span></Label>
-                            <Input
-                              value={t.customName}
-                              onChange={(e) => handleUpdateTalent(idx, "customName", e.target.value)}
-                              placeholder="مثال: تعليق صوتي، عزف كمان..."
-                              className="h-11 rounded-xl bg-surface"
-                            />
-                          </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-bold text-zinc-400">نبذة أو إنجازاتك في الموهبة (اختياري)</Label>
-                          <Textarea
-                            value={t.description}
-                            onChange={(e) => handleUpdateTalent(idx, "description", e.target.value)}
-                            placeholder="مثال: شاركت في مسابقات سابقة أو مشاريع..."
-                            rows={2}
-                            className="rounded-xl bg-surface resize-none text-sm"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {talents.length < MAX_TALENTS && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddTalentSlot}
-                      className="w-full h-11 border-dashed border-gold/40 text-gold hover:bg-gold/[0.06] rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      إضافة موهبة أخرى ({talents.length}/{MAX_TALENTS})
-                    </Button>
-                  )}
-                </div>
-              )}
+              <StepIntro
+                icon={<Sparkles className="h-5 w-5" />}
+                title="مواهبك واهتماماتك ورغباتك"
+                hint="اختر كل المجالات التي تتقنها أو تحب المشاركة والتطور فيها — بنقرة واحدة!"
+              />
+              <TalentSelectorField
+                selectedTalents={talents}
+                onChange={setTalents}
+                maxTalents={MAX_TALENTS}
+              />
             </>
           )}
 
@@ -507,17 +338,34 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-zinc-200">ليه انضمت للجنة؟ <span className="text-xs font-normal text-zinc-500">(تقدر تختار أكثر من سبب)</span></Label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {JOIN_REASONS.map((r) => (
-                    <label key={r.value} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 text-sm text-zinc-200 transition-colors hover:border-gold/25 has-[button[data-state=checked]]:border-gold/50 has-[button[data-state=checked]]:bg-gold/[0.08]">
-                      <Checkbox
-                        checked={joinReasons.includes(r.value)}
-                        onCheckedChange={(chk) => {
-                          setJoinReasons((p) => (chk ? [...p, r.value] : p.filter((x) => x !== r.value)));
+                  {JOIN_REASONS.map((r) => {
+                    const isChecked = joinReasons.includes(r.value);
+                    return (
+                      <div
+                        key={r.value}
+                        onClick={() => {
+                          setJoinReasons((p) =>
+                            isChecked ? p.filter((x) => x !== r.value) : [...p, r.value]
+                          );
                         }}
-                      />
-                      {r.label}
-                    </label>
-                  ))}
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-colors select-none ${
+                          isChecked
+                            ? "border-gold/60 bg-gold/[0.08] text-gold-light"
+                            : "border-white/[0.06] bg-white/[0.02] text-zinc-200 hover:border-gold/25"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(chk) => {
+                            setJoinReasons((p) =>
+                              chk ? [...p, r.value] : p.filter((x) => x !== r.value)
+                            );
+                          }}
+                        />
+                        <span>{r.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 {joinReasons.includes("OTHER") && (
                   <div className="space-y-2 rounded-2xl border border-gold/20 bg-gold/[0.04] p-4">
@@ -532,7 +380,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
         </motion.div>
       </AnimatePresence>
 
-      {/* أزرار التنقل — ثابتة أسفل الشاشة في الموبايل (في متناول الإبهام دائمًا) */}
+      {/* أزرار التنقل — ثابتة أسفل الشاشة في الموبايل */}
       <div className="sticky bottom-4 z-20 mt-8 flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-night/95 p-3 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:static sm:z-auto sm:mt-8 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
         {step > 0 && (
           <Button
@@ -562,17 +410,18 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
             className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
           >
             {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <PartyPopper className="h-5 w-5" />}
-            {pending ? "جاري إنشاء حسابك..." : "إنشاء الحساب"}
+            {pending ? "جاري إنشاء حسابك..." : "إكمال التسجيل والدخول إلى المنصة"}
           </Button>
         )}
       </div>
 
-      <p className="mt-6 text-center text-sm text-zinc-500">
-        عندك حساب بالفعل؟{" "}
-        <Link href={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"} className="font-bold text-gold-deep dark:text-gold-light hover:text-gold">
-          سجّل دخولك
+      {/* رابط الدخول إن كان مسجلًا مسبقًا */}
+      <div className="mt-6 text-center text-xs text-zinc-500">
+        لديك حساب بالفعل؟{" "}
+        <Link href={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"} className="font-bold text-gold hover:underline">
+          سجل دخولك الآن
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

@@ -22,11 +22,11 @@ const PAGE_SIZE = 20;
 export default async function AdminStudentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; grade?: string; section?: string; gender?: string; status?: string; attendance?: string; talent?: string; minPoints?: string; page?: string }>;
+  searchParams?: Promise<{ q?: string; grade?: string; section?: string; gender?: string; status?: string; attendance?: string; talent?: string; minPoints?: string; page?: string }> | { q?: string; grade?: string; section?: string; gender?: string; status?: string; attendance?: string; talent?: string; minPoints?: string; page?: string };
 }) {
   const admin = await requireAdmin(MODULES.STUDENTS);
   const canManage = canUser(admin, MODULES.STUDENTS, "manage");
-  const sp = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
 
   const q = (sp.q ?? "").trim();
   const grade = GRADES.some((g) => g.value === sp.grade) ? sp.grade! : "";

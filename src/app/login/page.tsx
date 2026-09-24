@@ -15,13 +15,16 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ returnTo?: string; error?: string; notice?: string }>;
+  searchParams?: Promise<{ returnTo?: string; error?: string; notice?: string }> | { returnTo?: string; error?: string; notice?: string };
 }) {
   // مسجل بالفعل؟ لوجهته مباشرة
   const user = await getCurrentUser();
   if (user) redirect(isAdminRole(user.role) ? "/admin" : "/panel");
 
-  const { returnTo, error, notice } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const returnTo = typeof sp.returnTo === "string" ? sp.returnTo : undefined;
+  const error = typeof sp.error === "string" ? sp.error : undefined;
+  const notice = typeof sp.notice === "string" ? sp.notice : undefined;
 
   // رسالة خطأ من رجوع Google (لو فشل الدخول)
   const initialError = error ? LOGIN_ERROR_MESSAGES[error] : undefined;

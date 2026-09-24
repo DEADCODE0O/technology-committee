@@ -3,36 +3,34 @@
 // ═══════════════════════════════════════════════════════════════
 //  معالج إكمال بيانات الطالب (Google OAuth) — معالج 4 خطوات تفاعلي
 //  مطابق تماماً لتجربة معالج التسجيل بالبريد العادي:
-//  1) حسابك  2) بياناتك الأساسية  3) مواهبك  4) بيانات إضافية
+//  1) حسابك  2) بياناتك الأساسية  3) مواهبك ورغباتك  4) بيانات إضافية
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2, ChevronRight, ChevronLeft, Mail, User as UserIcon, Phone, IdCard,
-  HelpCircle, Heart, PartyPopper, Check, Sparkles, Plus, Trash2,
+  HelpCircle, Heart, PartyPopper, Check, Sparkles,
 } from "lucide-react";
-import { completeGoogleProfile, type CompleteProfileData, type TalentEntry } from "@/actions/auth";
+import { completeGoogleProfile, type CompleteProfileData } from "@/actions/auth";
 import { validateStudentCodeFormat } from "@/lib/validation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   GRADES, SECTIONS, GENDERS, DISCOVERY_SOURCES, JOIN_REASONS,
-  TALENT_CATEGORIES, TALENT_OPTIONS, MAX_TALENTS,
+  MAX_TALENTS,
 } from "@/lib/constants";
+import { TalentSelectorField, type SelectedTalent } from "@/components/platform/talent-selector-field";
 
 const STEPS = [
   { title: "حسابك", icon: Mail },
   { title: "بياناتك الأساسية", icon: UserIcon },
-  { title: "مواهبك", icon: Sparkles },
+  { title: "مواهبك ورغباتك", icon: Sparkles },
   { title: "بيانات إضافية", icon: HelpCircle },
 ];
 
@@ -51,7 +49,6 @@ export function CompleteProfileForm({
   codeConfig?: CodeConfig;
   returnTo?: string;
 }) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [pending, startTransition] = useTransition();
 
@@ -66,11 +63,8 @@ export function CompleteProfileForm({
   const [joinReasons, setJoinReasons] = useState<string[]>([]);
   const [joinReasonOther, setJoinReasonOther] = useState("");
 
-  // المواهب (يدعم حتى MAX_TALENTS)
-  const [hasTalent, setHasTalent] = useState(false);
-  const [talents, setTalents] = useState<
-    Array<{ category: string; name: string; customName: string; description: string }>
-  >([]);
+  // المواهب والرغبات (اختيار سلس بنقرة واحدة)
+  const [talents, setTalents] = useState<SelectedTalent[]>([]);
 
   const codeNeeded = codeConfig?.requiredGrades?.includes(grade) ?? false;
 
@@ -79,44 +73,7 @@ export function CompleteProfileForm({
     (d) => !("firstYearOnly" in d && d.firstYearOnly) || grade === "FIRST"
   );
 
-  const toggleHasTalent = (checked: boolean) => {
-    setHasTalent(checked);
-    if (checked && talents.length === 0) {
-      setTalents([{ category: "", name: "", customName: "", description: "" }]);
-    }
-  };
-
-  const handleAddTalentSlot = () => {
-    if (talents.length >= MAX_TALENTS) {
-      toast.error(`الحد الأقصى للمواهب هو ${MAX_TALENTS}`);
-      return;
-    }
-    setTalents((prev) => [...prev, { category: "", name: "", customName: "", description: "" }]);
-  };
-
-  const handleRemoveTalentSlot = (index: number) => {
-    setTalents((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateTalent = (
-    index: number,
-    field: "category" | "name" | "customName" | "description",
-    val: string
-  ) => {
-    setTalents((prev) => {
-      const next = [...prev];
-      if (field === "category") {
-        next[index] = { ...next[index], category: val, name: "", customName: "" };
-      } else if (field === "name") {
-        next[index] = { ...next[index], name: val, customName: val === "OTHER" ? next[index].customName : "" };
-      } else {
-        next[index] = { ...next[index], [field]: val };
-      }
-      return next;
-    });
-  };
-
-  // ── التحقق لكل خطوة (مطابق تماماً لمعالج التسجيل) ──
+  // ── التحقق لكل خطوة ──
   const validateStep = (s: number): string | null => {
     if (s === 0) {
       // حساب Google موثق بالفعل
@@ -141,24 +98,8 @@ export function CompleteProfileForm({
       }
     }
     if (s === 2) {
-      if (hasTalent) {
-        if (talents.length === 0) {
-          return "أضف موهبتك أو قم بإلغاء التفعيل إن لم تكن ترغب في إضافة موهبة";
-        }
-        for (let i = 0; i < talents.length; i++) {
-          const t = talents[i];
-          const prefix = talents.length > 1 ? `الموهبة (${i + 1}): ` : "";
-          if (!t.category) return `${prefix}يرجى اختيار تصنيف الموهبة`;
-          if (!t.name) return `${prefix}يرجى اختيار اسم الموهبة من القائمة`;
-          if (t.name === "OTHER" && (!t.customName || t.customName.trim().length < 2)) {
-            return `${prefix}يرجى كتابة اسم الموهبة`;
-          }
-        }
-        const keys = talents.map((t) => `${t.category}|${t.name}|${t.customName.trim()}`.toLowerCase());
-        if (new Set(keys).size !== keys.length) {
-          return "يوجد تكرار في المواهب المختارة — اختر موهبة مختلفة";
-        }
-      }
+      // المواهب اختيارية وسلسة — لا قيود تمنع الانتقال
+      return null;
     }
     if (s === 3) {
       if (joinReasons.includes("OTHER") && joinReasonOther.trim().length < 3) {
@@ -193,8 +134,8 @@ export function CompleteProfileForm({
       discoverySource: discoverySource || undefined,
       joinReasons: joinReasons.length ? joinReasons : undefined,
       joinReasonOther: joinReasons.includes("OTHER") ? joinReasonOther.trim() : undefined,
-      hasTalent,
-      talents: hasTalent
+      hasTalent: talents.length > 0,
+      talents: talents.length > 0
         ? talents.map((t) => ({
             category: t.category,
             name: t.name,
@@ -208,7 +149,7 @@ export function CompleteProfileForm({
       const res = await completeGoogleProfile(payload);
       if (res.ok) {
         toast.success("أهلاً بيك في اللجنة! 🎉");
-        const target = returnTo && returnTo.startsWith("/") ? returnTo : "/panel";
+        const target = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/panel";
         window.location.href = target;
       } else {
         toast.error(res.error || "تعذر حفظ البيانات");
@@ -347,10 +288,18 @@ export function CompleteProfileForm({
                 <Label className="text-sm font-bold text-zinc-200">الجنس <span className="text-gold">*</span></Label>
                 <RadioGroup dir="rtl" value={gender} onValueChange={setGender} className="grid grid-cols-2 gap-2">
                   {GENDERS.map((g) => (
-                    <label key={g.value} className="flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-sm font-bold text-zinc-200 transition-colors has-[button[data-state=checked]]:border-gold/60 has-[button[data-state=checked]]:bg-gold/[0.1] has-[button[data-state=checked]]:text-gold-light">
+                    <div
+                      key={g.value}
+                      onClick={() => setGender(g.value)}
+                      className={`flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl border text-sm font-bold transition-colors select-none ${
+                        gender === g.value
+                          ? "border-gold/60 bg-gold/[0.1] text-gold-light shadow-[0_0_15px_-3px_rgba(201,164,92,0.3)]"
+                          : "border-white/[0.08] bg-white/[0.02] text-zinc-200 hover:border-gold/30 hover:bg-white/[0.05]"
+                      }`}
+                    >
                       <RadioGroupItem value={g.value} id={`cg-${g.value}`} />
-                      {g.label}
-                    </label>
+                      <span>{g.label}</span>
+                    </div>
                   ))}
                 </RadioGroup>
               </div>
@@ -391,126 +340,19 @@ export function CompleteProfileForm({
             </>
           )}
 
-          {/* ── الخطوة 3: المواهب ── */}
+          {/* ── الخطوة 3: المواهب والرغبات ── */}
           {step === 2 && (
             <>
               <StepIntro
                 icon={<Sparkles className="h-5 w-5" />}
-                title="مواهبك واهتماماتك"
-                hint="شاركنا مواهبك لنساعدك في تطويرها وتوجيهك للأنشطة المناسبة"
+                title="مواهبك واهتماماتك ورغباتك"
+                hint="اختر كل المجالات التي تتقنها أو تحب المشاركة والتطور فيها — بنقرة واحدة!"
               />
-              
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <Label className="text-sm font-bold text-zinc-100">هل لديك موهبة تحب تشاركها معنا؟</Label>
-                    <p className="text-xs text-zinc-500">تقدر تضيف حتى {MAX_TALENTS} مواهب، أو تتخطاها وتضيفها لاحقًا من ملفك</p>
-                  </div>
-                  <Switch checked={hasTalent} onCheckedChange={toggleHasTalent} />
-                </div>
-              </div>
-
-              {hasTalent && (
-                <div className="space-y-4">
-                  {talents.map((t, idx) => {
-                    const availableOptions = TALENT_OPTIONS[t.category] || [];
-                    return (
-                      <div key={idx} className="relative space-y-3 rounded-2xl border border-gold/20 bg-gold/[0.03] p-4 sm:p-5">
-                        <div className="flex items-center justify-between border-b border-white/[0.06] pb-2.5">
-                          <span className="text-xs font-bold text-gold flex items-center gap-1.5">
-                            <Sparkles className="h-3.5 w-3.5" />
-                            الموهبة {idx + 1} من {MAX_TALENTS}
-                          </span>
-                          {talents.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveTalentSlot(idx)}
-                              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              حذف
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-zinc-300">تصنيف الموهبة <span className="text-gold">*</span></Label>
-                            <Select
-                              dir="rtl"
-                              value={t.category}
-                              onValueChange={(val) => handleUpdateTalent(idx, "category", val)}
-                            >
-                              <SelectTrigger className="h-11 w-full rounded-xl bg-surface">
-                                <SelectValue placeholder="اختر المجال" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {TALENT_CATEGORIES.map((c) => (
-                                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-zinc-300">الموهبة المحددة <span className="text-gold">*</span></Label>
-                            <Select
-                              dir="rtl"
-                              value={t.name}
-                              disabled={!t.category}
-                              onValueChange={(val) => handleUpdateTalent(idx, "name", val)}
-                            >
-                              <SelectTrigger className="h-11 w-full rounded-xl bg-surface">
-                                <SelectValue placeholder={t.category ? "اختر الموهبة" : "اختر المجال أولاً"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {availableOptions.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        {t.name === "OTHER" && (
-                          <div className="space-y-1.5">
-                            <Label className="text-xs font-bold text-gold-light">اسم الموهبة بالتفصيل <span className="text-gold">*</span></Label>
-                            <Input
-                              value={t.customName}
-                              onChange={(e) => handleUpdateTalent(idx, "customName", e.target.value)}
-                              placeholder="مثال: تعليق صوتي، عزف كمان..."
-                              className="h-11 rounded-xl bg-surface"
-                            />
-                          </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-bold text-zinc-400">نبذة أو إنجازاتك في الموهبة (اختياري)</Label>
-                          <Textarea
-                            value={t.description}
-                            onChange={(e) => handleUpdateTalent(idx, "description", e.target.value)}
-                            placeholder="مثال: شاركت في مسابقات سابقة أو مشاريع..."
-                            rows={2}
-                            className="rounded-xl bg-surface resize-none text-sm"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {talents.length < MAX_TALENTS && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddTalentSlot}
-                      className="w-full h-11 border-dashed border-gold/40 text-gold hover:bg-gold/[0.06] rounded-xl flex items-center justify-center gap-2 font-bold text-xs sm:text-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      إضافة موهبة أخرى ({talents.length}/{MAX_TALENTS})
-                    </Button>
-                  )}
-                </div>
-              )}
+              <TalentSelectorField
+                selectedTalents={talents}
+                onChange={setTalents}
+                maxTalents={MAX_TALENTS}
+              />
             </>
           )}
 
@@ -538,17 +380,34 @@ export function CompleteProfileForm({
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-zinc-200">ليه انضمت للجنة؟ <span className="text-xs font-normal text-zinc-500">(تقدر تختار أكثر من سبب)</span></Label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {JOIN_REASONS.map((r) => (
-                    <label key={r.value} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-3 text-sm text-zinc-200 transition-colors hover:border-gold/25 has-[button[data-state=checked]]:border-gold/50 has-[button[data-state=checked]]:bg-gold/[0.08]">
-                      <Checkbox
-                        checked={joinReasons.includes(r.value)}
-                        onCheckedChange={(chk) => {
-                          setJoinReasons((p) => (chk ? [...p, r.value] : p.filter((x) => x !== r.value)));
+                  {JOIN_REASONS.map((r) => {
+                    const isChecked = joinReasons.includes(r.value);
+                    return (
+                      <div
+                        key={r.value}
+                        onClick={() => {
+                          setJoinReasons((p) =>
+                            isChecked ? p.filter((x) => x !== r.value) : [...p, r.value]
+                          );
                         }}
-                      />
-                      {r.label}
-                    </label>
-                  ))}
+                        className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-3 text-sm transition-colors select-none ${
+                          isChecked
+                            ? "border-gold/60 bg-gold/[0.08] text-gold-light"
+                            : "border-white/[0.06] bg-white/[0.02] text-zinc-200 hover:border-gold/25"
+                        }`}
+                      >
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={(chk) => {
+                            setJoinReasons((p) =>
+                              chk ? [...p, r.value] : p.filter((x) => x !== r.value)
+                            );
+                          }}
+                        />
+                        <span>{r.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 {joinReasons.includes("OTHER") && (
                   <div className="space-y-2 rounded-2xl border border-gold/20 bg-gold/[0.04] p-4">

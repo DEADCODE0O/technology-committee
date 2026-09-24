@@ -12,11 +12,12 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: Promise<{ session?: string }>;
+  searchParams?: Promise<{ session?: string }> | { session?: string };
 }
 
 export default async function WorkshopAnalyticsPage({ searchParams }: PageProps) {
-  const { session: targetSessionId } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const targetSessionId = typeof sp.session === "string" ? sp.session : undefined;
   const data = await getWorkshopDeepAnalytics(targetSessionId);
 
   return (

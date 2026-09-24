@@ -13,14 +13,17 @@ export const dynamic = "force-dynamic";
 export default async function RegisterVerifyPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; returnTo?: string; notice?: string }>;
+  searchParams?: Promise<{ email?: string; returnTo?: string; notice?: string }> | { email?: string; returnTo?: string; notice?: string };
 }) {
   const user = await getCurrentUser();
   if (user) {
     redirect(isAdminRole(user.role) ? "/admin" : "/panel");
   }
 
-  const { email, returnTo, notice } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const email = typeof sp.email === "string" ? sp.email : undefined;
+  const returnTo = typeof sp.returnTo === "string" ? sp.returnTo : undefined;
+  const notice = typeof sp.notice === "string" ? sp.notice : undefined;
 
   // إذا لم يكن هناك بريد محدد، العودة لصفحة التسجيل
   if (!email) {

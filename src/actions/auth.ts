@@ -147,42 +147,19 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
 
     // ── المواهب (تدعم أكثر من موهبة) ──
     const talentRecords: { category: string; name: string; customName: string | null; description: string | null }[] = [];
-    if (data.hasTalent) {
-      // المصدر: قائمة المواهب الجديدة — أو الحقول القديمة (توافق موهبة واحدة)
-      const rawEntries: TalentEntry[] =
-        data.talents && data.talents.length > 0
-          ? data.talents
-          : data.talentCategory || data.talentName
-            ? [{
-                category: data.talentCategory ?? "",
-                name: data.talentName ?? "",
-                customName: data.talentCustomName,
-                description: data.talentDescription,
-              }]
-            : [];
-
-      if (rawEntries.length === 0) return { ok: false, error: "اختر موهبتك من القائمة" };
-      if (rawEntries.length > MAX_TALENTS) return { ok: false, error: `أقصى عدد للمواهب هو ${MAX_TALENTS}` };
-
+    if (data.talents && data.talents.length > 0) {
+      const rawEntries = data.talents.slice(0, MAX_TALENTS);
       const seen = new Set<string>();
-      for (const [i, entry] of rawEntries.entries()) {
-        const label = rawEntries.length > 1 ? `الموهبة ${i + 1}: ` : "";
-
-        if (!entry.category || !talentCatValues.includes(entry.category)) {
-          return { ok: false, error: `${label}اختر تصنيف الموهبة` };
-        }
-        if (!entry.name) return { ok: false, error: `${label}اختر الموهبة من القائمة` };
-
+      for (const entry of rawEntries) {
+        if (!entry.category || !entry.name) continue;
         let customName: string | null = null;
-        if (entry.name === "OTHER") {
+        if (entry.name === "OTHER" || entry.name.startsWith("OTHER_")) {
           const custom = (entry.customName || "").trim();
-          if (custom.length < 2) return { ok: false, error: `${label}اكتب اسم الموهبة` };
+          if (custom.length < 2) continue;
           customName = custom;
         }
-
-        // منع تكرار نفس الموهبة مرتين
         const dedupeKey = `${entry.category}|${entry.name}|${customName ?? ""}`.toLowerCase();
-        if (seen.has(dedupeKey)) return { ok: false, error: `${label}مكررة — اختار موهبة مختلفة` };
+        if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
 
         talentRecords.push({
@@ -860,24 +837,21 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
 
     // المواهب
     const talentRecords: { category: string; name: string; customName: string | null; description: string | null }[] = [];
-    if (data.hasTalent && data.talents && data.talents.length > 0) {
-      if (data.talents.length > MAX_TALENTS) return { ok: false, error: `أقصى عدد للمواهب هو ${MAX_TALENTS}` };
+    if (data.talents && data.talents.length > 0) {
+      const rawEntries = data.talents.slice(0, MAX_TALENTS);
       const seen = new Set<string>();
-      for (const [i, entry] of data.talents.entries()) {
-        const label = data.talents.length > 1 ? `الموهبة ${i + 1}: ` : "";
-        if (!entry.category || !talentCatValues.includes(entry.category)) {
-          return { ok: false, error: `${label}اختر تصنيف الموهبة` };
-        }
-        if (!entry.name) return { ok: false, error: `${label}اختر الموهبة من القائمة` };
+      for (const entry of rawEntries) {
+        if (!entry.category || !entry.name) continue;
         let customName: string | null = null;
-        if (entry.name === "OTHER") {
+        if (entry.name === "OTHER" || entry.name.startsWith("OTHER_")) {
           const custom = (entry.customName || "").trim();
-          if (custom.length < 2) return { ok: false, error: `${label}اكتب اسم الموهبة` };
+          if (custom.length < 2) continue;
           customName = custom;
         }
         const dedupeKey = `${entry.category}|${entry.name}|${customName ?? ""}`.toLowerCase();
-        if (seen.has(dedupeKey)) return { ok: false, error: `${label}مكررة — اختار موهبة مختلفة` };
+        if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
+
         talentRecords.push({
           category: entry.category,
           name: entry.name,

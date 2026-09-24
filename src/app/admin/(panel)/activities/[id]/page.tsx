@@ -23,10 +23,11 @@ export default async function AdminActivityDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string }> | { tab?: string };
 }) {
   const { id } = await params;
-  const { tab } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const tab = typeof sp.tab === "string" ? sp.tab : undefined;
   const user = await requireAdmin();
   if (!canUser(user, MODULES.WORKSHOPS, "manage")) redirect("/admin/activities");
 

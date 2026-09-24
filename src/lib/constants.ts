@@ -99,14 +99,77 @@ export const JOIN_REASON_LABELS: Record<string, string> = Object.fromEntries(
 
 // ─── المواهب ─────────────────────────────────────────────────
 export const TALENT_CATEGORIES = [
-  { value: "TECH", label: "البرمجة والتكنولوجيا" },
-  { value: "MEDIA_DESIGN", label: "التصميم وصناعة المحتوى" },
-  { value: "PERFORMING", label: "المواهب الفنية والأدائية" },
-  { value: "SPORTS", label: "الرياضة" },
-  { value: "OTHER", label: "موهبة أخرى" },
+  { value: "COURSES_TECH", label: "الكورسات والتكنولوجيا", icon: "💻" },
+  { value: "SPORTS", label: "الرياضة واللياقة البدنية", icon: "⚽" },
+  { value: "ARTS_CREATIVE", label: "الفنون والأشغال اليدوية", icon: "🎨" },
+  { value: "PERFORMING_ARTS", label: "المسرح والأداء والموسيقى", icon: "🎭" },
+  { value: "CULTURE_COMPETITIONS", label: "الثقافة والأدب والمسابقات", icon: "📖" },
+  { value: "EVENTS_ORGANIZATION", label: "الفعاليات والتنظيم والقيادة", icon: "✨" },
+  { value: "OTHER", label: "موهبة أو رغبة أخرى", icon: "🌟" },
 ] as const;
 
 export const TALENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  COURSES_TECH: [
+    { value: "AI", label: "الذكاء الاصطناعي والتطبيقات الذكية" },
+    { value: "PROGRAMMING", label: "البرمجة وتطوير البرمجيات" },
+    { value: "CYBER_SECURITY", label: "الأمن السيبراني وحماية البيانات" },
+    { value: "DESIGN_GRAPHIC", label: "تصميم الجرافيك والـ Branding" },
+    { value: "VIDEO_EDITING", label: "المونتاج وصناعة الفيديو" },
+    { value: "PHOTOGRAPHY", label: "التصوير الفوتوغرافي وصناعة الميديا" },
+    { value: "ICDL_OFFICE", label: "أساسيات الحاسب وبرامج أوفيس (ICDL)" },
+    { value: "OTHER_TECH", label: "أخرى في التكنولوجيا والكورسات" },
+  ],
+  SPORTS: [
+    { value: "FOOTBALL", label: "كرة القدم" },
+    { value: "BASKETBALL", label: "كرة السلة" },
+    { value: "VOLLEYBALL", label: "كرة طائرة" },
+    { value: "HANDBALL", label: "كرة يد" },
+    { value: "TABLE_TENNIS", label: "تنس طاولة" },
+    { value: "TENNIS", label: "تنس أرضي" },
+    { value: "SWIMMING", label: "السباحة" },
+    { value: "BODYBUILDING", label: "كمال الأجسام واللياقة البدنية" },
+    { value: "MARTIAL_ARTS", label: "فنون قتالية (ملاكمة / كاراتيه / جودو / مصارعة)" },
+    { value: "CHESS", label: "الشطرنج والألعاب الذهنية" },
+    { value: "OTHER_SPORTS", label: "أخرى في الرياضة" },
+  ],
+  ARTS_CREATIVE: [
+    { value: "DRAWING", label: "الرسم والفنون التشكيلية" },
+    { value: "CALLIGRAPHY", label: "الخط العربي والزخرفة" },
+    { value: "HANDICRAFTS", label: "الأشغال اليدوية والهاند ميد" },
+    { value: "EMBROIDERY", label: "التطريز والخياطة" },
+    { value: "SCULPTURE", label: "النحت والتشكيل" },
+    { value: "RECYCLING", label: "إعادة التدوير والأعمال الإبداعية" },
+    { value: "OTHER_ARTS", label: "أخرى في الفنون والأشغال" },
+  ],
+  PERFORMING_ARTS: [
+    { value: "THEATER", label: "المسرح والتمثيل" },
+    { value: "FOLK_ARTS", label: "الفنون الشعبية والاستعراضية" },
+    { value: "MUSIC", label: "العزف والآلات الموسيقية" },
+    { value: "SINGING", label: "الغناء والطرب" },
+    { value: "NASHEED", label: "الإنشاد الديني" },
+    { value: "HYMNS", label: "الترانيم" },
+    { value: "OTHER_PERFORMING", label: "أخرى في الأداء والموسيقى" },
+  ],
+  CULTURE_COMPETITIONS: [
+    { value: "QURAN", label: "حفظ وتلاوة القرآن الكريم" },
+    { value: "POETRY", label: "الشعر والزجل" },
+    { value: "RECITATION", label: "الإلقاء والخطابة والتقديم" },
+    { value: "CONTENT_WRITING", label: "كتابة القصص والمقالات" },
+    { value: "CULTURAL_DEBATES", label: "المناظرات والندوات الثقافية" },
+    { value: "OTHER_CULTURE", label: "أخرى في الثقافة والمسابقات" },
+  ],
+  EVENTS_ORGANIZATION: [
+    { value: "EVENT_ORGANIZING", label: "تنظيم وإدارة الفعاليات والحفلات" },
+    { value: "PUBLIC_RELATIONS", label: "العلاقات العامة والتواصل" },
+    { value: "LEADERSHIP", label: "القيادة وإدارة فرق العمل" },
+    { value: "TRIPS_CAMPING", label: "الرحلات والتخييم والمغامرات" },
+    { value: "VOLUNTEERING", label: "العمل التطوعي والخدمة المجتمعية" },
+    { value: "OTHER_EVENTS", label: "أخرى في التنظيم والفعاليات" },
+  ],
+  OTHER: [
+    { value: "OTHER", label: "موهبة أو رغبة خاصة أخرى" },
+  ],
+  // ── للتوافق مع أي سجلات سابقة بقاعدة البيانات ──
   TECH: [
     { value: "WEB_DEV", label: "تطوير المواقع والويب" },
     { value: "MOBILE_DEV", label: "تطوير تطبيقات الهاتف" },
@@ -137,36 +200,38 @@ export const TALENT_OPTIONS: Record<string, { value: string; label: string }[]> 
     { value: "MUSIC", label: "العزف" },
     { value: "OTHER", label: "أخرى" },
   ],
-  SPORTS: [
-    { value: "FOOTBALL", label: "كرة القدم" },
-    { value: "BASKETBALL", label: "كرة السلة" },
-    { value: "SWIMMING", label: "السباحة" },
-    { value: "BODYBUILDING", label: "كمال الأجسام واللياقة" },
-    { value: "MARTIAL", label: "فنون قتالية ودفاع عن النفس" },
-    { value: "CHESS", label: "الشطرنج" },
-    { value: "OTHER", label: "أخرى" },
-  ],
-  OTHER: [],
 };
 
 export const TALENT_CATEGORY_LABELS: Record<string, string> = {
+  COURSES_TECH: "الكورسات والتكنولوجيا",
+  SPORTS: "الرياضة واللياقة",
+  ARTS_CREATIVE: "الفنون والأشغال اليدوية",
+  PERFORMING_ARTS: "المسرح والأداء والموسيقى",
+  CULTURE_COMPETITIONS: "الثقافة والأدب والمسابقات",
+  EVENTS_ORGANIZATION: "الفعاليات والتنظيم والقيادة",
+  OTHER: "أخرى",
+  // Legacy
   TECH: "برمجة وتكنولوجيا",
   MEDIA_DESIGN: "تصميم وميديا",
   PERFORMING: "فنية وأدائية",
-  SPORTS: "رياضية",
-  OTHER: "أخرى",
 };
 
 // ترجمة موهبة معينة إلى نص عربي
 export function talentLabel(category: string, name: string, customName?: string | null): string {
-  if (name === "OTHER") return customName || "موهبة أخرى";
+  if (name === "OTHER" || name.startsWith("OTHER_")) return customName || "موهبة أخرى";
   const list = TALENT_OPTIONS[category] || [];
   const found = list.find((t) => t.value === name);
-  return found ? found.label : customName || name;
+  if (found) return found.label;
+  // بحث عام في كل التصنيفات للتوافق العكسي
+  for (const c of Object.values(TALENT_OPTIONS)) {
+    const f = c.find((t) => t.value === name);
+    if (f) return f.label;
+  }
+  return customName || name;
 }
 
 // الحد الأقصى للمواهب المسجلة لكل طالب (في التسجيل والملف الشخصي)
-export const MAX_TALENTS = 5;
+export const MAX_TALENTS = 20;
 
 export const TALENT_STATUS_LABELS: Record<string, string> = {
   PENDING: "قيد المراجعة",

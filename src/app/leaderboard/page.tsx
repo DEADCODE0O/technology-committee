@@ -37,9 +37,10 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams?: Promise<{ tab?: string }> | { tab?: string };
 }) {
-  const { tab } = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
+  const tab = typeof sp.tab === "string" ? sp.tab : undefined;
   const activeTab: Tab =
     tab === "month" || tab === "semester" || tab === "season" ? tab : "overall";
 

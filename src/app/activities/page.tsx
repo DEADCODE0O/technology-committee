@@ -94,9 +94,9 @@ function classifyActivity(a: ActivityWithSessions, now: Date): "OPEN" | "UPCOMIN
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; program?: string }>;
+  searchParams?: Promise<{ type?: string; program?: string }> | { type?: string; program?: string };
 }) {
-  const sp = await searchParams;
+  const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
   const typeFilter: TypeFilter = (["COURSE", "WORKSHOP", "EVENT"] as const).includes(sp.type as "COURSE")
     ? (sp.type as TypeFilter)
     : "ALL";
