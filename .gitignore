@@ -63,3 +63,5 @@ shots/
 scripts/test-*.mjs
 scripts/simulate-*.mjs
 scripts/inspect-*.mjs
+scripts/*.cjs
+backups/
