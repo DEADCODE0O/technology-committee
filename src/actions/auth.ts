@@ -541,15 +541,24 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
     // تحديد الوجهة المناسبة
     const rawReturnTo = String(formData.get("returnTo") || "").trim();
-    const defaultTarget = isAdminRole(user.role)
-      ? "/admin"
-      : !user.profile && user.role === ROLES.STUDENT
-      ? "/profile/complete"
-      : "/panel";
-    const targetUrl =
-      rawReturnTo && rawReturnTo !== "/"
-        ? safeRedirectUrl(rawReturnTo, defaultTarget)
-        : defaultTarget;
+    let targetUrl: string;
+
+    if (isAdminRole(user.role)) {
+      targetUrl = rawReturnTo.startsWith("/admin") ? rawReturnTo : "/admin";
+    } else {
+      if (
+        rawReturnTo &&
+        rawReturnTo.startsWith("/") &&
+        !rawReturnTo.startsWith("//") &&
+        !rawReturnTo.startsWith("/admin") &&
+        rawReturnTo !== "/login" &&
+        rawReturnTo !== "/register"
+      ) {
+        targetUrl = rawReturnTo;
+      } else {
+        targetUrl = !user.profile && user.role === ROLES.STUDENT ? "/profile/complete" : "/panel";
+      }
+    }
 
     // ══ وضع Supabase: التحقق عبر Supabase Auth الرسمي ══
     if (isSupabaseConfigured()) {
@@ -569,6 +578,31 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
           const retry = await supabase.auth.signInWithPassword({ email, password });
           signInData = retry.data;
           signInError = retry.error;
+        }
+      }
+
+      // فحص محلي وتزامن فوري: إذا فشل الدخول بـ Supabase وكانت كلمة السر صحيحة في قاعدة البيانات
+      if ((signInError || !signInData?.user) && user.passwordHash) {
+        const matchesLocalHash = await verifyPassword(password, user.passwordHash);
+        if (matchesLocalHash) {
+          const supaAdmin = getSupabaseAdmin();
+          if (supaAdmin) {
+            await supaAdmin.auth.admin.updateUserById(user.id, {
+              password,
+              email_confirm: true,
+            }).catch(() => {});
+            const retry = await supabase.auth.signInWithPassword({ email, password });
+            if (retry.data?.user) {
+              signInData = retry.data;
+              signInError = null;
+            }
+          }
+          // حتى لو تعذر Supabase في هذه اللحظة، نعتمد المصادقة الموثقة عبر الجلسة المحلية
+          if (!signInData?.user) {
+            resetRateLimit(`login:email:${email}`);
+            await createSession(user.id);
+            return { redirectTo: targetUrl };
+          }
         }
       }
 

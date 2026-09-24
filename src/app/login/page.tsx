@@ -66,7 +66,11 @@ export default async function LoginPage({
           <p className="mt-6 text-center text-sm text-zinc-500">
             أول مرة معنا؟{" "}
             <Link
-              href={returnTo ? `/register?returnTo=${encodeURIComponent(returnTo)}` : "/register"}
+              href={
+                returnTo && !returnTo.startsWith("/admin")
+                  ? `/register?returnTo=${encodeURIComponent(returnTo)}`
+                  : "/register"
+              }
               className="font-bold text-gold-deep dark:text-gold-light transition-colors hover:text-gold"
             >
               أنشئ حسابك الآن

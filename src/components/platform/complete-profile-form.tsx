@@ -149,8 +149,8 @@ export function CompleteProfileForm({
       const res = await completeGoogleProfile(payload);
       if (res.ok) {
         toast.success("أهلاً بيك في اللجنة! 🎉");
-        const target = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/panel";
-        window.location.href = target;
+        const safeTarget = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") && !returnTo.startsWith("/admin") ? returnTo : "/panel";
+        window.location.href = safeTarget;
       } else {
         toast.error(res.error || "تعذر حفظ البيانات");
       }

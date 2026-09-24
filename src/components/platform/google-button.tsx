@@ -26,7 +26,13 @@ export function GoogleButton({
       toast.info("الدخول بـ Google يتفعّل بعد إعداد Supabase — الخطوات كاملة في دليل DEPLOY.md");
       return;
     }
-    const safeReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/panel";
+    const safeReturnTo =
+      returnTo &&
+      returnTo.startsWith("/") &&
+      !returnTo.startsWith("//") &&
+      !returnTo.startsWith("/admin")
+        ? returnTo
+        : "/panel";
     const callback = `${window.location.origin}/auth/callback?returnTo=${encodeURIComponent(safeReturnTo)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

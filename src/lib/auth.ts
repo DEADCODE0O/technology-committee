@@ -91,14 +91,27 @@ export async function destroySession(): Promise<void> {
 export async function getSessionUserId(): Promise<string | null> {
   // وضع Supabase — الهوية من جلسة Supabase Auth
   if (isSupabaseConfigured()) {
-    const supabase = await createSupabaseServerClient();
-    if (!supabase) return null;
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
+    try {
+      const store = await cookies();
+      const allCookies = store.getAll();
+      const token = extractAccessTokenFromCookies(allCookies);
+      if (token && isTokenValidAndFresh(token, 60)) {
+        const decoded = decodeSupabaseToken(token);
+        if (decoded?.sub) return decoded.sub;
+      }
+      const supabase = await createSupabaseServerClient();
+      if (supabase) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user?.id) return user.id;
+      }
+    } catch (err) {
+      console.warn("[getSessionUserId] Supabase session check error:", err);
+    }
   }
-  // وضع التطوير — JWT محلي
+
+  // وضع الجلسة المحلية (tc_session) كضمان موثوق واحتياطي فوري
   const store = await cookies();
   const token = store.get(COOKIE_NAME)?.value;
   if (!token) return null;

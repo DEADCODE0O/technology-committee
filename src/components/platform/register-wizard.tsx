@@ -160,8 +160,8 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
           return;
         }
         toast.success("أهلاً بيك في اللجنة! 🎉");
-        const target = returnTo && returnTo.startsWith("/") ? returnTo : "/panel";
-        window.location.href = target;
+        const safeTarget = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("/admin") ? returnTo : "/panel";
+        window.location.href = safeTarget;
       } else {
         toast.error(res.error || "تعذر إنشاء الحساب");
       }

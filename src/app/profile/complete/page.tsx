@@ -28,7 +28,8 @@ export default async function CompleteProfilePage({
   if (user.role !== "STUDENT") redirect("/admin");
   if (user.profile) redirect("/panel");
 
-  const returnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
+  const rawReturnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
+  const returnTo = rawReturnTo && !rawReturnTo.startsWith("/admin") ? rawReturnTo : undefined;
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-background px-4 py-10">

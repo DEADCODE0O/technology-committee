@@ -18,10 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const user = await getCurrentUser();
 
   // guard عام: أدمن أو تحويل
+  if (!user) redirect("/login?returnTo=/admin");
+  if (!isAdminRole(user.role)) redirect("/panel");
   await requireAdmin();
-
-  // نعرض الهيكل فقط للأدوار الإدارية
-  if (!user || !isAdminRole(user.role)) redirect("/login?returnTo=/admin");
 
   // تصفية العناصر المتاحة للمشرف حسب الصلاحيات الدقيقة
   const visibleMenu: AdminNavItem[] = ADMIN_NAV_ITEMS

@@ -68,7 +68,8 @@ export async function GET(req: NextRequest) {
 
     // 3) التوجيه — مستخدم جديد بلا ملف؟ إكمال البيانات
     const profile = await db.studentProfile.findUnique({ where: { userId: appUser.id } });
-    const target = profile ? returnTo : "/profile/complete";
+    const safeTarget = (!isAdminRole(appUser.role) && returnTo.startsWith("/admin")) ? "/panel" : returnTo;
+    const target = profile ? safeTarget : "/profile/complete";
     return NextResponse.redirect(new URL(target, req.url));
   } catch (err) {
     console.error("auth callback error:", err);

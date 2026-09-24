@@ -23,7 +23,8 @@ export default async function RegisterPage({
     getStudentCodeConfig(),
     searchParams ? Promise.resolve(searchParams) : Promise.resolve({} as { returnTo?: string }),
   ]);
-  const returnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
+  const rawReturnTo = typeof sp?.returnTo === "string" ? sp.returnTo : undefined;
+  const returnTo = rawReturnTo && !rawReturnTo.startsWith("/admin") ? rawReturnTo : undefined;
 
   return (
     <div className="relative flex min-h-svh items-center justify-center bg-background px-4 py-10">
