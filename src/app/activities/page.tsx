@@ -11,6 +11,7 @@ import { ACTIVITY_TYPES, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS, ACTIVITY_TYP
 import { getSessionState, decideRegistration } from "@/lib/activities";
 import { resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
+import { formatCairoDate } from "@/lib/dates";
 
 import { getCachedPublishedActivities, getCachedPrograms } from "@/lib/cache/data-cache";
 
@@ -23,11 +24,11 @@ type SessionLite = {
   title: string;
   image?: string | null;
   order: number;
-  startsAt: Date;
-  endsAt: Date | null;
+  startsAt: Date | string;
+  endsAt: Date | string | null;
   seats: number;
-  registrationOpensAt: Date | null;
-  registrationClosesAt: Date | null;
+  registrationOpensAt: Date | string | null;
+  registrationClosesAt: Date | string | null;
   closingMode: string;
   registrationOpen: boolean;
   status: string;
@@ -41,15 +42,16 @@ type ActivityWithSessions = {
   image: string | null;
   type: string;
   level: string | null;
-  createdAt: Date;
+  createdAt: Date | string;
   program: { id: string; name: string; icon: string } | null;
   sessions: SessionLite[];
 };
 
 type Card = ActivityWithSessions & { focusSession: SessionLite | null };
 
-function fmtDate(d: Date) {
-  return new Intl.DateTimeFormat("ar-EG", { timeZone: "Africa/Cairo", day: "numeric", month: "long" }).format(d);
+function fmtDate(d: Date | string | null | undefined) {
+  if (!d) return "";
+  return formatCairoDate(d, { day: "numeric", month: "long" });
 }
 
 // أكثر جلسة صلة بالعرض: جارية > أقرب قادمة > أحدث منتهية
@@ -58,9 +60,11 @@ function pickFocusSession(a: ActivityWithSessions, now: Date): SessionLite | nul
   if (live) return live;
   const upcoming = a.sessions
     .filter((s) => s.status !== "CANCELLED" && getSessionState(s, now) === "UPCOMING")
-    .sort((x, y) => x.startsAt.getTime() - y.startsAt.getTime())[0];
+    .sort((x, y) => new Date(x.startsAt).getTime() - new Date(y.startsAt).getTime())[0];
   if (upcoming) return upcoming;
-  return a.sessions.filter((s) => s.status !== "CANCELLED").sort((x, y) => y.startsAt.getTime() - x.startsAt.getTime())[0] ?? null;
+  return a.sessions
+    .filter((s) => s.status !== "CANCELLED")
+    .sort((x, y) => new Date(y.startsAt).getTime() - new Date(x.startsAt).getTime())[0] ?? null;
 }
 
 // تصنيف البطاقة من كل جلساتها
@@ -134,8 +138,17 @@ export default async function ActivitiesPage({
     else if (cls === "UPCOMING") upcoming.push(card);
     else past.push(card);
   }
-  upcoming.sort((x, y) => (x.focusSession?.startsAt.getTime() ?? Infinity) - (y.focusSession?.startsAt.getTime() ?? Infinity));
-  openNow.sort((x, y) => (x.focusSession?.startsAt.getTime() ?? Infinity) - (y.focusSession?.startsAt.getTime() ?? Infinity));
+
+  upcoming.sort((x, y) => {
+    const xt = x.focusSession?.startsAt ? new Date(x.focusSession.startsAt).getTime() : Infinity;
+    const yt = y.focusSession?.startsAt ? new Date(y.focusSession.startsAt).getTime() : Infinity;
+    return xt - yt;
+  });
+  openNow.sort((x, y) => {
+    const xt = x.focusSession?.startsAt ? new Date(x.focusSession.startsAt).getTime() : Infinity;
+    const yt = y.focusSession?.startsAt ? new Date(y.focusSession.startsAt).getTime() : Infinity;
+    return xt - yt;
+  });
 
   const TABS: { key: TypeFilter; label: string }[] = [
     { key: "ALL", label: "الكل" },
@@ -314,26 +327,38 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
 
   // العدّ التنازلي المعروض على البطاقة — مربوط بجدول المواعيد الفعلي
   let countdown: { to: string; prefix: string; tone: "success" | "urgent" | "gold" } | null = null;
+  const nowMs = now.getTime();
+  const regClosesAt = s?.registrationClosesAt ? new Date(s.registrationClosesAt) : null;
+  const startsAt = s?.startsAt ? new Date(s.startsAt) : null;
+
   if (s && state === "OPEN") {
-    const targetDate = (s.registrationClosesAt && s.registrationClosesAt > now) ? s.registrationClosesAt : (s.startsAt > now ? s.startsAt : null);
+    const targetDate = (regClosesAt && regClosesAt.getTime() > nowMs)
+      ? regClosesAt
+      : (startsAt && startsAt.getTime() > nowMs ? startsAt : null);
     if (targetDate) {
-      const hoursLeft = (targetDate.getTime() - now.getTime()) / (3600 * 1000);
+      const hoursLeft = (targetDate.getTime() - nowMs) / (3600 * 1000);
       countdown = {
         to: targetDate.toISOString(),
-        prefix: (s.registrationClosesAt && s.registrationClosesAt > now) ? "يقفل بعد" : "تبدأ بعد",
+        prefix: (regClosesAt && regClosesAt.getTime() > nowMs) ? "يقفل بعد" : "تبدأ بعد",
         tone: hoursLeft < 24 ? "urgent" : "success",
       };
     }
   } else if (s && state === "UPCOMING") {
-    const openable = a.sessions.find((x) =>
-      x.registrationOpensAt && x.registrationOpensAt > now && x.registrationClosesAt && x.registrationClosesAt > now
-    ) ?? s;
-    if (openable.registrationOpensAt && openable.registrationOpensAt > now) {
-      countdown = { to: openable.registrationOpensAt.toISOString(), prefix: "يُفتح بعد", tone: "gold" };
-    } else if (openable.registrationClosesAt && openable.registrationClosesAt > now) {
-      countdown = { to: openable.registrationClosesAt.toISOString(), prefix: "يقفل بعد", tone: "success" };
-    } else if (s.startsAt > now) {
-      countdown = { to: s.startsAt.toISOString(), prefix: "تبدأ بعد", tone: "gold" };
+    const openable = a.sessions.find((x) => {
+      const o = x.registrationOpensAt ? new Date(x.registrationOpensAt).getTime() : 0;
+      const c = x.registrationClosesAt ? new Date(x.registrationClosesAt).getTime() : 0;
+      return o > nowMs && c > nowMs;
+    }) ?? s;
+    const opOpensAt = openable?.registrationOpensAt ? new Date(openable.registrationOpensAt) : null;
+    const opClosesAt = openable?.registrationClosesAt ? new Date(openable.registrationClosesAt) : null;
+    const opStartsAt = openable?.startsAt ? new Date(openable.startsAt) : null;
+
+    if (opOpensAt && opOpensAt.getTime() > nowMs) {
+      countdown = { to: opOpensAt.toISOString(), prefix: "يُفتح بعد", tone: "gold" };
+    } else if (opClosesAt && opClosesAt.getTime() > nowMs) {
+      countdown = { to: opClosesAt.toISOString(), prefix: "يقفل بعد", tone: "success" };
+    } else if (opStartsAt && opStartsAt.getTime() > nowMs) {
+      countdown = { to: opStartsAt.toISOString(), prefix: "تبدأ بعد", tone: "gold" };
     }
   }
 
@@ -348,7 +373,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
       }`}>
       <div className="relative aspect-[16/9] overflow-hidden">
         {useNextImage ? (
-          <Image src={a.image!} alt={a.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          <Image src={effectiveImage!} alt={a.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className={`object-cover transition-transform duration-500 group-hover:scale-105 ${state === "PAST" ? "grayscale-[0.4] opacity-75" : ""}`} />
         ) : imgSrc ? (
           <SmartImg src={imgSrc} alt={a.title}

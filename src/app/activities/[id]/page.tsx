@@ -212,28 +212,34 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
                             {s.location && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3 text-gold" /> {s.location}</span>}
                             <span className="inline-flex items-center gap-1"><Users className="h-3 w-3 text-gold" /> {s.registered} / {s.seats}</span>
                           </div>
-                          {s.state !== "COMPLETED" && (
-                            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                              {s.decision.reason === "NOT_YET_OPEN" && s.registrationOpensAt && now < s.registrationOpensAt ? (
-                                <Countdown to={s.registrationOpensAt.toISOString()} prefix="التسجيل يُفتح بعد" tone="gold" variant="pill" />
-                              ) : s.decision.open ? (
-                                s.registrationClosesAt && now < s.registrationClosesAt ? (
-                                  <Countdown to={s.registrationClosesAt.toISOString()} prefix="يقفل بعد" tone="success" autoUrgent={true} variant="pill" />
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/70 px-3 py-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300 shadow-[0_2px_10px_-3px_rgba(5,120,85,0.3)] dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    التسجيل مفتوح الآن
+                          {s.state !== "COMPLETED" && (() => {
+                            const regOpensAt = s.registrationOpensAt ? new Date(s.registrationOpensAt) : null;
+                            const regClosesAt = s.registrationClosesAt ? new Date(s.registrationClosesAt) : null;
+                            const nowMs = now.getTime();
+
+                            return (
+                              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                                {s.decision.reason === "NOT_YET_OPEN" && regOpensAt && regOpensAt.getTime() > nowMs ? (
+                                  <Countdown to={regOpensAt.toISOString()} prefix="التسجيل يُفتح بعد" tone="gold" variant="pill" />
+                                ) : s.decision.open ? (
+                                  regClosesAt && regClosesAt.getTime() > nowMs ? (
+                                    <Countdown to={regClosesAt.toISOString()} prefix="يقفل بعد" tone="success" autoUrgent={true} variant="pill" />
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 dark:border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/70 px-3 py-1 text-[11px] font-black text-emerald-700 dark:text-emerald-300 shadow-[0_2px_10px_-3px_rgba(5,120,85,0.3)] dark:shadow-[0_0_12px_rgba(16,185,129,0.25)]">
+                                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                      التسجيل مفتوح الآن
+                                    </span>
+                                  )
+                                ) : s.decision.reason === "FULL" ? (
+                                  <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/70 px-3 py-1 text-[11px] font-black text-rose-600 dark:text-rose-300">
+                                    مكتمل — قائمة انتظار
                                   </span>
-                                )
-                              ) : s.decision.reason === "FULL" ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 dark:border-rose-500/40 bg-rose-50 dark:bg-rose-950/70 px-3 py-1 text-[11px] font-black text-rose-600 dark:text-rose-300">
-                                  مكتمل — قائمة انتظار
-                                </span>
-                              ) : (
-                                <span className="rounded-full bg-muted border border-border px-2.5 py-1 text-[10px] font-extrabold text-muted-foreground">{s.decision.message}</span>
-                              )}
-                            </div>
-                          )}
+                                ) : (
+                                  <span className="rounded-full bg-muted border border-border px-2.5 py-1 text-[10px] font-extrabold text-muted-foreground">{s.decision.message}</span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                         <span className={`rounded-xl px-4 py-2 text-xs font-black transition-all ${
                           s.state === "COMPLETED"
@@ -292,16 +298,24 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
               </span>
               <p className="mt-2 text-base font-black text-zinc-900 dark:text-zinc-100">{upcoming[0].label}</p>
               <div className="mt-3">
-                {upcoming[0].decision.reason === "NOT_YET_OPEN" && upcoming[0].registrationOpensAt ? (
-                  <Countdown to={upcoming[0].registrationOpensAt.toISOString()} prefix="التسجيل يُفتح بعد" tone="gold" variant="pill" />
-                ) : upcoming[0].registrationClosesAt && upcoming[0].registrationClosesAt > now ? (
-                  <Countdown to={upcoming[0].registrationClosesAt.toISOString()} prefix="يقفل بعد" tone="success" autoUrgent={true} variant="pill" />
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    التسجيل متاح الآن
-                  </span>
-                )}
+                {(() => {
+                  const upOpensAt = upcoming[0].registrationOpensAt ? new Date(upcoming[0].registrationOpensAt) : null;
+                  const upClosesAt = upcoming[0].registrationClosesAt ? new Date(upcoming[0].registrationClosesAt) : null;
+                  const nowMs = now.getTime();
+
+                  if (upcoming[0].decision.reason === "NOT_YET_OPEN" && upOpensAt && upOpensAt.getTime() > nowMs) {
+                    return <Countdown to={upOpensAt.toISOString()} prefix="التسجيل يُفتح بعد" tone="gold" variant="pill" />;
+                  }
+                  if (upClosesAt && upClosesAt.getTime() > nowMs) {
+                    return <Countdown to={upClosesAt.toISOString()} prefix="يقفل بعد" tone="success" autoUrgent={true} variant="pill" />;
+                  }
+                  return (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-300 dark:border-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-700 dark:text-emerald-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      التسجيل متاح الآن
+                    </span>
+                  );
+                })()}
               </div>
               <p className="mt-4 inline-flex items-center gap-1 text-xs font-black text-emerald-700 dark:text-gold-light group-hover:underline">
                 احجز مقعدك الآن ←

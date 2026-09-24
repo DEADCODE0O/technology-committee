@@ -19,8 +19,32 @@ export function purgeCacheTag(tag: string) {
   } catch {}
 }
 
+function parseSessionDates<T extends Record<string, any>>(s: T): T {
+  if (!s) return s;
+  return {
+    ...s,
+    startsAt: s.startsAt ? (s.startsAt instanceof Date ? s.startsAt : new Date(s.startsAt)) : new Date(),
+    endsAt: s.endsAt ? (s.endsAt instanceof Date ? s.endsAt : new Date(s.endsAt)) : null,
+    registrationOpensAt: s.registrationOpensAt
+      ? (s.registrationOpensAt instanceof Date ? s.registrationOpensAt : new Date(s.registrationOpensAt))
+      : null,
+    registrationClosesAt: s.registrationClosesAt
+      ? (s.registrationClosesAt instanceof Date ? s.registrationClosesAt : new Date(s.registrationClosesAt))
+      : null,
+  };
+}
+
+function parseActivityDates<T extends Record<string, any>>(a: T): T {
+  if (!a) return a;
+  return {
+    ...a,
+    createdAt: a.createdAt ? (a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt)) : new Date(),
+    sessions: Array.isArray(a.sessions) ? a.sessions.map(parseSessionDates) : [],
+  };
+}
+
 // ── 1. كاش الأنشطة المنشورة للطلاب والزوار ──
-export const getCachedPublishedActivities = unstable_cache(
+const _getCachedPublishedActivities = unstable_cache(
   async () => {
     return db.activity.findMany({
       where: { publish: "PUBLISHED" },
@@ -58,8 +82,13 @@ export const getCachedPublishedActivities = unstable_cache(
   }
 );
 
+export async function getCachedPublishedActivities() {
+  const list = await _getCachedPublishedActivities();
+  return list.map(parseActivityDates);
+}
+
 // ── 2. كاش تفاصيل نشاط محدد ──
-export const getCachedActivityById = (id: string) =>
+const _getCachedActivityById = (id: string) =>
   unstable_cache(
     async () => {
       return db.activity.findUnique({
@@ -84,7 +113,12 @@ export const getCachedActivityById = (id: string) =>
       revalidate: 300,
       tags: ["activities", `activity-${id}`],
     }
-  )();
+  );
+
+export async function getCachedActivityById(id: string) {
+  const item = await _getCachedActivityById(id)();
+  return item ? parseActivityDates(item) : null;
+}
 
 // ── 3. كاش البرامج المتاحة ──
 export const getCachedPrograms = unstable_cache(

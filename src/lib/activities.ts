@@ -8,15 +8,30 @@
 export type SessionState = "UPCOMING" | "ONGOING" | "COMPLETED";
 
 export type SessionLike = {
-  startsAt: Date;
-  endsAt: Date | null;
+  startsAt: Date | string;
+  endsAt: Date | string | null;
 };
+
+export function toDateSafe(d: Date | string | null | undefined): Date | null {
+  if (!d) return null;
+  const obj = d instanceof Date ? d : new Date(d);
+  return isNaN(obj.getTime()) ? null : obj;
+}
+
+export function toRequiredDateSafe(d: Date | string | null | undefined): Date {
+  if (!d) return new Date();
+  const obj = d instanceof Date ? d : new Date(d);
+  return isNaN(obj.getTime()) ? new Date() : obj;
+}
 
 // حالة الجلسة من التواريخ — لا تخزين يدوي إطلاقًا
 export function getSessionState(session: SessionLike, now: Date = new Date()): SessionState {
-  const end = session.endsAt ?? new Date(session.startsAt.getTime() + 2 * 3600 * 1000);
-  if (now < session.startsAt) return "UPCOMING";
-  if (now > end) return "COMPLETED";
+  const startsAt = toRequiredDateSafe(session.startsAt);
+  const endsAt = toDateSafe(session.endsAt);
+  const end = endsAt ?? new Date(startsAt.getTime() + 2 * 3600 * 1000);
+  const nowMs = now.getTime();
+  if (nowMs < startsAt.getTime()) return "UPCOMING";
+  if (nowMs > end.getTime()) return "COMPLETED";
   return "ONGOING";
 }
 
@@ -59,10 +74,10 @@ export const CLOSING_MODE_LABELS: Record<string, string> = Object.fromEntries(
 
 export type RegistrationGate = {
   session: {
-    registrationOpensAt: Date | null;
-    registrationClosesAt: Date | null;
-    startsAt: Date;
-    endsAt: Date | null;
+    registrationOpensAt: Date | string | null;
+    registrationClosesAt: Date | string | null;
+    startsAt: Date | string;
+    endsAt: Date | string | null;
     closingMode: string;
     registrationOpen: boolean;
   };
@@ -94,8 +109,12 @@ export function decideRegistration(gate: RegistrationGate, now: Date = new Date(
   if (!session.registrationOpen) return { open: false, reason: "CLOSED_MANUAL", message: MESSAGES.CLOSED_MANUAL };
 
   const mode = session.closingMode as ClosingMode;
-  const notYetOpen = session.registrationOpensAt !== null && now < session.registrationOpensAt;
-  const dateClosed = session.registrationClosesAt !== null && now > session.registrationClosesAt;
+  const opensAt = toDateSafe(session.registrationOpensAt);
+  const closesAt = toDateSafe(session.registrationClosesAt);
+  const nowMs = now.getTime();
+
+  const notYetOpen = opensAt !== null && nowMs < opensAt.getTime();
+  const dateClosed = closesAt !== null && nowMs > closesAt.getTime();
   const full = gate.registeredCount >= gate.seats;
 
   // فتح لاحق؟ (كل الأوضاع تحترم موعد الفتح إن وُجد)
@@ -151,16 +170,20 @@ export function getSessionDisplayPhase(
   if (state === "COMPLETED") return { phase: "COMPLETED", label: "انتهت" };
   if (state === "ONGOING") return { phase: "ONGOING", label: "جارية الآن" };
 
+  const opensAt = toDateSafe(gate.session.registrationOpensAt);
+  const closesAt = toDateSafe(gate.session.registrationClosesAt);
+  const startsAt = toRequiredDateSafe(gate.session.startsAt);
+  const nowMs = now.getTime();
+
   // قادمة (UPCOMING)
   if (teaser && decision.reason === "NOT_YET_OPEN") {
     return { phase: "TEASER", label: "تفاصيل قريبًا — تابعنا" };
   }
-  if (decision.reason === "NOT_YET_OPEN" && gate.session.registrationOpensAt) {
-    return { phase: "BEFORE_REGISTRATION", countdownTo: gate.session.registrationOpensAt, label: "التسجيل يُفتح بعد" };
+  if (decision.reason === "NOT_YET_OPEN" && opensAt) {
+    return { phase: "BEFORE_REGISTRATION", countdownTo: opensAt, label: "التسجيل يُفتح بعد" };
   }
   if (decision.open) {
-    const closesAt = gate.session.registrationClosesAt;
-    if (closesAt && closesAt > now) {
+    if (closesAt && closesAt.getTime() > nowMs) {
       return { phase: "REGISTRATION_OPEN", countdownTo: closesAt, label: "التسجيل يقفل بعد" };
     }
     return { phase: "REGISTRATION_OPEN", label: "التسجيل مفتوح الآن" };
@@ -169,7 +192,7 @@ export function getSessionDisplayPhase(
     return { phase: "WAITLIST", label: "اكتمل العدد — قائمة الانتظار متاحة" };
   }
   // مغلق بالتاريخ أو يدويًا → عدّ تنازلي حتى بدء الجلسة إن كانت قادمة
-  return { phase: "BEFORE_START", countdownTo: gate.session.startsAt, label: "يبدأ بعد" };
+  return { phase: "BEFORE_START", countdownTo: startsAt, label: "يبدأ بعد" };
 }
 
 // عنوان النشاط + جلسته في سطر واحد (للسجلات والقوائم)
