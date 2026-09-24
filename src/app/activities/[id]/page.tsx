@@ -17,6 +17,7 @@ import { SmartImg } from "@/components/platform/smart-img";
 import { ChevronRight, MapPin, Users, CalendarDays, Clock } from "lucide-react";
 import { formatCairoDate } from "@/lib/dates";
 import { CommunityLinksCard } from "@/components/platform/community-links-card";
+import { ImagePreviewButton } from "@/components/platform/image-preview-button";
 import { getCachedActivityById } from "@/lib/cache/data-cache";
 
 export const dynamic = "force-dynamic";
@@ -119,17 +120,30 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <article className="min-w-0">
-          {/* الصورة — المرفوعة أو من الرابط (درايف/خارجي) عبر المحوّل */}
-          <div className="relative aspect-[16/8] overflow-hidden rounded-3xl border border-white/[0.07]">
+          {/* الصورة — المرفوعة أو من الرابط (درايف/خارجي) عبر المحوّل — بنسبة 16:9 كاملة */}
+          <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/[0.07] bg-black/40">
             {useNextImage ? (
-              <Image src={activity.image!} alt={activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover" />
+              <Image src={activity.image!} alt={activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover object-center" />
             ) : imgSrc ? (
-              <SmartImg src={imgSrc} alt={activity.title} className="h-full w-full object-cover" />
+              <SmartImg src={imgSrc} alt={activity.title} className="h-full w-full object-cover object-center" />
             ) : (
-              <Image src="/images/hero-bg.webp" alt={activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover" />
+              <Image src="/images/hero-bg.webp" alt={activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover object-center" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-            <div className="absolute bottom-5 start-5 end-5">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+            {/* زر فحص وتكبير وتحميل البوستر بدقته الأصلية الكاملة */}
+            {activity.image && (
+              <div className="absolute top-4 end-4 z-10">
+                <ImagePreviewButton
+                  src={activity.image}
+                  alt={activity.title}
+                  title={`بوستر ${typeWord}: ${activity.title}`}
+                  label="عرض البوستر كاملًا"
+                />
+              </div>
+            )}
+
+            <div className="pointer-events-none absolute bottom-5 start-5 end-5">
               <p className="mb-1 text-xs font-bold text-gold-light">
                 {ACTIVITY_TYPE_ICONS[activity.type]} {typeWord}
                 {activity.level ? ` · ${ACTIVITY_LEVEL_LABELS[activity.level]}` : ""}

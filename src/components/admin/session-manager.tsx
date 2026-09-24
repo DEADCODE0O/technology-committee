@@ -245,10 +245,10 @@ export function SessionManager({
                   <button
                     type="button"
                     onClick={() => setPreviewImg({ src: s.image!, title: `${sessionWord}: ${s.title}` })}
-                    className="group relative shrink-0 h-14 w-14 overflow-hidden rounded-xl border border-white/10 hover:border-gold/40 transition-colors cursor-pointer"
+                    className="group relative shrink-0 w-24 aspect-video overflow-hidden rounded-xl border border-white/10 hover:border-gold/40 transition-colors cursor-pointer bg-black/40"
                     title="فحص وتكبير وتحميل صورة الجلسة"
                   >
-                    <img src={resolveImageSrc(s.image) || s.image} alt={s.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                    <img src={resolveImageSrc(s.image) || s.image} alt={s.title} className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105" />
                     <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Maximize2 className="h-4 w-4 text-gold-light" />
                     </span>
@@ -375,10 +375,10 @@ export function SessionManager({
                   <img
                     src={resolveImageSrc(form.image) || form.image}
                     alt="معاينة"
-                    className="h-10 w-16 rounded-lg border border-white/10 object-cover"
+                    className="w-20 aspect-video rounded-lg border border-white/10 object-cover object-center shrink-0 bg-black/40"
                   />
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-zinc-200">معاينة صورة الجلسة</p>
+                    <p className="text-xs font-bold text-zinc-200">معاينة صورة الجلسة (16:9)</p>
                     <p className="truncate text-[10px] text-zinc-500 max-w-[240px]" dir="ltr">{form.image}</p>
                   </div>
                 </div>

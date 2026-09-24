@@ -22,6 +22,7 @@ import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 import { formatCairoDate } from "@/lib/dates";
 import { CommunityLinksCard, WhatsAppIcon, TelegramIcon } from "@/components/platform/community-links-card";
+import { ImagePreviewButton } from "@/components/platform/image-preview-button";
 
 export const dynamic = "force-dynamic";
 
@@ -184,19 +185,31 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         {/* ── المحتوى الأساسي ── */}
         <article className="min-w-0">
-          {/* الصورة الرئيسية */}
-          <div className="relative aspect-[16/8] overflow-hidden rounded-3xl border border-white/[0.07]">
+          {/* الصورة الرئيسية — بنسبة 16:9 الكاملة */}
+          <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/[0.07] bg-night/40">
             {useNextImage ? (
               <Image src={sessionImg!} alt={session.title || activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw"
-                className={`object-cover ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
+                className={`object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
             ) : imgSrc ? (
               <SmartImg src={imgSrc} alt={session.title || activity.title}
-                className={`h-full w-full object-cover ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
+                className={`h-full w-full object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
             ) : (
               <Image src={FALLBACK_IMAGE} alt={session.title || activity.title} fill priority sizes="(max-width: 1024px) 100vw, 60vw"
-                className={`object-cover ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
+                className={`object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`} />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-night/85 via-night/25 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night/85 via-night/25 to-transparent" />
+
+            {/* زر فحص وتكبير وتحميل البوستر بدقته الكاملة */}
+            {sessionImg && (
+              <div className="absolute top-4 end-4 z-20">
+                <ImagePreviewButton
+                  src={sessionImg}
+                  alt={session.title || activity.title}
+                  title={`بوستر ${sessionLabel}: ${session.title || activity.title}`}
+                  label="عرض البوستر كاملًا"
+                />
+              </div>
+            )}
 
             {/* شارة الحالة العلوية البارزة بالألوان الحية */}
             <div className="absolute start-4 top-4 z-10 flex flex-wrap gap-2">

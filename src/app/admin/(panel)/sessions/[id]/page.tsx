@@ -12,6 +12,7 @@ import { ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD }
 import { formatCairoDate } from "@/lib/dates";
 import { SessionTeamsManager } from "@/components/admin/session-teams-manager";
 import { WhatsAppIcon, TelegramIcon } from "@/components/platform/community-links-card";
+import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -183,10 +184,22 @@ export default async function AdminSessionPage({
     <div className="mx-auto max-w-6xl space-y-5">
       {/* الرأس */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <Link href={`/admin/activities/${activity.id}`} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-zinc-500 hover:text-gold-light">
-            ← {activity.title}
-          </Link>
+        <div className="flex items-start gap-4 min-w-0 flex-1">
+          {(session.image || activity.image) && (
+            <div className="hidden sm:block shrink-0">
+              <ImageWithPreview
+                src={session.image || activity.image}
+                alt={session.title || activity.title}
+                title={`صورة الجلسة: ${session.title || activity.title}`}
+                className="group relative w-36 aspect-video overflow-hidden rounded-2xl border border-white/10 cursor-pointer shadow-lg bg-black/40"
+                imgClassName="h-full w-full object-cover object-center transition-transform group-hover:scale-105"
+              />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <Link href={`/admin/activities/${activity.id}`} className="mb-1 inline-flex items-center gap-1 text-xs font-bold text-zinc-500 hover:text-gold-light">
+              ← {activity.title}
+            </Link>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xl">{ACTIVITY_TYPE_ICONS[activity.type]}</span>
             <h1 className="text-2xl font-extrabold text-zinc-50">{sessionLabel}</h1>
@@ -216,6 +229,7 @@ export default async function AdminSessionPage({
           </p>
         </div>
       </div>
+    </div>
 
       {/* بانر روابط جروبات التواصل للأدمن */}
       {(session.whatsappUrl || session.telegramUrl || activity.whatsappUrl || activity.telegramUrl) && (

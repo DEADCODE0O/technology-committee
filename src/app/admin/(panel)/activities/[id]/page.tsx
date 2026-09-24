@@ -183,8 +183,8 @@ export default async function AdminActivityDetailPage({
                 src={activity.image}
                 alt={activity.title}
                 title={`صورة النشاط: ${activity.title}`}
-                className="group relative h-20 w-32 overflow-hidden rounded-2xl border border-white/10 cursor-pointer shadow-lg"
-                imgClassName="h-full w-full object-cover transition-transform group-hover:scale-105"
+                className="group relative w-36 aspect-video overflow-hidden rounded-2xl border border-white/10 cursor-pointer shadow-lg bg-black/40"
+                imgClassName="h-full w-full object-cover object-center transition-transform group-hover:scale-105"
               />
             </div>
           )}

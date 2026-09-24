@@ -181,10 +181,10 @@ export function ActivityForm({
           <ImagePlus className="h-4 w-4 text-gold" /> صورة النشاط
         </Label>
 
-        {/* المعاينة */}
+        {/* المعاينة بنسبة 16:9 الكاملة */}
         {previewSrc && (
-          <div className="group relative overflow-hidden rounded-2xl border border-gold/25">
-            <img src={previewSrc} alt="معاينة صورة النشاط" className="aspect-[16/7] w-full object-cover" />
+          <div className="group relative overflow-hidden rounded-2xl border border-gold/25 bg-black/40">
+            <img src={previewSrc} alt="معاينة صورة النشاط" className="aspect-video w-full object-cover object-center" />
             <div className="absolute end-2 top-2 flex items-center gap-2">
               <button
                 type="button"
@@ -215,7 +215,7 @@ export function ActivityForm({
             <Label className="text-xs font-bold text-zinc-300">ارفع صورة من جهازك</Label>
             <label className="flex h-14 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gold/30 bg-gold/[0.03] text-xs font-bold text-gold-light transition-colors hover:bg-gold/[0.08]">
               {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? "جاري الرفع..." : "اختر صورة (JPG / PNG / WEBP — حتى 4MB)"}
+              {uploading ? "جاري الرفع..." : "اختر صورة (JPG / PNG / WEBP — النسبة المثالية 16:9)"}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
