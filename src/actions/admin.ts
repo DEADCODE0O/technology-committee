@@ -562,6 +562,14 @@ export async function toggleStudentStatus(userId: string): Promise<{ ok: boolean
 
     const next = student.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
     await db.user.update({ where: { id: userId }, data: { status: next } });
+
+    if (next === "ACTIVE" && isSupabaseConfigured()) {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        await supaAdmin.auth.admin.updateUserById(userId, { email_confirm: true }).catch(() => {});
+      }
+    }
+
     await logAudit({
       actor: admin,
       action: "STUDENT_STATUS",
@@ -572,6 +580,78 @@ export async function toggleStudentStatus(userId: string): Promise<{ ok: boolean
     });
     revalidatePath("/admin/students");
     revalidatePath(`/admin/students/${userId}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+// ─── تفعيل حساب الطالب يدويًا ومباشرة من الإدارة ───────────────
+export async function verifyStudentDirectlyAction(userId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.STUDENTS, "manage");
+    const student = await db.user.findUnique({ where: { id: userId }, include: { profile: true } });
+    if (!student || student.role !== "STUDENT") return { ok: false, error: "الطالب غير موجود" };
+
+    await db.user.update({
+      where: { id: userId },
+      data: { status: "ACTIVE" },
+    });
+
+    if (isSupabaseConfigured()) {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        await supaAdmin.auth.admin.updateUserById(userId, { email_confirm: true }).catch(() => {});
+      }
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "MANUAL_STUDENT_VERIFY",
+      entity: "STUDENT",
+      entityId: userId,
+      summary: `تفعيل يدوي مباشر لحساب الطالب ${student.profile?.fullName ?? student.email}`,
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath(`/admin/students/${userId}`);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+// ─── إعادة إرسال رمز الـ OTP للطالب من الإدارة ───────────────
+export async function resendStudentOtpAction(userId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.STUDENTS, "manage");
+    const student = await db.user.findUnique({ where: { id: userId } });
+    if (!student || student.role !== "STUDENT") return { ok: false, error: "الطالب غير موجود" };
+
+    if (!isSupabaseConfigured()) {
+      return { ok: true };
+    }
+
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return { ok: false, error: "خدمة المصادقة غير متصلة" };
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: student.email,
+    });
+
+    if (error) {
+      return { ok: false, error: error.message || "تعذر إعادة إرسال الرمز" };
+    }
+
+    await logAudit({
+      actor: admin,
+      action: "RESEND_STUDENT_OTP",
+      entity: "STUDENT",
+      entityId: userId,
+      summary: `إعادة إرسال رمز OTP للطالب ${student.email}`,
+    });
+
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };

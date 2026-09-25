@@ -44,6 +44,7 @@ export function SelectStatusParam({ defaultValue }: { defaultValue: string }) {
       <SelectContent>
         <SelectItem value="ALL">الكل</SelectItem>
         <SelectItem value="ACTIVE">نشط</SelectItem>
+        <SelectItem value="PENDING_VERIFICATION">بانتظار تأكيد OTP</SelectItem>
         <SelectItem value="SUSPENDED">معلق</SelectItem>
       </SelectContent>
     </Select>

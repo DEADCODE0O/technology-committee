@@ -5,8 +5,8 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle, LogIn, Copy, ShieldCheck } from "lucide-react";
-import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently, impersonateStudentAction } from "@/actions/admin";
+import { Loader2, Ban, CheckCircle2, Zap, TrendingDown, Medal, KeyRound, Trash2, AlertTriangle, LogIn, Copy, ShieldCheck, MailCheck, Mail } from "lucide-react";
+import { toggleStudentStatus, addPointEvent, awardBadge, resetStudentPassword, deleteStudentPermanently, impersonateStudentAction, verifyStudentDirectlyAction, resendStudentOtpAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -607,6 +607,84 @@ export function ResetStudentAbsencesButton({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// ─── تفعيل الحساب يدويًا ومباشرة للطلاب الذين لم يصلهم الـ OTP ────
+export function VerifyStudentDirectlyButton({
+  userId,
+  studentName,
+}: {
+  userId: string;
+  studentName: string;
+}) {
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+
+  const handleVerify = () => {
+    if (!confirm(`هل أنت متأكد من تفعيل وتأكيد حساب الطالب «${studentName}» فوراً وتجاوز التحقق بالبريد؟`)) return;
+
+    startTransition(async () => {
+      const res = await verifyStudentDirectlyAction(userId);
+      if (res.ok) {
+        toast.success(`تم تفعيل حساب الطالب «${studentName}» بنجاح — يمكنه تصفح المنصة والدخول الآن`);
+        router.refresh();
+      } else {
+        toast.error(res.error || "تعذر تفعيل الحساب");
+      }
+    });
+  };
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={handleVerify}
+      className="h-8 rounded-lg border-emerald-500/30 bg-emerald-500/10 px-2.5 text-[11px] font-extrabold text-emerald-400 hover:bg-emerald-500/20"
+      title="تفعيل الحساب فوراً بدون انتظار رسالة البريد"
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailCheck className="h-3.5 w-3.5" />}
+      <span className="ms-1">تفعيل مباشر</span>
+    </Button>
+  );
+}
+
+// ─── إعادة إرسال رمز الـ OTP للطالب من الإدارة ───────────────
+export function ResendStudentOtpButton({
+  userId,
+  studentName,
+}: {
+  userId: string;
+  studentName: string;
+}) {
+  const [pending, startTransition] = useTransition();
+
+  const handleResend = () => {
+    startTransition(async () => {
+      const res = await resendStudentOtpAction(userId);
+      if (res.ok) {
+        toast.success(`تمت إعادة إرسال رمز OTP إلى بريد الطالب «${studentName}»`);
+      } else {
+        toast.error(res.error || "تعذر إعادة إرسال الرمز");
+      }
+    });
+  };
+
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant="outline"
+      disabled={pending}
+      onClick={handleResend}
+      className="h-8 rounded-lg border-amber-500/30 bg-amber-500/10 px-2.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/20"
+      title="إعادة إرسال رمز الـ OTP إلى بريد الطالب"
+    >
+      {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
+      <span className="ms-1">إعادة إرسال</span>
+    </Button>
   );
 }
 

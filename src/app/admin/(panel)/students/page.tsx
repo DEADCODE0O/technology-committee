@@ -7,7 +7,7 @@ import { findTargetedStudentIds } from "@/lib/targeting";
 import { GRADES, SECTIONS, GENDERS, GRADE_LABELS, SECTION_LABELS, GENDER_LABELS, levelFromPoints } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SuspendToggle, ImpersonateStudentButton } from "@/components/admin/student-actions";
+import { SuspendToggle, ImpersonateStudentButton, VerifyStudentDirectlyButton, ResendStudentOtpButton } from "@/components/admin/student-actions";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function AdminStudentsPage({
   const grade = GRADES.some((g) => g.value === sp.grade) ? sp.grade! : "";
   const section = SECTIONS.some((s) => s.value === sp.section) ? sp.section! : "";
   const gender = GENDERS.some((g) => g.value === sp.gender) ? sp.gender! : "";
-  const status = sp.status === "ACTIVE" || sp.status === "SUSPENDED" ? sp.status : "";
+  const status = sp.status === "ACTIVE" || sp.status === "SUSPENDED" || sp.status === "PENDING_VERIFICATION" ? sp.status : "";
   const attendance: "ATTENDED" | "NOT_ATTENDED" | "" = sp.attendance === "ATTENDED" || sp.attendance === "NOT_ATTENDED" ? sp.attendance : "";
   const talent: "HAS" | "VERIFIED" | "NONE" | "" = sp.talent === "HAS" || sp.talent === "VERIFIED" || sp.talent === "NONE" ? sp.talent : "";
   const minPoints = Number(sp.minPoints) > 0 ? Number(sp.minPoints) : 0;
@@ -266,14 +266,28 @@ export default async function AdminStudentsPage({
                         <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
                           s.status === "ACTIVE"
                             ? "border border-gold/25 bg-gold/[0.06] text-gold-light"
+                            : s.status === "PENDING_VERIFICATION"
+                            ? "border border-amber-500/30 bg-amber-500/10 text-amber-300"
                             : "border border-red-500/25 bg-red-500/[0.06] text-red-300"
                         }`}>
-                          {s.status === "ACTIVE" ? "نشط" : "معلق"}
+                          {s.status === "ACTIVE" ? "نشط" : s.status === "PENDING_VERIFICATION" ? "بانتظار تأكيد OTP" : "معلق"}
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1.5">
-                          {canManage && (
+                          {canManage && s.status === "PENDING_VERIFICATION" && (
+                            <>
+                              <ResendStudentOtpButton
+                                userId={s.id}
+                                studentName={s.profile?.fullName ?? s.email}
+                              />
+                              <VerifyStudentDirectlyButton
+                                userId={s.id}
+                                studentName={s.profile?.fullName ?? s.email}
+                              />
+                            </>
+                          )}
+                          {canManage && s.status !== "PENDING_VERIFICATION" && (
                             <ImpersonateStudentButton
                               userId={s.id}
                               studentName={s.profile?.fullName ?? s.email}
