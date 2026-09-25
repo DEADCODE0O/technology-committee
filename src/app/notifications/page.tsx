@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { requireStudent } from "@/lib/auth";
 import { StudentShell } from "@/components/student/student-shell";
 import { NotificationsList, type CenterNotification } from "@/components/platform/notifications-list";
 import { getStudentBadges } from "@/lib/student-badges";
@@ -7,10 +6,7 @@ import { getStudentBadges } from "@/lib/student-badges";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login?returnTo=/notifications");
-  if (user.role !== "STUDENT" && !user.profile) redirect("/admin");
-  if (!user.profile) redirect("/profile/complete");
+  const user = await requireStudent();
 
   const badges = await getStudentBadges(user);
 
@@ -33,7 +29,7 @@ export default async function NotificationsPage() {
   return (
     <StudentShell
       user={{
-        name: user.profile.fullName,
+        name: user.profile?.fullName ?? user.displayName ?? "طالب",
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,

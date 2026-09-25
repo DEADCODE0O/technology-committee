@@ -1,10 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { SitePageShell } from "@/components/platform/site-page-shell";
 import { StudentShell } from "@/components/student/student-shell";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentBadges } from "@/lib/student-badges";
 import { Countdown } from "@/components/platform/countdown";
@@ -66,6 +66,11 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   const useNextImage = !!activity.image && activity.image.startsWith("/");
   const totalSeats = sessions.reduce((sum, s) => sum + s.seats, 0);
   const totalRegistered = sessions.reduce((sum, s) => sum + s.registered, 0);
+
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
 
   const user = await getCurrentUser();
   const isStudent = !!user && user.role === "STUDENT";

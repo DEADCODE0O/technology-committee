@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   GraduationCap,
@@ -12,7 +12,7 @@ import {
   Flame,
 } from "lucide-react";
 import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentRank, getAvatarFramesVisible, getCharmHeartsVisible } from "@/lib/platform";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
@@ -54,6 +54,11 @@ export async function generateMetadata(props: { params: Promise<{ username: stri
 }
 
 export default async function PublicProfilePage(props: { params: Promise<{ username: string }> }) {
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
+
   const { username } = await props.params;
   const clean = decodeURIComponent(username).replace(/^@/, "");
 

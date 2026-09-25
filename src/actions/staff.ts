@@ -99,9 +99,21 @@ export async function demoteToStudent(userId: string): Promise<{ ok: boolean; er
       return { ok: false, error: "لا يمكنك تنزيل المدير الأعلى" };
     }
 
+    // إذا كان الحساب مسجلاً بالبريد وغير موثق في Supabase Auth، نلزم حالته بالتحقق
+    let newStatus = target.status;
+    if (target.provider === "EMAIL") {
+      const supaAdmin = getSupabaseAdmin();
+      if (supaAdmin) {
+        const { data: authData } = await supaAdmin.auth.admin.getUserById(userId);
+        if (!authData?.user?.email_confirmed_at) {
+          newStatus = "PENDING_VERIFICATION";
+        }
+      }
+    }
+
     await db.user.update({
       where: { id: userId },
-      data: { role: "STUDENT", customPermissions: null },
+      data: { role: "STUDENT", status: newStatus, customPermissions: null },
     });
 
     await logAudit({

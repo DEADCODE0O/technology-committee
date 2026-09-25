@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
 
 // ═══════════════════════════════════════════════════════════════
@@ -18,6 +18,11 @@ function redirectTo(path: string): NextResponse {
 }
 
 export async function GET() {
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    return redirectTo(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
+
   const user = await getCurrentUser();
   if (user) {
     return redirectTo(isAdminRole(user.role) ? "/admin" : "/panel");

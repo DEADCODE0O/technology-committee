@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/permissions";
 import { OtpVerifyForm } from "@/components/platform/otp-verify-form";
 import { PublicSiteSideLink } from "@/components/platform/public-site-side-link";
@@ -21,13 +21,18 @@ export default async function RegisterVerifyPage({
   }
 
   const sp = (searchParams ? await Promise.resolve(searchParams) : {}) || {};
-  const email = typeof sp.email === "string" ? sp.email : undefined;
+  let email = typeof sp.email === "string" ? sp.email : undefined;
   const returnTo = typeof sp.returnTo === "string" ? sp.returnTo : undefined;
   const notice = typeof sp.notice === "string" ? sp.notice : undefined;
 
-  // إذا لم يكن هناك بريد محدد، العودة لصفحة التسجيل
+  // إذا لم يكن هناك بريد محدد، نحاول جلبه من الجلسة المعلقة
   if (!email) {
-    redirect("/register");
+    const unverified = await getUnverifiedSessionUser();
+    if (unverified) {
+      email = unverified.email;
+    } else {
+      redirect("/register");
+    }
   }
 
   return (

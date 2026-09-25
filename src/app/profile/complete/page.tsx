@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { getStudentCodeConfig } from "@/lib/platform";
 import { CompleteProfileForm } from "@/components/platform/complete-profile-form";
 import { PublicSiteSideLink } from "@/components/platform/public-site-side-link";
@@ -18,6 +18,11 @@ export default async function CompleteProfilePage({
 }: {
   searchParams?: Promise<{ returnTo?: string }> | { returnTo?: string };
 }) {
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
+
   const [user, codeConfig, sp] = await Promise.all([
     getCurrentUser(),
     getStudentCodeConfig(),

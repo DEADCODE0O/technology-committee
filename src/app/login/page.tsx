@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { LOGIN_ERROR_MESSAGES } from "@/lib/constants";
 import { LoginForm } from "@/components/platform/login-form";
@@ -17,6 +17,12 @@ export default async function LoginPage({
 }: {
   searchParams?: Promise<{ returnTo?: string; error?: string; notice?: string }> | { returnTo?: string; error?: string; notice?: string };
 }) {
+  // فحص الجلسة المعلقة بالتحقق OTP
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
+
   // مسجل بالفعل؟ لوجهته مباشرة
   const user = await getCurrentUser();
   if (user) redirect(isAdminRole(user.role) ? "/admin" : "/panel");

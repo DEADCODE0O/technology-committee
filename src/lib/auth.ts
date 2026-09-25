@@ -593,6 +593,77 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
   }
 });
 
+// ─── كشف الجلسات غير الموثقة بالبريد (Pending Verification) ──
+// إذا كان المستخدم يملك جلسة نشطة لكن حسابه ما زال بانتظار OTP
+export const getUnverifiedSessionUser = cache(async function getUnverifiedSessionUser(): Promise<{
+  id: string;
+  email: string;
+} | null> {
+  try {
+    const store = await cookies();
+
+    // 1) فحص جلسة Supabase Auth
+    if (isSupabaseConfigured()) {
+      const allCookies = store.getAll();
+      const token = extractAccessTokenFromCookies(allCookies);
+      let authUserId: string | null = null;
+
+      if (token) {
+        const decoded = decodeSupabaseToken(token);
+        if (decoded?.sub) {
+          authUserId = decoded.sub;
+        }
+      }
+
+      if (!authUserId) {
+        const supabase = await createSupabaseServerClient();
+        if (supabase) {
+          try {
+            const { data } = await supabase.auth.getUser();
+            if (data?.user) {
+              authUserId = data.user.id;
+            }
+          } catch {}
+        }
+      }
+
+      if (authUserId) {
+        const user = await db.user.findUnique({
+          where: { id: authUserId },
+          select: { id: true, email: true, role: true, status: true, provider: true },
+        });
+
+        if (user && user.role === ROLES.STUDENT && user.provider === "EMAIL") {
+          if (user.status === "PENDING_VERIFICATION") {
+            return { id: user.id, email: user.email };
+          }
+        }
+      }
+    }
+
+    // 2) فحص الجلسة المحلية (tc_session)
+    const localToken = store.get(COOKIE_NAME)?.value;
+    if (localToken) {
+      try {
+        const { payload } = await jwtVerify(localToken, getSecret());
+        const sub = payload.sub as string;
+        if (sub) {
+          const user = await db.user.findUnique({
+            where: { id: sub },
+            select: { id: true, email: true, role: true, status: true, provider: true },
+          });
+          if (user && user.role === ROLES.STUDENT && user.provider === "EMAIL" && user.status === "PENDING_VERIFICATION") {
+            return { id: user.id, email: user.email };
+          }
+        }
+      } catch {}
+    }
+  } catch (err) {
+    console.warn("[getUnverifiedSessionUser] error:", err);
+  }
+  return null;
+});
+
 // ─── حرس الصفحات (Server Components) ─────────────────────────
 
 // صفحات الطالب — تحويل لصفحة الدخول إن لم يكن مسجلاً
@@ -601,6 +672,12 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
 export async function requireStudent(
   opts?: { skipProfileCheck?: boolean; skipRequiredGate?: boolean }
 ): Promise<SessionUser> {
+  // فحص ما إذا كان المستخدم مسجلاً بالبريد وبانتظار تأكيد OTP — قفل المنصة عليه فوراً وتحويله لصفحة التحقق
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
+
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   // السماح للطلاب والمشرفين الذين يملكون ملف طالب بالوصول للوحة ومنصة الطالب بكامل مزاياها
@@ -645,6 +722,12 @@ export async function requireActionUser(module?: Module, action: Action = "manag
 export async function requireStudentAction(
   opts?: { skipRequiredGate?: boolean }
 ): Promise<SessionUser> {
+  // فحص الجلسة المعلقة بالـ OTP ومنع أي إجراء خادم
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    throw new Error("يجب تأكيد البريد الإلكتروني برمز الـ OTP أولاً قبل إكمال أي عملية");
+  }
+
   const user = await getCurrentUser();
   if (!user) throw new Error("انتهت الجلسة — سجّل دخولك مرة أخرى");
   if (user.status === "SUSPENDED" || user.status === "PENDING_VERIFICATION") throw new Error("حسابك غير مفعل أو يتطلب تأكيد البريد الإلكتروني أولاً");

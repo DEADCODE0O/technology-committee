@@ -3,7 +3,8 @@ import Image from "next/image";
 import { db } from "@/lib/db";
 import { SitePageShell } from "@/components/platform/site-page-shell";
 import { StudentShell } from "@/components/student/student-shell";
-import { getCurrentUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { getStudentProgress } from "@/lib/progress";
 import { getStudentBadges } from "@/lib/student-badges";
 import { Countdown } from "@/components/platform/countdown";
@@ -162,6 +163,11 @@ export default async function ActivitiesPage({
     const s = params.toString();
     return s ? `/activities?${s}` : "/activities";
   };
+
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
 
   const user = await getCurrentUser();
   const isStudent = !!user && user.role === "STUDENT";

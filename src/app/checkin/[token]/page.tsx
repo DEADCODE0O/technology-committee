@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { CheckCircle2, QrCode, LogIn, Presentation } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { QrCheckinButton } from "@/components/platform/qr-checkin-button";
 import { isAdminRole } from "@/lib/permissions";
@@ -12,6 +12,11 @@ export const dynamic = "force-dynamic";
 
 export default async function CheckinPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
 
   // كود الحضور خاص بكل جلسة (محاضرة/موعد ورشة)
   const session = await db.session.findUnique({

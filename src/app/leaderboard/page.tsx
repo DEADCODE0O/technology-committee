@@ -14,9 +14,10 @@ import {
 import { db } from "@/lib/db";
 import { SitePageShell, EmptyState } from "@/components/platform/site-page-shell";
 import { StudentShell } from "@/components/student/student-shell";
+import { redirect } from "next/navigation";
 import { getLeaderboard, type LeaderboardEntry } from "@/lib/platform";
 import { getActiveSeason, getStudentProgress } from "@/lib/progress";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, getUnverifiedSessionUser } from "@/lib/auth";
 import { getStudentBadges } from "@/lib/student-badges";
 import { monthStart, semesterStart, GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
@@ -62,6 +63,11 @@ export default async function LeaderboardPage({
   const second = rows[1] ?? null;
   const third = rows[2] ?? null;
   const remainingRows = rows.slice(3);
+
+  const unverified = await getUnverifiedSessionUser();
+  if (unverified) {
+    redirect(`/register/verify?email=${encodeURIComponent(unverified.email)}&notice=need_verification`);
+  }
 
   const user = await getCurrentUser();
   const isStudent = !!user && user.role === "STUDENT";
