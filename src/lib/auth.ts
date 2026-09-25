@@ -480,7 +480,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
 
       if (authUser) {
         const row = await resolveSupabaseAppUser(authUser);
-        if (row && row.status !== "SUSPENDED") {
+        if (row && row.status !== "SUSPENDED" && row.status !== "PENDING_VERIFICATION") {
 
       // التأكد من تمرير صورة الحساب بنظافة ودقة عالية
       const meta = (authUser.user_metadata ?? {}) as Record<string, unknown>;
@@ -569,7 +569,7 @@ export const getCurrentUser = cache(async function getCurrentUser(): Promise<Ses
       where: { id: userId },
       include: { profile: true },
     });
-    if (!user || user.status === "SUSPENDED") return null;
+    if (!user || user.status === "SUSPENDED" || user.status === "PENDING_VERIFICATION") return null;
 
     const isPresetLocal = Boolean(
       user.avatarUrl?.startsWith("/images/avatars/") ||
@@ -647,7 +647,7 @@ export async function requireStudentAction(
 ): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) throw new Error("انتهت الجلسة — سجّل دخولك مرة أخرى");
-  if (user.status === "SUSPENDED") throw new Error("حسابك معلق — تواصل مع إدارة اللجنة");
+  if (user.status === "SUSPENDED" || user.status === "PENDING_VERIFICATION") throw new Error("حسابك غير مفعل أو يتطلب تأكيد البريد الإلكتروني أولاً");
   if (user.role !== ROLES.STUDENT && !user.profile) throw new Error("هذه العملية للطلاب فقط");
   if (!opts?.skipRequiredGate) {
     const { getStudentGate } = await import("@/lib/gate");
