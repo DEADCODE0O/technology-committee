@@ -204,16 +204,26 @@ export async function getStudentLevel(userId: string): Promise<{ points: number;
   return { points, level: levelFromPoints(points) };
 }
 
-// ترتيب الطالب = 1 + عدد الطلاب الأعلى منه نقاطًا
+// ترتيب الطالب = 1 + عدد الطلاب الأعلى منه نقاطًا (كاش ذاكرة 60 ثانية لتفادي التكرار)
+let cachedRanks: { map: Map<string, number>; expiresAt: number } | null = null;
+
 export async function getStudentRank(userId: string): Promise<number> {
   try {
+    const nowMs = Date.now();
+    if (cachedRanks && cachedRanks.expiresAt > nowMs) {
+      return cachedRanks.map.get(userId) ?? 1;
+    }
     const grouped = await db.pointEvent.groupBy({
       by: ["userId"],
       _sum: { points: true },
+      orderBy: { _sum: { points: "desc" } },
     });
-    const myTotal = grouped.find((g) => g.userId === userId)?._sum.points ?? 0;
-    const higher = grouped.filter((g) => (g._sum.points ?? 0) > myTotal).length;
-    return higher + 1;
+    const map = new Map<string, number>();
+    grouped.forEach((g, idx) => {
+      map.set(g.userId, idx + 1);
+    });
+    cachedRanks = { map, expiresAt: nowMs + 60 * 1000 };
+    return map.get(userId) ?? 1;
   } catch {
     return 1;
   }

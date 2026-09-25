@@ -43,7 +43,10 @@ export type StreakResult = {
 /**
  * تسجيل الزيارة اليومية وتحديث الاستمرارية
  */
-export async function recordDailyActivity(userId: string): Promise<StreakResult> {
+export async function recordDailyActivity(
+  userId: string,
+  lastActiveAt?: Date | null
+): Promise<StreakResult> {
   const fallback: StreakResult = {
     currentStreak: 1,
     longestStreak: 1,
@@ -55,11 +58,16 @@ export async function recordDailyActivity(userId: string): Promise<StreakResult>
     const today = getTodayDateString();
     const yesterday = getYesterdayDateString();
 
-    // تحديث وقت آخر ظهور دائماً
-    await db.user.update({
-      where: { id: userId },
-      data: { lastActiveAt: new Date() },
-    }).catch(() => {});
+    // تحديث وقت آخر ظهور بذكاء (فقط إذا مر أكثر من 15 دقيقة على آخر تسجيل لتفادي استنزاف قاعدة البيانات)
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const shouldUpdateActive = !lastActiveAt || new Date(lastActiveAt) < fifteenMinutesAgo;
+
+    if (shouldUpdateActive) {
+      await db.user.update({
+        where: { id: userId },
+        data: { lastActiveAt: new Date() },
+      }).catch(() => {});
+    }
 
     const existing = await db.dailyStreak.findUnique({
       where: { userId },

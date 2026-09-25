@@ -205,3 +205,63 @@ export const getCachedUserById = (userId: string) =>
       tags: [`user-${userId}`],
     }
   )();
+
+// ── 6. كاش منشورات المجتمع الرسمية للوحة الطالب (180 ثانية) ──
+const _getCachedCommunityPosts = unstable_cache(
+  async () => {
+    return db.communityPost.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            avatarFrameId: true,
+            displayName: true,
+            profile: { select: { fullName: true } },
+            pointEvents: { select: { points: true } },
+          },
+        },
+        reactions: true,
+        comments: {
+          where: { status: "APPROVED" },
+          orderBy: { createdAt: "asc" },
+          include: {
+            user: {
+              select: {
+                id: true,
+                avatarUrl: true,
+                avatarFrameId: true,
+                profile: { select: { fullName: true } },
+                pointEvents: { select: { points: true } },
+                badges: { include: { badge: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+  ["panel-community-posts"],
+  {
+    revalidate: 180, // 3 دقائق كاش يمنع إغراق السيرفر مع كل زيارة طالب
+    tags: ["community-posts"],
+  }
+);
+
+export async function getCachedCommunityPosts() {
+  const posts = await _getCachedCommunityPosts();
+  return posts.map((p) => ({
+    ...p,
+    createdAt: p.createdAt ? (p.createdAt instanceof Date ? p.createdAt : new Date(p.createdAt)) : new Date(),
+    comments: Array.isArray(p.comments)
+      ? p.comments.map((c) => ({
+          ...c,
+          createdAt: c.createdAt ? (c.createdAt instanceof Date ? c.createdAt : new Date(c.createdAt)) : new Date(),
+        }))
+      : [],
+  }));
+}

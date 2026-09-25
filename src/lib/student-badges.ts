@@ -13,6 +13,16 @@ export interface StudentBadgesResult {
   pinnedBanner: StudentNotification | null;
 }
 
+const badgesCache = new Map<string, { result: StudentBadgesResult; expiresAt: number }>();
+
+export function clearBadgesCache(userId?: string) {
+  if (userId) {
+    badgesCache.delete(userId);
+  } else {
+    badgesCache.clear();
+  }
+}
+
 /**
  * دالة موحدة فائقة السرعة لجلب كافة شارات وعدادات الطالب
  * (الإشعارات غير المقروءة · المهام المفتوحة بانتظار التسليم · الرسائل والتنبيهات الاجتماعية)
@@ -22,6 +32,12 @@ export async function getStudentBadges(user: {
   id: string;
   profile?: { grade: string; section: string; gender: string } | null;
 }): Promise<StudentBadgesResult> {
+  const nowMs = Date.now();
+  const cached = badgesCache.get(user.id);
+  if (cached && cached.expiresAt > nowMs) {
+    return cached.result;
+  }
+
   try {
     // 1. جلب عضوية الفريق للطالب لمطابقة استعلام صفحة المهام تماماً
     const membership = await db.teamMember
@@ -76,7 +92,7 @@ export async function getStudentBadges(user: {
       (a) => !a.submission || a.submission.status === "RETURNED"
     ).length;
 
-    return {
+    const finalResult: StudentBadgesResult = {
       unreadCount: notificationsRes.unreadCount,
       openTaskCount,
       unreadMessagesCount: 0,
@@ -85,6 +101,8 @@ export async function getStudentBadges(user: {
       pinnedBanners: notificationsRes.pinnedBanners,
       pinnedBanner: notificationsRes.pinnedBanner,
     };
+    badgesCache.set(user.id, { result: finalResult, expiresAt: nowMs + 30 * 1000 });
+    return finalResult;
   } catch (err) {
     console.error("[getStudentBadges] error:", err);
     return {

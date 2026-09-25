@@ -12,13 +12,14 @@ import { getStudentProgress } from "@/lib/progress";
 import { recordDailyActivity } from "@/lib/streak";
 import { getStudentFeed } from "@/actions/student-posts";
 import { getCharmHeartsVisible } from "@/lib/platform";
-import { parseTarget, findTargetedStudentIds } from "@/lib/targeting";
+import { parseTarget, studentMatchesTarget } from "@/lib/targeting";
 import { planMedia } from "@/lib/media";
 import { parseExternalLinks } from "@/lib/tasks";
 import { levelFromPoints } from "@/lib/constants";
 import { CommunityFeedView } from "@/components/community/community-feed-view";
 import { LeveledName } from "@/components/ui/leveled-name";
 import { normalizeEndorsement } from "@/lib/endorsements";
+import { getCachedPublishedActivities, getCachedCommunityPosts } from "@/lib/cache/data-cache";
 
 export const dynamic = "force-dynamic";
 
@@ -64,54 +65,20 @@ export default async function StudentDashboardPage() {
     openActivitiesCount,
     myBadges,
   ] = await Promise.all([
-    recordDailyActivity(user.id).catch(() => ({ currentStreak: 1, longestStreak: 1, isNewDay: false, bonusPointsEarned: 0 })),
+    recordDailyActivity(user.id, user.lastActiveAt).catch(() => ({ currentStreak: 1, longestStreak: 1, isNewDay: false, bonusPointsEarned: 0 })),
     getStudentProgress(user.id).catch(() => ({ xp: 0, level: 1, nextLevel: 2, progressToNext: 0, seasonXp: 0, seasonName: null, streakWeeks: 0, attendedCount: 0, tasksCompleted: 0, questsCompleted: 0 })),
     getStudentBadges(user),
     getStudentFeed().catch(() => []),
-    db.communityPost.findMany({
-      where: { status: "PUBLISHED" },
-      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }],
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            email: true,
-            role: true,
-            avatarUrl: true,
-            avatarFrameId: true,
-            displayName: true,
-            profile: { select: { fullName: true } },
-            pointEvents: { select: { points: true } },
-          },
-        },
-        reactions: true,
-        comments: {
-          where: { status: "APPROVED" },
-          orderBy: { createdAt: "asc" },
-          include: {
-            user: {
-              select: {
-                id: true,
-                avatarUrl: true,
-                avatarFrameId: true,
-                profile: { select: { fullName: true } },
-                pointEvents: { select: { points: true } },
-                badges: { include: { badge: true } },
-              },
-            },
-          },
-        },
-      },
-    }).catch(() => []),
+    getCachedCommunityPosts().catch(() => []),
     getCharmHeartsVisible().catch(() => true),
-    db.activity.count({ where: { publish: "PUBLISHED" } }).catch(() => 0),
+    getCachedPublishedActivities().then((a) => a.length).catch(() => 0),
     db.studentBadge.findMany({
       where: { userId: user.id },
       include: { badge: true },
     }).then((list) => list.map((b) => ({ id: b.badge.id, name: b.badge.name, icon: b.badge.icon }))).catch(() => []),
   ]);
 
-  // تصفية المنشورات الرسمية المستهدفة للطالب
+  // تصفية المنشورات الرسمية المستهدفة للطالب بذكاء وفورية (0 استعلام لقاعدة البيانات)
   let visibleCommitteePosts: any[] = committeePostsRaw;
   const filtered: any[] = [];
   for (const p of committeePostsRaw) {
@@ -119,8 +86,10 @@ export default async function StudentDashboardPage() {
       filtered.push(p);
       continue;
     }
-    const ids = await findTargetedStudentIds(parseTarget(p.target)).catch((): string[] => []);
-    if (ids.includes(user.id)) filtered.push(p);
+    const target = parseTarget(p.target);
+    if (studentMatchesTarget(user, target)) {
+      filtered.push(p);
+    }
   }
   visibleCommitteePosts = filtered;
 

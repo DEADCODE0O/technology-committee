@@ -6,19 +6,32 @@ import "server-only";
 //  لا نقاط لأفعال بلا معنى (مشاهدة صفحات / تحديث متكرر)
 // ═══════════════════════════════════════════════════════════════
 
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { levelFromPoints, nextLevelProgress } from "./constants";
 
 export { levelFromPoints, nextLevelProgress };
 
-// ─── الموسم الجاري ─────────────────────────────────────────
+// ─── الموسم الجاري (كاش ذاكرة لمدة 5 دقائق لتفادي تكرار الاستعلام) ───
+
+let activeSeasonCache: { value: any; expiry: number } | null = null;
 
 export async function getActiveSeason() {
+  const nowMs = Date.now();
+  if (activeSeasonCache && activeSeasonCache.expiry > nowMs) {
+    return activeSeasonCache.value;
+  }
   const now = new Date();
-  return db.season.findFirst({
+  const season = await db.season.findFirst({
     where: { status: "ACTIVE", startAt: { lte: now } },
     orderBy: { startAt: "desc" },
   });
+  activeSeasonCache = { value: season, expiry: nowMs + 5 * 60 * 1000 };
+  return season;
+}
+
+export function clearActiveSeasonCache() {
+  activeSeasonCache = null;
 }
 
 /** ختم الموسم على أي حدث نقاط — يُستدعى عند كل منح */
@@ -42,42 +55,54 @@ export type StudentProgressSummary = {
   questsCompleted: number;
 };
 
+const _getCachedStudentProgress = (userId: string) =>
+  unstable_cache(
+    async () => {
+      const season = await getActiveSeason();
+      const [allAgg, seasonAgg, attendance, tasksDone, quests] = await Promise.all([
+        db.pointEvent.aggregate({ where: { userId }, _sum: { points: true } }),
+        season
+          ? db.pointEvent.aggregate({ where: { userId, seasonId: season.id }, _sum: { points: true } })
+          : Promise.resolve({ _sum: { points: null as number | null } }),
+        db.attendance.findMany({
+          where: { present: true, registration: { userId } },
+          select: { markedAt: true, createdAt: true },
+        }),
+        db.taskAssignment.count({ where: { userId, status: "EVALUATED" } }),
+        db.questProgress.findMany({
+          where: { userId, completedAt: { not: null } },
+          select: { questId: true },
+        }),
+      ]);
+
+      const xp = allAgg._sum.points ?? 0;
+      const { current, next, progress } = nextLevelProgress(xp);
+      const dates = attendance
+        .map((a) => (a.markedAt ?? a.createdAt))
+        .map((d) => new Date(d).getTime());
+
+      return {
+        xp,
+        level: current,
+        nextLevel: next,
+        progressToNext: progress,
+        seasonXp: seasonAgg._sum.points ?? 0,
+        seasonName: season?.name ?? null,
+        streakWeeks: computeStreakWeeks(dates),
+        attendedCount: attendance.length,
+        tasksCompleted: tasksDone,
+        questsCompleted: quests.length,
+      };
+    },
+    [`student-progress-${userId}`],
+    {
+      revalidate: 60, // كاش 60 ثانية يحمي من الاستعلامات مع كل نقرة للطالب
+      tags: [`user-${userId}`, `progress-${userId}`],
+    }
+  );
+
 export async function getStudentProgress(userId: string): Promise<StudentProgressSummary> {
-  const season = await getActiveSeason();
-  const [allAgg, seasonAgg, attendance, tasksDone, quests] = await Promise.all([
-    db.pointEvent.aggregate({ where: { userId }, _sum: { points: true } }),
-    season
-      ? db.pointEvent.aggregate({ where: { userId, seasonId: season.id }, _sum: { points: true } })
-      : Promise.resolve({ _sum: { points: null as number | null } }),
-    db.attendance.findMany({
-      where: { present: true, registration: { userId } },
-      select: { markedAt: true, createdAt: true },
-    }),
-    db.taskAssignment.count({ where: { userId, status: "EVALUATED" } }),
-    db.questProgress.findMany({
-      where: { userId, completedAt: { not: null } },
-      select: { questId: true },
-    }),
-  ]);
-
-  const xp = allAgg._sum.points ?? 0;
-  const { current, next, progress } = nextLevelProgress(xp);
-  const dates = attendance
-    .map((a) => (a.markedAt ?? a.createdAt))
-    .map((d) => new Date(d).getTime());
-
-  return {
-    xp,
-    level: current,
-    nextLevel: next,
-    progressToNext: progress,
-    seasonXp: seasonAgg._sum.points ?? 0,
-    seasonName: season?.name ?? null,
-    streakWeeks: computeStreakWeeks(dates),
-    attendedCount: attendance.length,
-    tasksCompleted: tasksDone,
-    questsCompleted: quests.length,
-  };
+  return _getCachedStudentProgress(userId)();
 }
 
 // ─── الاستمرارية (Streak) ───────────────────────────────────

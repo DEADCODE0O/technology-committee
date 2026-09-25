@@ -90,6 +90,19 @@ export function isTargetEveryone(target: StudentTarget): boolean {
   );
 }
 
+// فحص سريع محليًا في الذاكرة (0 استعلام لقاعدة البيانات) عما إذا كان الطالب مؤهلاً لرؤية المحتوى
+export function studentMatchesTarget(
+  user: { id: string; profile?: { grade?: string | null; section?: string | null; gender?: string | null } | null },
+  target: StudentTarget
+): boolean {
+  if (isTargetEveryone(target)) return true;
+  if (target.userIds.length > 0 && !target.userIds.includes(user.id)) return false;
+  if (target.grades.length > 0 && user.profile?.grade && !target.grades.includes(user.profile.grade)) return false;
+  if (target.sections.length > 0 && user.profile?.section && !target.sections.includes(user.profile.section)) return false;
+  if (target.genders.length > 0 && user.profile?.gender && !target.genders.includes(user.profile.gender)) return false;
+  return true;
+}
+
 // البحث عن معرفات الطلاب المستهدفين — كل الفلترة سيرفر-side
 export async function findTargetedStudentIds(target: StudentTarget): Promise<string[]> {
   // 1) الفلتر الأساسي: حساب نشط + بيانات الملف
