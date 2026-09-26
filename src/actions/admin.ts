@@ -1063,4 +1063,88 @@ export async function deleteStudentPermanently(
   }
 }
 
+// ─── إحصائيات وعينات تصدير جهات اتصال الطلاب للهاتف ───────────
+export async function getContactsExportStatsAction(): Promise<{
+  ok: boolean;
+  error?: string;
+  stats?: {
+    totalStudents: number;
+    totalWithPhone: number;
+    maleCount: number;
+    femaleCount: number;
+    activeCount: number;
+    pendingCount: number;
+    samples: {
+      id: string;
+      fullName: string;
+      phone: string;
+      grade: string | null;
+      section: string | null;
+      gender: string | null;
+      email: string;
+      status: string;
+    }[];
+  };
+}> {
+  try {
+    await requireActionUser(MODULES.STUDENTS, "manage");
+
+    const [totalStudents, totalWithPhone, maleCount, femaleCount, activeCount, pendingCount, sampleMales, sampleFemales] = await Promise.all([
+      db.user.count({ where: { role: "STUDENT" } }),
+      db.user.count({ where: { role: "STUDENT", profile: { phone: { not: "" } } } }),
+      db.user.count({ where: { role: "STUDENT", profile: { phone: { not: "" }, gender: "MALE" } } }),
+      db.user.count({ where: { role: "STUDENT", profile: { phone: { not: "" }, gender: "FEMALE" } } }),
+      db.user.count({ where: { role: "STUDENT", status: "ACTIVE", profile: { phone: { not: "" } } } }),
+      db.user.count({ where: { role: "STUDENT", status: "PENDING_VERIFICATION", profile: { phone: { not: "" } } } }),
+      db.user.findMany({
+        where: { role: "STUDENT", profile: { phone: { not: "" }, gender: "MALE" } },
+        take: 2,
+        select: {
+          id: true,
+          email: true,
+          status: true,
+          profile: { select: { fullName: true, phone: true, grade: true, section: true, gender: true } },
+        },
+      }),
+      db.user.findMany({
+        where: { role: "STUDENT", profile: { phone: { not: "" }, gender: "FEMALE" } },
+        take: 2,
+        select: {
+          id: true,
+          email: true,
+          status: true,
+          profile: { select: { fullName: true, phone: true, grade: true, section: true, gender: true } },
+        },
+      }),
+    ]);
+
+    const samples = [...sampleMales, ...sampleFemales].map((s) => ({
+      id: s.id,
+      fullName: s.profile?.fullName || s.email,
+      phone: s.profile?.phone || "",
+      grade: s.profile?.grade || null,
+      section: s.profile?.section || null,
+      gender: s.profile?.gender || null,
+      email: s.email,
+      status: s.status,
+    }));
+
+    return {
+      ok: true,
+      stats: {
+        totalStudents,
+        totalWithPhone,
+        maleCount,
+        femaleCount,
+        activeCount,
+        pendingCount,
+        samples,
+      },
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+
 

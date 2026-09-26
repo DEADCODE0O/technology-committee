@@ -8,6 +8,7 @@ import { GRADES, SECTIONS, GENDERS, GRADE_LABELS, SECTION_LABELS, GENDER_LABELS,
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SuspendToggle, ImpersonateStudentButton, VerifyStudentDirectlyButton, ResendStudentOtpButton } from "@/components/admin/student-actions";
+import { ContactsExportModal } from "@/components/admin/contacts-export-modal";
 import { AvatarWithFrame } from "@/components/ui/avatar-with-frame";
 
 export const dynamic = "force-dynamic";
@@ -125,10 +126,21 @@ export default async function AdminStudentsPage({
         </p>
         </div>
         {canManage && (
-          <a href={buildExportHref()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-gold/30 bg-gold/[0.08] px-4 text-xs font-extrabold text-gold-light hover:bg-gold/[0.14]">
-            <Download className="h-4 w-4" />
-            تصدير النتائج Excel
-          </a>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <ContactsExportModal
+              currentFilters={{
+                q,
+                grade,
+                section,
+                gender,
+                status,
+              }}
+            />
+            <a href={buildExportHref()} className="inline-flex h-10 items-center gap-2 rounded-xl border border-gold/30 bg-gold/[0.08] px-4 text-xs font-extrabold text-gold-light hover:bg-gold/[0.14]">
+              <Download className="h-4 w-4" />
+              تصدير النتائج Excel
+            </a>
+          </div>
         )}
       </div>
 
