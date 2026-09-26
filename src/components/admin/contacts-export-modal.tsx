@@ -70,6 +70,7 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
   const [format, setFormat] = useState<"VCF" | "CSV_GOOGLE" | "CSV_EXCEL">("VCF");
   const [phoneFormat, setPhoneFormat] = useState<"LOCAL" | "INTERNATIONAL">("LOCAL");
   const [scope, setScope] = useState<"ALL" | "CURRENT_FILTER">("ALL");
+  const [selectedGender, setSelectedGender] = useState<"ALL" | "MALE" | "FEMALE">("ALL");
 
   // قالب الاسم
   const [prefix, setPrefix] = useState("");
@@ -105,6 +106,10 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
       params.set("phoneFormat", phoneFormat);
       params.set("scope", scope);
 
+      if (selectedGender !== "ALL") {
+        params.set("gender", selectedGender);
+      }
+
       if (prefix.trim()) params.set("prefix", prefix.trim());
       if (suffix.trim()) params.set("suffix", suffix.trim());
 
@@ -122,13 +127,25 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
       if (scope === "CURRENT_FILTER" && currentFilters) {
         if (currentFilters.grade) params.set("grade", currentFilters.grade);
         if (currentFilters.section) params.set("section", currentFilters.section);
-        if (currentFilters.gender) params.set("gender", currentFilters.gender);
+        if (currentFilters.gender && selectedGender === "ALL") params.set("gender", currentFilters.gender);
         if (currentFilters.status) params.set("status", currentFilters.status);
         if (currentFilters.q) params.set("q", currentFilters.q);
       }
 
-      // توجيه المتصفح لتحميل الملف
-      window.location.href = `/api/admin/students/contacts?${params.toString()}`;
+      const link = document.createElement("a");
+      link.href = `/api/admin/students/contacts?${params.toString()}`;
+      link.setAttribute(
+        "download",
+        format === "VCF"
+          ? "students-contacts.vcf"
+          : format === "CSV_GOOGLE"
+          ? "google-contacts.csv"
+          : "students-contacts.csv"
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       toast.success(
         format === "VCF"
           ? "جاري تحميل ملف VCF — افتحه على هاتفك لإضافة كافة الأسماء بلمسة واحدة!"
@@ -286,7 +303,32 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
             {/* 2) نطاق الطلاب وتنسيق الهاتف */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs font-bold text-zinc-300">2. الطلاب المراد تصديرهم</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-zinc-300">2. الطلاب المراد تصديرهم</Label>
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGender("ALL")}
+                      className={`px-1.5 py-0.5 rounded ${selectedGender === "ALL" ? "bg-white/20 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                    >
+                      الكل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGender("MALE")}
+                      className={`px-1.5 py-0.5 rounded ${selectedGender === "MALE" ? "bg-sky-500/30 text-sky-300 font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                    >
+                      بنين 👨‍🎓
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGender("FEMALE")}
+                      className={`px-1.5 py-0.5 rounded ${selectedGender === "FEMALE" ? "bg-pink-500/30 text-pink-300 font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                    >
+                      بنات 👩‍🎓
+                    </button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -297,7 +339,7 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
                         : "border-white/10 bg-white/[0.02] text-zinc-400 hover:border-white/20"
                     }`}
                   >
-                    جميع الطلاب (186)
+                    جميع الطلاب ({selectedGender === "MALE" ? (stats?.maleCount ?? 110) : selectedGender === "FEMALE" ? (stats?.femaleCount ?? 76) : (stats?.totalWithPhone ?? 186)})
                   </button>
                   <button
                     type="button"
