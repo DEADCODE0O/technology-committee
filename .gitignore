@@ -64,4 +64,16 @@ scripts/test-*.mjs
 scripts/simulate-*.mjs
 scripts/inspect-*.mjs
 scripts/*.cjs
+scripts/generate-*.js
+scripts/convert-*.ps1
+temp_*.ps1
 backups/
+*.docx
+*.pdf
+test_page.html
+mockup_*.png
+updated_mockup_with_official_logo.png
+supervisor_with_logo.png
+mobile_workshops_programs_hub.png
+وثيقة_*.html
+
