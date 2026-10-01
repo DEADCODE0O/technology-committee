@@ -17,7 +17,7 @@ import { Countdown } from "@/components/platform/countdown";
 import { CtaLink } from "@/components/platform/cta-link";
 import { GRADE_LABELS, SECTION_LABELS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS } from "@/lib/constants";
 import { isAdminRole } from "@/lib/permissions";
-import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
+import { getSessionState, decideRegistration, sessionDisplayName, parseFormFieldOptions } from "@/lib/activities";
 import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { SmartImg } from "@/components/platform/smart-img";
 import { formatCairoDate } from "@/lib/dates";
@@ -51,7 +51,8 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const user = await getCurrentUser();
   const activity = session.activity;
   const registeredCount = session.registrations.length;
-  const seatsLeft = Math.max(0, session.seats - registeredCount);
+  const isUnlimitedSeats = session.seats <= 0 || session.closingMode === "OPEN_UNLIMITED" || session.closingMode === "BY_DATE";
+  const seatsLeft = isUnlimitedSeats ? 999999 : Math.max(0, session.seats - registeredCount);
   const state = getSessionState(session);
   const decision = decideRegistration({
     session: {
@@ -71,16 +72,21 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
   const isCourse = activity.type === "COURSE";
 
   // أسئلة النشاط (تُسأل مرة واحدة)
-  const fields: DynField[] = activity.formFields.map((f) => ({
-    id: f.id,
-    label: f.label,
-    type: f.type,
-    options: f.options ? (JSON.parse(f.options) as string[]) : [],
-    required: f.required,
-  }));
+  const fields: DynField[] = activity.formFields.map((f) => {
+    const parsed = parseFormFieldOptions(f.options);
+    return {
+      id: f.id,
+      label: f.label,
+      type: f.type,
+      options: parsed.choices,
+      section: parsed.section,
+      allowCustom: parsed.allowCustom,
+      required: f.required,
+    };
+  });
 
   // تسجيل الطالب الحالي في هذه الجلسة (إن وجد) + حضوره
-  let existing: { id: string; status: string } | null = null;
+  let existing: { id: string; status: string; answers?: string | null } | null = null;
   let waitlistPos: number | null = null;
   let myAttended = false;
   if (user && user.role === "STUDENT") {
@@ -89,7 +95,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
       include: { attendance: { where: { sessionId: session.id } } },
     });
     if (reg && reg.status !== "CANCELLED") {
-      existing = { id: reg.id, status: reg.status };
+      existing = { id: reg.id, status: reg.status, answers: reg.answers };
       waitlistPos = reg.waitlistOrder;
       myAttended = reg.attendance.some((a) => a.present);
     }
@@ -285,6 +291,11 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                   <p className="mt-0.5 text-sm font-black text-foreground">
                     {state === "COMPLETED" ? (
                       `${registeredCount} مسجلاً`
+                    ) : isUnlimitedSeats ? (
+                      <>
+                        <span>{registeredCount} مسجلاً</span>
+                        <span className="ms-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">(مقاعد مفتوحة للجميع ∞)</span>
+                      </>
                     ) : (
                       <>
                         <span>{registeredCount} / {session.seats} مقعد</span>

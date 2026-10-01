@@ -8,11 +8,11 @@ import { SessionManager, type AdminSession } from "@/components/admin/session-ma
 import { RunManager, type AdminRun } from "@/components/admin/run-manager";
 import { DeleteActivityButton } from "@/components/admin/delete-activity-button";
 import { FormBuilder } from "@/components/admin/form-builder";
-import type { FormFieldInput } from "@/actions/activities";
+import { type FormFieldInput } from "@/actions/activities";
 import {
   ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD,
 } from "@/lib/constants";
-import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
+import { getSessionState, decideRegistration, sessionDisplayName, parseFormFieldOptions } from "@/lib/activities";
 import { ImageWithPreview } from "@/components/admin/image-preview-modal";
 import { ActivityDecisionAnalytics } from "@/components/admin/activity-decision-analytics";
 
@@ -164,14 +164,19 @@ export default async function AdminActivityDetailPage({
   ];
   const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "sessions";
 
-  const initialFields: FormFieldInput[] = activity.formFields.map((f) => ({
-    id: f.id,
-    label: f.label,
-    type: f.type,
-    options: f.options ? (JSON.parse(f.options) as string[]) : [],
-    required: f.required,
-    order: f.order,
-  }));
+  const initialFields: FormFieldInput[] = activity.formFields.map((f) => {
+    const parsed = parseFormFieldOptions(f.options);
+    return {
+      id: f.id,
+      label: f.label,
+      type: f.type,
+      options: parsed.choices,
+      section: parsed.section,
+      allowCustom: parsed.allowCustom,
+      required: f.required,
+      order: f.order,
+    };
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">

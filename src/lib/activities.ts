@@ -59,12 +59,13 @@ export function sessionDisplayName(
 // وضع الإغلاق: BY_DATE (التاريخ فقط) | BY_CAPACITY (العدد فقط)
 // | EITHER (أيهما أول) | MANUAL (مفتاح يدوي فقط)
 
-export type ClosingMode = "BY_DATE" | "BY_CAPACITY" | "EITHER" | "MANUAL";
+export type ClosingMode = "BY_DATE" | "BY_CAPACITY" | "EITHER" | "MANUAL" | "OPEN_UNLIMITED";
 
 export const CLOSING_MODES: { value: ClosingMode; label: string; hint: string }[] = [
-  { value: "BY_DATE", label: "عند انتهاء موعد التسجيل", hint: "يُغلق تلقائيًا في التاريخ المحدد مهما كان العدد" },
-  { value: "BY_CAPACITY", label: "عند اكتمال العدد", hint: "يُغلق عند امتلاء المقاعد — التاريخ غير معتمد" },
   { value: "EITHER", label: "التاريخ أو اكتمال العدد — أيهما أول", hint: "الأكثر شيوعًا: من يسبق يُغلق التسجيل" },
+  { value: "BY_DATE", label: "عند انتهاء موعد التسجيل فقط", hint: "يُغلق تلقائيًا في التاريخ المحدد مهما كان العدد (بدون حد أقصى للمقاعد)" },
+  { value: "BY_CAPACITY", label: "عند اكتمال العدد فقط", hint: "يُغلق عند امتلاء المقاعد — التاريخ غير معتمد (بدون موعد إغلاق زمني)" },
+  { value: "OPEN_UNLIMITED", label: "مفتوح بالكامل (بدون تقيد بوقت أو عدد)", hint: "مفتوح دائماً لأي عدد في أي وقت دون إغلاق تلقائي" },
   { value: "MANUAL", label: "يدويًا — أغلقه بنفسي", hint: "مفتاح «التسجيل مفتوح» في يدك وحدك" },
 ];
 
@@ -113,13 +114,19 @@ export function decideRegistration(gate: RegistrationGate, now: Date = new Date(
   const closesAt = toDateSafe(session.registrationClosesAt);
   const nowMs = now.getTime();
 
+  const isUnlimitedSeats = gate.seats <= 0 || mode === "BY_DATE" || mode === "OPEN_UNLIMITED";
+  const hasNoDateLimit = !session.registrationClosesAt || mode === "BY_CAPACITY" || mode === "OPEN_UNLIMITED";
+
   const notYetOpen = opensAt !== null && nowMs < opensAt.getTime();
-  const dateClosed = closesAt !== null && nowMs > closesAt.getTime();
-  const full = gate.registeredCount >= gate.seats;
+  const dateClosed = !hasNoDateLimit && closesAt !== null && nowMs > closesAt.getTime();
+  const full = !isUnlimitedSeats && gate.registeredCount >= gate.seats;
 
   // فتح لاحق؟ (كل الأوضاع تحترم موعد الفتح إن وُجد)
   if (notYetOpen) return { open: false, reason: "NOT_YET_OPEN", message: MESSAGES.NOT_YET_OPEN };
 
+  if (mode === "OPEN_UNLIMITED") {
+    return { open: true, reason: "OK" };
+  }
   if (mode === "BY_DATE") {
     if (dateClosed) return { open: false, reason: "CLOSED_DATE", message: MESSAGES.CLOSED_DATE };
     return { open: true, reason: "OK" };
@@ -201,4 +208,29 @@ export function activitySessionTitle(
   session: { title: string; order: number }
 ): string {
   return `${activity.title} — ${sessionDisplayName(session, activity.type)}`;
+}
+
+/**
+ * تحليل خيارات وأقسام حقل الاستمارة من صيغة JSON المخزنة في قاعدة البيانات
+ */
+export function parseFormFieldOptions(raw: string | null | undefined): {
+  choices: string[];
+  section: string;
+  allowCustom: boolean;
+} {
+  if (!raw) return { choices: [], section: "", allowCustom: false };
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return { choices: parsed, section: "", allowCustom: false };
+    }
+    if (parsed && typeof parsed === "object") {
+      return {
+        choices: Array.isArray(parsed.choices) ? parsed.choices : [],
+        section: typeof parsed.section === "string" ? parsed.section : "",
+        allowCustom: !!parsed.allowCustom,
+      };
+    }
+  } catch {}
+  return { choices: [], section: "", allowCustom: false };
 }

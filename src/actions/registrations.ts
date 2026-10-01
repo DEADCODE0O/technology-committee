@@ -605,3 +605,74 @@ export async function adminPromoteRegistration(registrationId: string): Promise<
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }
 }
+
+/**
+ * تحديث استجابة وخيارات الطالب في استمارة/أسئلة الورشة
+ */
+export async function updateRegistrationAnswers(
+  registrationId: string,
+  answers: Record<string, string | string[]>
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const user = await requireStudentAction();
+    const reg = await db.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        session: {
+          include: {
+            activity: {
+              include: { formFields: { orderBy: { order: "asc" } } },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reg || reg.userId !== user.id) {
+      return { ok: false, error: "التسجيل غير موجود أو لا يخصك" };
+    }
+    if (reg.status === "CANCELLED") {
+      return { ok: false, error: "لا يمكن تعديل تسجيل ملغي" };
+    }
+
+    // تحقق من الأسئلة الإلزامية
+    for (const field of reg.session.activity.formFields) {
+      if (field.required) {
+        const val = answers[field.id];
+        const empty =
+          val === undefined ||
+          val === null ||
+          val === "" ||
+          (Array.isArray(val) && val.length === 0);
+        if (empty) {
+          return { ok: false, error: `السؤال «${field.label}» إلزامي` };
+        }
+      }
+    }
+
+    await db.registration.update({
+      where: { id: registrationId },
+      data: {
+        answers: JSON.stringify(answers),
+        updatedAt: new Date(),
+      },
+    });
+
+    await logAudit({
+      actor: user,
+      action: "REGISTRATION_ANSWERS_UPDATED",
+      entity: "REGISTRATION",
+      entityId: registrationId,
+      summary: `تحديث خيارات ورغبات الاستمارة لـ ${reg.fullName} في «${reg.session.activity.title} — ${reg.session.title}»`,
+    });
+
+    refresh(reg.sessionId, reg.session.activityId);
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "خطأ غير متوقع",
+    };
+  }
+}
+

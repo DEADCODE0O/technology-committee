@@ -103,13 +103,22 @@ export function FormBuilder({ activityId, initial }: { activityId: string; initi
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-zinc-400">نص السؤال</Label>
-                  <Input value={f.label} onChange={(e) => update(i, { label: e.target.value })} placeholder="مثال: هل لديك خبرة سابقة؟" className="h-10 rounded-lg" />
+                  <Input value={f.label} onChange={(e) => update(i, { label: e.target.value })} placeholder="مثال: ما هي الفنون التي تتقنها؟" className="h-10 rounded-lg" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-zinc-400">النوع</Label>
+                  <Label className="text-xs font-bold text-zinc-400">القسم / المحور (اختياري)</Label>
+                  <Input
+                    value={f.section || ""}
+                    onChange={(e) => update(i, { section: e.target.value })}
+                    placeholder="مثال: قسم الفنون التشكيلية / قسم الرياضة"
+                    className="h-10 rounded-lg text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-zinc-400">نوع الإجابة</Label>
                   <Select dir="rtl" value={f.type} onValueChange={(v) => update(i, { type: v })}>
                     <SelectTrigger className="h-10 w-full rounded-lg"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -122,15 +131,28 @@ export function FormBuilder({ activityId, initial }: { activityId: string; initi
               </div>
 
               {NEED_OPTIONS.includes(f.type) && (
-                <div className="mt-3 space-y-1.5">
-                  <Label className="text-xs font-bold text-zinc-400">الخيارات <span className="text-zinc-600">(سطر لكل خيار)</span></Label>
-                  <textarea
-                    value={(f.options ?? []).join("\n")}
-                    onChange={(e) => update(i, { options: e.target.value.split("\n") })}
-                    rows={Math.max(2, (f.options ?? []).length)}
-                    placeholder={"نعم\nلا"}
-                    className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-gold/40 focus:outline-none"
-                  />
+                <div className="mt-3 space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-bold text-zinc-400">الخيارات <span className="text-zinc-600">(سطر لكل موهبة / خيار)</span></Label>
+                    <textarea
+                      value={(f.options ?? []).join("\n")}
+                      onChange={(e) => update(i, { options: e.target.value.split("\n") })}
+                      rows={Math.max(2, (f.options ?? []).length)}
+                      placeholder={"رسم زيتي\nرسم رصاص\nنحت وتشكيل\nأشغال يدوية"}
+                      className="w-full rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-gold/40 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5">
+                    <div>
+                      <p className="text-xs font-bold text-zinc-300">السماح بإضافة خيار حر من الطالب («أخرى - اذكرها»)</p>
+                      <p className="text-[10px] text-zinc-500">في حال رغب الطالب بكتابة فن أو موهبة خاصة غير مدرجة في الخيارات</p>
+                    </div>
+                    <Switch
+                      checked={!!f.allowCustom}
+                      onCheckedChange={(v) => update(i, { allowCustom: v })}
+                    />
+                  </div>
                 </div>
               )}
             </li>

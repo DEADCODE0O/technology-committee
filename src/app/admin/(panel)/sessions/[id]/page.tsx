@@ -7,12 +7,13 @@ import { SessionManager, type AdminSession } from "@/components/admin/session-ma
 import { ParticipantsTable, type ParticipantRow } from "@/components/admin/participants-table";
 import { GateAddForm, ManifestExportButton } from "@/components/admin/gate-add-form";
 import { AttendanceBoard, type AttendanceRowData } from "@/components/admin/attendance-board";
-import { getSessionState, decideRegistration, sessionDisplayName } from "@/lib/activities";
+import { getSessionState, decideRegistration, sessionDisplayName, parseFormFieldOptions } from "@/lib/activities";
 import { ACTIVITY_TYPE_ICONS, ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_SESSION_WORD } from "@/lib/constants";
 import { formatCairoDate } from "@/lib/dates";
 import { SessionTeamsManager } from "@/components/admin/session-teams-manager";
 import { WhatsAppIcon, TelegramIcon } from "@/components/platform/community-links-card";
 import { ImageWithPreview } from "@/components/admin/image-preview-modal";
+import { SessionIntakeExplorer } from "@/components/admin/session-intake-explorer";
 
 export const dynamic = "force-dynamic";
 
@@ -92,19 +93,23 @@ export default async function AdminSessionPage({
       };
     });
 
-  const TABS = [
-    { key: "details", label: "بيانات الجلسة" },
-    { key: "participants", label: `المشاركون (${registeredCount}/${session.seats})` },
-    { key: "attendance", label: "الحضور وQR" },
-    { key: "teams", label: `فرق الورشة (${teams.length})` },
-  ];
-  const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "details";
-
-  // بيانات تاب المشاركين
+  // بيانات حقول الاستمارة
   const formFields = await db.formField.findMany({
     where: { activityId: activity.id },
     orderBy: { order: "asc" },
   });
+
+  const seatsLabel = session.seats === 0 ? "∞" : session.seats;
+  const TABS = [
+    { key: "details", label: "بيانات الجلسة" },
+    { key: "participants", label: `المشاركون (${registeredCount}/${seatsLabel})` },
+    ...(formFields.length > 0
+      ? [{ key: "intake", label: "🎯 استكشاف الاستجابات والمواهب" }]
+      : []),
+    { key: "attendance", label: "الحضور وQR" },
+    { key: "teams", label: `فرق الورشة (${teams.length})` },
+  ];
+  const activeTab = TABS.some((t) => t.key === tab) ? (tab as string) : "details";
   const participants: ParticipantRow[] = session.registrations.map((r) => ({
     id: r.id,
     fullName: r.fullName,
@@ -332,6 +337,26 @@ export default async function AdminSessionPage({
           participants={participants}
           canManage={canManage}
           hasFormFields={formFields.length > 0}
+        />
+      )}
+
+      {activeTab === "intake" && (
+        <SessionIntakeExplorer
+          sessionId={session.id}
+          sessionTitle={sessionLabel}
+          activityTitle={activity.title}
+          formFields={formFields.map((f) => {
+            const parsed = parseFormFieldOptions(f.options);
+            return {
+              id: f.id,
+              label: f.label,
+              type: f.type,
+              options: parsed.choices,
+              section: parsed.section,
+              allowCustom: parsed.allowCustom,
+            };
+          })}
+          participants={participants}
         />
       )}
 

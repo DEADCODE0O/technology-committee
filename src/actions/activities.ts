@@ -18,7 +18,7 @@ const typeValues = ACTIVITY_TYPES.map((t) => t.value as string);
 const publishValues = ACTIVITY_PUBLISH.map((p) => p.value as string);
 const levelValues = ACTIVITY_LEVELS.map((l) => l.value as string);
 const fieldTypeValues = FORM_FIELD_TYPES.map((f) => f.value as string);
-const CLOSING_MODE_VALUES = ["BY_DATE", "BY_CAPACITY", "EITHER", "MANUAL"];
+const CLOSING_MODE_VALUES = ["BY_DATE", "BY_CAPACITY", "EITHER", "MANUAL", "OPEN_UNLIMITED"];
 
 function refreshAll(ids?: { activityId?: string; sessionId?: string }) {
   purgeCacheTag("activities");
@@ -297,7 +297,7 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
     if (endsAt < startsAt) return { ok: false, error: "نهاية الجلسة قبل بدايتها" };
 
     const seats = Number(input.seats ?? 50);
-    if (!Number.isInteger(seats) || seats < 1 || seats > 1000) return { ok: false, error: "عدد المقاعد غير منطقي (1-1000)" };
+    if (!Number.isInteger(seats) || seats < 0 || seats > 10000) return { ok: false, error: "عدد المقاعد غير منطقي (0 أو أكثر — 0 يعني مفتوح بدون حد)" };
     if (input.closingMode && !CLOSING_MODE_VALUES.includes(input.closingMode)) return { ok: false, error: "وضع إغلاق غير صحيح" };
     if (input.status && !["SCHEDULED", "DONE", "CANCELLED"].includes(input.status)) {
       return { ok: false, error: "حالة جلسة غير صحيحة" };
@@ -467,9 +467,12 @@ export type FormFieldInput = {
   label: string;
   type: string;
   options?: string[];
+  section?: string;
+  allowCustom?: boolean;
   required: boolean;
   order: number;
 };
+
 
 export async function saveFormFields(activityId: string, fields: FormFieldInput[]): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -491,20 +494,37 @@ export async function saveFormFields(activityId: string, fields: FormFieldInput[
 
     await db.$transaction([
       db.formField.deleteMany({ where: { activityId } }),
-      ...fields.map((f, i) =>
-        db.formField.create({
+      ...fields.map((f, i) => {
+        const choices = (f.options || []).map((o) => o.trim()).filter(Boolean);
+        const section = (f.section || "").trim();
+        const allowCustom = !!f.allowCustom;
+
+        let optionsPayload: string | null = null;
+        if (["SELECT", "RADIO", "CHECKBOX"].includes(f.type)) {
+          optionsPayload = JSON.stringify({
+            choices,
+            section: section || undefined,
+            allowCustom,
+          });
+        } else if (section || allowCustom) {
+          optionsPayload = JSON.stringify({
+            choices: [],
+            section: section || undefined,
+            allowCustom,
+          });
+        }
+
+        return db.formField.create({
           data: {
             activityId,
             label: f.label.trim(),
             type: f.type,
-            options: ["SELECT", "RADIO", "CHECKBOX"].includes(f.type)
-              ? JSON.stringify((f.options || []).map((o) => o.trim()).filter(Boolean))
-              : null,
+            options: optionsPayload,
             required: !!f.required,
             order: f.order ?? i,
           },
-        })
-      ),
+        });
+      }),
     ]);
 
     await logAudit({

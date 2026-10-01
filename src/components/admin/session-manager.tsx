@@ -192,7 +192,7 @@ export function SessionManager({
         whatsappUrl: form.whatsappUrl || undefined,
         telegramUrl: form.telegramUrl || undefined,
         status: form.status,
-        seats: Number(form.seats) || 50,
+        seats: form.seats === "0" ? 0 : Number(form.seats) || 50,
         registrationOpensAt: toUtcIso(form.registrationOpensAt) || undefined,
         registrationClosesAt: toUtcIso(form.registrationClosesAt) || undefined,
         closingMode: form.closingMode,
@@ -418,22 +418,67 @@ export function SessionManager({
             <p className="text-xs font-extrabold text-gold-light">التسجيل في هذه الجلسة — مستقل عن موعد الإقامة</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-zinc-300">فتح التسجيل (اختياري)</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-zinc-300">فتح التسجيل (اختياري)</Label>
+                  {form.registrationOpensAt && (
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, registrationOpensAt: "" }))}
+                      className="text-[10px] text-zinc-500 hover:text-gold"
+                    >
+                      إلغاء الموعد
+                    </button>
+                  )}
+                </div>
                 <Input type="datetime-local" dir="ltr" value={form.registrationOpensAt} onChange={(e) => setForm((p) => ({ ...p, registrationOpensAt: e.target.value }))} />
                 <p className="text-[10px] text-zinc-500">قبلها يظهر للطالب «التسجيل يُفتح بعد» مع عد تنازلي</p>
               </div>
+
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-zinc-300">إغلاق التسجيل (اختياري)</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-zinc-300">إغلاق التسجيل (اختياري)</Label>
+                  {form.registrationClosesAt && (
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, registrationClosesAt: "" }))}
+                      className="text-[10px] text-zinc-500 hover:text-gold"
+                    >
+                      مفتوح زمنياً (بدون إغلاق)
+                    </button>
+                  )}
+                </div>
                 <Input type="datetime-local" dir="ltr" value={form.registrationClosesAt} onChange={(e) => setForm((p) => ({ ...p, registrationClosesAt: e.target.value }))} />
-                <p className="text-[10px] text-zinc-500">عدّ تنازلي تسويقي حتى الإغلاق</p>
+                <p className="text-[10px] text-zinc-500">اتركه فارغاً إذا كانت الورشة غير ملزمة بوقت إغلاق</p>
               </div>
+
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-zinc-300">عدد المقاعد</Label>
-                <Input type="number" min={1} max={1000} dir="ltr" value={form.seats} onChange={(e) => setForm((p) => ({ ...p, seats: e.target.value }))} />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-zinc-300">عدد المقاعد</Label>
+                  <label className="flex items-center gap-1.5 text-[10px] text-zinc-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.seats === "0"}
+                      onChange={(e) => setForm((p) => ({ ...p, seats: e.target.checked ? "0" : "50" }))}
+                      className="rounded border-white/20 bg-white/5 text-gold"
+                    />
+                    <span>مفتوح بدون حد أقصى ∞</span>
+                  </label>
+                </div>
+                {form.seats === "0" ? (
+                  <div className="flex h-10 items-center justify-center rounded-xl border border-gold/30 bg-gold/10 px-3 text-xs font-bold text-gold-light">
+                    مقاعد مفتوحة للجميع (بدون حد أقصى)
+                  </div>
+                ) : (
+                  <Input type="number" min={1} max={1000} dir="ltr" value={form.seats} onChange={(e) => setForm((p) => ({ ...p, seats: e.target.value }))} />
+                )}
+                <p className="text-[10px] text-zinc-500">
+                  {form.seats === "0" ? "لا يوجد سقف لعدد الطلاب المسجلين" : "يُغلق أو يحوّل لقائمة الانتظار عند الوصول لهذا العدد"}
+                </p>
               </div>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-xs font-bold text-zinc-300">وضع إغلاق التسجيل</Label>
+              <Label className="text-xs font-bold text-zinc-300">وضع إغلاق التسجيل والقيود</Label>
               <Select value={form.closingMode} onValueChange={(val) => setForm((p) => ({ ...p, closingMode: val }))}>
                 <SelectTrigger dir="rtl" className="h-11 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>

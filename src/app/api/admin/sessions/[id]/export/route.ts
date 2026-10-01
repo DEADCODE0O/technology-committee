@@ -19,6 +19,11 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   const status = url.searchParams.get("status") || "REGISTERED";
   const source = url.searchParams.get("source") || "";
   const manifest = url.searchParams.get("manifest") === "1"; // كشف النادي الرسمي
+  const choicesParam = url.searchParams.get("choices") || url.searchParams.get("choice") || "";
+  const filterChoices = choicesParam
+    ? choicesParam.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+  const filterMode = url.searchParams.get("mode") === "AND" ? "AND" : "OR";
 
   const session = await db.session.findUnique({
     where: { id },
@@ -41,6 +46,30 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
     if (q) {
       const hay = [r.fullName, r.phone, r.email, r.studentCode].filter(Boolean).join(" ").toLocaleLowerCase("ar");
       if (!hay.includes(q.toLocaleLowerCase("ar"))) return false;
+    }
+    if (filterChoices.length > 0) {
+      let answers: Record<string, unknown> = {};
+      try {
+        answers = r.answers ? JSON.parse(r.answers) : {};
+      } catch {}
+      const studentVals: string[] = [];
+      Object.values(answers).forEach((val) => {
+        if (Array.isArray(val)) {
+          val.forEach((item) => {
+            if (typeof item === "string") studentVals.push(item.trim());
+          });
+        } else if (typeof val === "string") {
+          studentVals.push(val.trim());
+        }
+      });
+
+      if (filterMode === "AND") {
+        const matchesAll = filterChoices.every((target) => studentVals.includes(target));
+        if (!matchesAll) return false;
+      } else {
+        const matchesAny = filterChoices.some((target) => studentVals.includes(target));
+        if (!matchesAny) return false;
+      }
     }
     return true;
   });
