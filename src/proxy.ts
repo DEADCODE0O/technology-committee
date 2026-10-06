@@ -46,7 +46,11 @@ export async function proxy(request: NextRequest) {
   const closedUrl = request.nextUrl.clone();
   closedUrl.pathname = "/closed";
   closedUrl.search = "";
-  return NextResponse.redirect(closedUrl, { status: 307 });
+  const response = NextResponse.redirect(closedUrl, { status: 307 });
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  return response;
 }
 
 export const config = {

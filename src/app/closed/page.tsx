@@ -13,6 +13,9 @@ import {
 import { WhatsAppIcon } from "@/components/platform/community-links-card";
 import { ClosedContactActions } from "@/components/platform/closed-contact-actions";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "تم إغلاق المنصة | اللجنة التكنولوجية",
   description:
