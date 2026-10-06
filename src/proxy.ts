@@ -2,38 +2,57 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 // ═══════════════════════════════════════════════════════════════
-//  Middleware — تحديث جلسات Supabase Auth عند كل تنقّل
-//  (النمط الرسمي لـ @supabase/ssr — يمنع انتهاء الجلسة بعد ساعة)
-//  وضع التطوير المحلي (بدون مفاتيح): يمرر الطلب فورًا بلا أي عمل.
-//
-//  بوابة «أول زيارة» لـ / محسوبة في src/app/route.ts
-//  (كوكي tc_seen يضبط مع التحويل — لا يجوز ضبطه هنا لأنه
-//   يظهر للصفحة في نفس الطلب فتحوّل فورًا)
+//  Middleware — وضع إغلاق المنصة للطلاب وتوجيههم لصفحة الاعتذار الرسمية
+//  • أي طالب أو زائر يدخل المنصة يتم توجيهه مباشرة إلى /closed
+//  • استثناء مسارات الإدارة (/admin) حتى يتمكن المشرف من متابعة العمليات
+//  • استثناء الملفات الثابتة والوسائط
 // ═══════════════════════════════════════════════════════════════
 
 export async function proxy(request: NextRequest) {
-  // 1) تجاوز أي طلبات تحميل مسبق في الخلفية (Prefetch أو RSC navigation) لحماية Egress المصادقة تماماً
-  const purpose =
-    request.headers.get("purpose") ||
-    request.headers.get("x-purpose") ||
-    request.headers.get("next-router-prefetch");
-  const isRsc = request.headers.get("rsc") === "1" || request.nextUrl.searchParams.has("_rsc");
-  
-  if (purpose === "prefetch" || purpose === "1" || isRsc) {
+  const pathname = request.nextUrl.pathname;
+
+  // 1) استثناء الملفات الثابتة والصور
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/images") ||
+    pathname.startsWith("/icons") ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
 
-  // 2) استثناء مسارات API من تحديث الكوكيز في الـ Middleware
-  if (request.nextUrl.pathname.startsWith("/api/")) {
+  // 2) صفحة إغلاق المنصة
+  if (pathname === "/closed") {
     return NextResponse.next();
   }
 
-  return updateSession(request);
+  // 3) استثناء مسارات الإدارة وتسجيل دخول الإدارة
+  const isAdminPath = pathname.startsWith("/admin");
+  const isAdminLogin =
+    pathname === "/login" &&
+    (request.nextUrl.searchParams.has("admin") ||
+      request.nextUrl.searchParams.get("returnTo")?.startsWith("/admin"));
+
+  if (isAdminPath || isAdminLogin) {
+    return updateSession(request);
+  }
+
+  // 4) استثناء مسارات API الخاصة بالمصادقة أو الإدارة
+  if (pathname.startsWith("/api/admin/") || pathname.startsWith("/api/auth/")) {
+    return NextResponse.next();
+  }
+
+  // 5) أي مسار آخر (طالب / زائر / ورش / جلسات / ترحيب) → تحويل فوري لصفحة الإغلاق
+  const closedUrl = request.nextUrl.clone();
+  closedUrl.pathname = "/closed";
+  closedUrl.search = "";
+  return NextResponse.redirect(closedUrl, { status: 307 });
 }
 
 export const config = {
-  // كل الصفحات ما عدا الملفات الثابتة والوسائط وAPI
+  // كل الصفحات ما عدا الملفات الثابتة والوسائط
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
   ],
 };
+
