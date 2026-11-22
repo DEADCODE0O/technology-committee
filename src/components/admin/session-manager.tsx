@@ -227,11 +227,15 @@ export function SessionManager({
     });
   };
 
+  const externalOrigin = (
+    process.env.NEXT_PUBLIC_EXTERNAL_REG_URL || "https://k9m4x2v8q7.vercel.app"
+  ).replace(/\/+$/, "");
+
   const sessionQrUrl = (token: string) => (publicOrigin ? `${publicOrigin}/checkin/${token}` : null);
-  const sessionExternalUrl = (token: string) => (publicOrigin ? `${publicOrigin}/r/${token}` : `/r/${token}`);
+  const sessionExternalUrl = (token: string) => `${externalOrigin}/${token}`;
 
   const copyExternalUrl = async (sessionId: string, token: string) => {
-    const url = `${window.location.origin}/r/${token}`;
+    const url = `${externalOrigin}/${token}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedExtId(sessionId);

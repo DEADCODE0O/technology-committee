@@ -22,7 +22,7 @@ const fieldTypeValues = FORM_FIELD_TYPES.map((f) => f.value as string);
 const CLOSING_MODE_VALUES = ["BY_DATE", "BY_CAPACITY", "EITHER", "MANUAL", "OPEN_UNLIMITED"];
 
 function makeExternalToken() {
-  return randomBytes(9).toString("base64url");
+  return randomBytes(18).toString("base64url");
 }
 
 function refreshAll(ids?: { activityId?: string; sessionId?: string; externalTokens?: (string | null | undefined)[] }) {
@@ -40,7 +40,10 @@ function refreshAll(ids?: { activityId?: string; sessionId?: string; externalTok
     revalidatePath(`/admin/sessions/${ids.sessionId}`);
   }
   for (const tok of ids?.externalTokens ?? []) {
-    if (tok) revalidatePath(`/r/${tok}`);
+    if (tok) {
+      revalidatePath(`/r/${tok}`);
+      revalidatePath(`/${tok}`);
+    }
   }
 }
 

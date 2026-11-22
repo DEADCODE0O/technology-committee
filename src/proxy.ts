@@ -11,7 +11,63 @@ import { updateSession } from "@/lib/supabase/middleware";
 //   يظهر للصفحة في نفس الطلب فتحوّل فورًا)
 // ═══════════════════════════════════════════════════════════════
 
+const EXTERNAL_HOST = (process.env.NEXT_PUBLIC_EXTERNAL_REG_HOST || "k9m4x2v8q7.vercel.app")
+  .trim()
+  .toLowerCase();
+
+const RESERVED_PLATFORM_SEGMENTS = new Set([
+  "activities",
+  "admin",
+  "api",
+  "auth",
+  "chat",
+  "checkin",
+  "community",
+  "data-deletion",
+  "friends",
+  "leaderboard",
+  "login",
+  "messages",
+  "notifications",
+  "p",
+  "panel",
+  "privacy",
+  "profile",
+  "r",
+  "register",
+  "runs",
+  "sessions",
+  "settings",
+  "surveys",
+  "talents",
+  "tasks",
+  "terms",
+  "welcome",
+  "workshops",
+]);
+
 export async function proxy(request: NextRequest) {
+  const rawHost = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  const reqHost = rawHost.split(":")[0].trim().toLowerCase();
+
+  // عزل كامل لنطاق التسجيل الخارجي: يمنع الوصول لأي صفحة منصة أو مسار تخميني
+  if (EXTERNAL_HOST && reqHost === EXTERNAL_HOST) {
+    const pathname = request.nextUrl.pathname;
+    const rMatch = pathname.match(/^\/r\/([A-Za-z0-9_-]{8,128})$/);
+    if (rMatch) {
+      return NextResponse.next();
+    }
+    const segMatch = pathname.match(/^\/([A-Za-z0-9_-]{12,128})$/);
+    if (segMatch && !RESERVED_PLATFORM_SEGMENTS.has(segMatch[1].toLowerCase())) {
+      const target = request.nextUrl.clone();
+      target.pathname = `/r/${segMatch[1]}`;
+      return NextResponse.rewrite(target);
+    }
+    const fallback = request.nextUrl.clone();
+    fallback.pathname = "/r";
+    return NextResponse.rewrite(fallback);
+  }
+
   // 1) تجاوز أي طلبات تحميل مسبق في الخلفية (Prefetch أو RSC navigation) لحماية Egress المصادقة تماماً
   const purpose =
     request.headers.get("purpose") ||

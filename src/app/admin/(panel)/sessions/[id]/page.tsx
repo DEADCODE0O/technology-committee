@@ -228,7 +228,7 @@ export default async function AdminSessionPage({
             )}
             {session.externalToken && (
               <a
-                href={`/r/${session.externalToken}`}
+                href={`${(process.env.NEXT_PUBLIC_EXTERNAL_REG_URL || "https://k9m4x2v8q7.vercel.app").replace(/\/+$/, "")}/${session.externalToken}`}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-full border border-violet-400/35 bg-violet-500/[0.12] px-3 py-1 text-[10px] font-extrabold text-violet-200 hover:bg-violet-500/20"

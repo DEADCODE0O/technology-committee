@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import Script from "next/script";
 import { Toaster } from "sonner";
 import { getSiteTheme } from "@/lib/site-themes";
@@ -52,10 +53,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const h = await headers();
+  const reqHost = (h.get("x-forwarded-host") || h.get("host") || "").split(":")[0].trim().toLowerCase();
+  const extHost = (process.env.NEXT_PUBLIC_EXTERNAL_REG_HOST || "k9m4x2v8q7.vercel.app").trim().toLowerCase();
+  const isExternalDomain = Boolean(extHost && reqHost === extHost);
+
   const [themeConfig, avatarFramesVisible, currentUser] = await Promise.all([
     getSiteTheme(),
     getAvatarFramesVisible(),
-    getCurrentUser(),
+    isExternalDomain ? Promise.resolve(null) : getCurrentUser(),
   ]);
   const activeThemeDef = SITE_THEMES.find((t) => t.id === themeConfig.themeId) || SITE_THEMES[0];
 
@@ -80,20 +86,21 @@ export default async function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider defaultLocale="ar">
-            {currentUser?.isImpersonated && (
+            {!isExternalDomain && currentUser?.isImpersonated && (
               <ImpersonationBanner
                 studentName={currentUser.profile?.fullName || currentUser.suggestedName || currentUser.email}
                 studentEmail={currentUser.email}
               />
             )}
-            {themeConfig.showBanner && themeConfig.bannerText && (
+            {!isExternalDomain && themeConfig.showBanner && themeConfig.bannerText && (
               <SeasonalBanner
                 text={themeConfig.bannerText}
                 icon={activeThemeDef.icon}
                 accentColor={activeThemeDef.accentColor}
               />
             )}
-            {themeConfig.enableDecorations &&
+            {!isExternalDomain &&
+              themeConfig.enableDecorations &&
               activeThemeDef.id !== "default" &&
               activeThemeDef.decorations !== "none" && (
                 <SeasonalDecorations
@@ -120,26 +127,28 @@ export default async function RootLayout({
         </ThemeProvider>
 
         {/* ── Facebook JavaScript SDK ── */}
-        <Script id="facebook-jssdk" strategy="afterInteractive">
-          {`
-            window.fbAsyncInit = function() {
-              FB.init({
-                appId      : '1625840098924106',
-                cookie     : true,
-                xfbml      : true,
-                version    : 'v19.0'
-              });
-              FB.AppEvents.logPageView();
-            };
-            (function(d, s, id){
-               var js, fjs = d.getElementsByTagName(s)[0];
-               if (d.getElementById(id)) {return;}
-               js = d.createElement(s); js.id = id;
-               js.src = "https://connect.facebook.net/ar_AR/sdk.js";
-               fjs.parentNode.insertBefore(js, fjs);
-             }(document, 'script', 'facebook-jssdk'));
-          `}
-        </Script>
+        {!isExternalDomain && (
+          <Script id="facebook-jssdk" strategy="afterInteractive">
+            {`
+              window.fbAsyncInit = function() {
+                FB.init({
+                  appId      : '1625840098924106',
+                  cookie     : true,
+                  xfbml      : true,
+                  version    : 'v19.0'
+                });
+                FB.AppEvents.logPageView();
+              };
+              (function(d, s, id){
+                 var js, fjs = d.getElementsByTagName(s)[0];
+                 if (d.getElementById(id)) {return;}
+                 js = d.createElement(s); js.id = id;
+                 js.src = "https://connect.facebook.net/ar_AR/sdk.js";
+                 fjs.parentNode.insertBefore(js, fjs);
+               }(document, 'script', 'facebook-jssdk'));
+            `}
+          </Script>
+        )}
       </body>
     </html>
   );

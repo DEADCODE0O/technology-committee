@@ -39,6 +39,33 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async rewrites() {
+    const extHost = process.env.NEXT_PUBLIC_EXTERNAL_REG_HOST || "k9m4x2v8q7.vercel.app";
+    return {
+      beforeFiles: [
+        {
+          source: "/images/logo.png",
+          has: [{ type: "host", value: extHost }],
+          destination: "/api/external-deny",
+        },
+        {
+          source: "/logo.svg",
+          has: [{ type: "host", value: extHost }],
+          destination: "/api/external-deny",
+        },
+        {
+          source: "/favicon.ico",
+          has: [{ type: "host", value: extHost }],
+          destination: "/api/external-deny",
+        },
+        {
+          source: "/robots.txt",
+          has: [{ type: "host", value: extHost }],
+          destination: "/api/external-robots",
+        },
+      ],
+    };
+  },
   experimental: {
     serverActions: {
       // بروكسي المعاينة يمرر طلبات Server Actions بعنوان داخلي (x-forwarded-host)

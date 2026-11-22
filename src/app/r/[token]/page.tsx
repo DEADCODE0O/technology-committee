@@ -5,23 +5,23 @@ import {
   Clock,
   MapPin,
   Users,
+  History,
   User as UserIcon,
   Hourglass,
   Ban,
   Archive,
+  ChevronRight,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { GuestRegisterForm } from "@/components/platform/guest-register-form";
-import ExternalRegistrationNotFound from "../not-found";
 import { type DynField } from "@/components/platform/session-register-form";
 import { Countdown } from "@/components/platform/countdown";
+import { CtaLink } from "@/components/platform/cta-link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SmartImg } from "@/components/platform/smart-img";
-import {
-  ACTIVITY_TYPE_LABELS,
-  ACTIVITY_TYPE_ICONS,
-  ACTIVITY_LEVEL_LABELS,
-} from "@/lib/constants";
+import { ImagePreviewButton } from "@/components/platform/image-preview-button";
+import ExternalRegistrationNotFound from "../not-found";
+import { ACTIVITY_TYPE_LABELS, ACTIVITY_TYPE_ICONS } from "@/lib/constants";
 import {
   getSessionState,
   decideRegistration,
@@ -29,10 +29,12 @@ import {
   sessionDisplayName,
   parseFormFieldOptions,
 } from "@/lib/activities";
-import { resolveImageSrc } from "@/lib/links";
+import { isDriveLink, safeExternalUrl, resolveImageSrc } from "@/lib/links";
 import { formatCairoDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
+
+const FALLBACK_IMAGE = "/images/hero-bg.webp";
 
 function formatDateAr(d: Date): string {
   return formatCairoDate(d, {
@@ -124,7 +126,10 @@ export default async function ExternalSessionRegistrationPage({
     where: { externalToken: token },
     include: {
       activity: {
-        include: { formFields: { orderBy: { order: "asc" } } },
+        include: {
+          program: true,
+          formFields: { orderBy: { order: "asc" } },
+        },
       },
       registrations: {
         where: { status: "REGISTERED" },
@@ -143,8 +148,13 @@ export default async function ExternalSessionRegistrationPage({
 
   const activity = session.activity;
   const registeredCount = session.registrations.length;
-  const seatsLeft =
-    session.seats === 0 ? 0 : Math.max(0, session.seats - registeredCount);
+  const isUnlimitedSeats =
+    session.seats <= 0 ||
+    session.closingMode === "OPEN_UNLIMITED" ||
+    session.closingMode === "BY_DATE";
+  const seatsLeft = isUnlimitedSeats
+    ? 999999
+    : Math.max(0, session.seats - registeredCount);
   const state = getSessionState(session);
   const gate = {
     session: {
@@ -163,7 +173,7 @@ export default async function ExternalSessionRegistrationPage({
   const sessionLabel = sessionDisplayName(session, activity.type);
   const typeWord = ACTIVITY_TYPE_LABELS[activity.type] ?? "نشاط";
   const isCourse = activity.type === "COURSE";
-  const presenterName = session.presenter || activity.presenter;
+  const presenterName = session.presenter ?? activity.presenter;
 
   const fields: DynField[] = activity.formFields.map((f) => {
     const parsed = parseFormFieldOptions(f.options);
@@ -181,6 +191,7 @@ export default async function ExternalSessionRegistrationPage({
   const sessionImg = session.image || activity.image;
   const imgSrc = resolveImageSrc(sessionImg);
   const useNextImage = !!sessionImg && sessionImg.startsWith("/");
+  const isTeaserOnly = state === "UPCOMING" && !!activity.teaser;
   const whatsappUrl = session.whatsappUrl || activity.whatsappUrl;
   const telegramUrl = session.telegramUrl || activity.telegramUrl;
 
@@ -188,120 +199,234 @@ export default async function ExternalSessionRegistrationPage({
     <div className="relative min-h-svh overflow-x-clip bg-background text-foreground">
       <div className="noise-overlay" aria-hidden="true" />
       <div
-        className="gold-glow-bg pointer-events-none fixed inset-x-0 top-0 h-80 opacity-65"
+        className="gold-glow-bg pointer-events-none fixed inset-x-0 top-0 h-72 opacity-65"
         aria-hidden="true"
       />
 
-      {/* شريط علوي مستقل بدون أي روابط أو إشارة للمنصة */}
-      <header className="relative z-10 border-b border-border/70 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.1] px-3 py-1 text-xs font-extrabold text-gold-deep dark:text-gold-light">
-              <span>{ACTIVITY_TYPE_ICONS[activity.type]}</span>
-              <span>{typeWord}</span>
-            </span>
-            {activity.level && ACTIVITY_LEVEL_LABELS[activity.level] && (
-              <span className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-                {ACTIVITY_LEVEL_LABELS[activity.level]}
+      {/* مفتاح تبديل المظهر في الزاوية فقط — بدون أي شعار أو روابط للمنصة */}
+      <div className="fixed start-4 top-4 z-40 sm:start-6 sm:top-6">
+        <ThemeToggle />
+      </div>
+
+      <main className="relative z-10 mx-auto max-w-6xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+        {/* مسار نصي خالص بدون أي روابط */}
+        <div className="mb-4 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          {activity.program && (
+            <>
+              <span>
+                {activity.program.icon} {activity.program.name}
               </span>
-            )}
-          </div>
-          <ThemeToggle />
+              <ChevronRight className="h-3 w-3" />
+            </>
+          )}
+          <span className="font-bold text-foreground">{activity.title}</span>
+          {sessionLabel && sessionLabel !== activity.title && (
+            <>
+              <ChevronRight className="h-3 w-3" />
+              <span className="font-bold text-gold-deep dark:text-gold-light">
+                {sessionLabel}
+              </span>
+            </>
+          )}
         </div>
-      </header>
 
-      <main className="relative z-10 mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_400px]">
-          {/* تفاصيل الورشة / الجلسة */}
-          <article className="min-w-0 space-y-6">
-            {imgSrc && (
-              <div className="relative aspect-video overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-                {useNextImage ? (
-                  <Image
-                    src={sessionImg!}
-                    alt={activity.title}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 600px"
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <SmartImg
-                    src={imgSrc}
-                    alt={activity.title}
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
-            )}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          {/* ── المحتوى الأساسي — مطابق تمامًا لتصميم صفحة الجلسة الداخلية ── */}
+          <article className="min-w-0">
+            {/* الصورة الرئيسية — بنسبة 16:9 الكاملة */}
+            <div className="relative aspect-video overflow-hidden rounded-3xl border border-white/[0.07] bg-night/40">
+              {useNextImage ? (
+                <Image
+                  src={sessionImg!}
+                  alt={session.title || activity.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  className={`object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`}
+                />
+              ) : imgSrc ? (
+                <SmartImg
+                  src={imgSrc}
+                  alt={session.title || activity.title}
+                  className={`h-full w-full object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`}
+                />
+              ) : (
+                <Image
+                  src={FALLBACK_IMAGE}
+                  alt={session.title || activity.title}
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  className={`object-cover object-center ${state === "COMPLETED" ? "opacity-80 grayscale-[0.35]" : ""}`}
+                />
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-night/85 via-night/25 to-transparent" />
 
-            <div className="rounded-3xl border border-border bg-card p-6 shadow-sm sm:p-8">
-              <h1 className="text-2xl font-black leading-snug text-foreground sm:text-3xl">
-                <span className="text-gold-gradient">{activity.title}</span>
-              </h1>
-              {sessionLabel && sessionLabel !== activity.title && (
-                <p className="mt-2 text-sm font-bold text-muted-foreground">
-                  {sessionLabel}
-                </p>
+              {sessionImg && (
+                <div className="absolute top-4 end-4 z-20">
+                  <ImagePreviewButton
+                    src={sessionImg}
+                    alt={session.title || activity.title}
+                    title={`بوستر ${sessionLabel}: ${session.title || activity.title}`}
+                    label="عرض البوستر كاملًا"
+                  />
+                </div>
               )}
 
-              <div className="mt-5 flex flex-wrap gap-2.5 text-xs font-bold text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                  <CalendarDays className="h-3.5 w-3.5 text-gold" />
-                  {formatDateAr(session.startsAt)}
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                  <Clock className="h-3.5 w-3.5 text-gold" />
-                  {formatTimeAr(session.startsAt)}
-                </span>
-                {session.location && (
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                    <MapPin className="h-3.5 w-3.5 text-gold" />
-                    {session.location}
+              {/* شارة الحالة العلوية البارزة */}
+              <div className="absolute start-4 top-4 z-10 flex flex-wrap gap-2">
+                {state === "COMPLETED" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-night/80 px-3.5 py-1.5 text-xs font-bold text-zinc-300 backdrop-blur">
+                    <History className="h-3.5 w-3.5" />
+                    منتهٍ
+                  </span>
+                ) : state === "ONGOING" ? (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-3.5 py-1.5 text-xs font-black text-night shadow-[0_0_25px_rgba(16,185,129,0.55)] animate-pulse">
+                    <span className="h-2 w-2 rounded-full bg-night animate-ping" />
+                    جارٍ الآن ⚡
+                  </span>
+                ) : decision.open &&
+                  session.registrationClosesAt &&
+                  new Date(session.registrationClosesAt).getTime() - Date.now() < 24 * 3600 * 1000 ? (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-black text-white shadow-[0_0_25px_rgba(244,63,94,0.6)] animate-pulse">
+                    <span className="h-2 w-2 rounded-full bg-white animate-ping" />
+                    🔥 فرصة أخيرة — يغلق قريباً!
+                  </span>
+                ) : decision.open ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/50 bg-emerald-950/90 px-3.5 py-1.5 text-xs font-black text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.35)] backdrop-blur">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    التسجيل متاح الآن 🟢
+                  </span>
+                ) : decision.reason === "FULL" ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/40 bg-rose-950/90 px-3.5 py-1.5 text-xs font-black text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.3)] backdrop-blur">
+                    مكتمل — قائمة الانتظار
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold px-3.5 py-1.5 text-xs font-extrabold text-night shadow-lg">
+                    <Hourglass className="h-3.5 w-3.5" />
+                    يبدأ قريبًا
                   </span>
                 )}
-                {presenterName && (
-                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                    <UserIcon className="h-3.5 w-3.5 text-gold" />
-                    {presenterName}
-                  </span>
-                )}
-                <span className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-2">
-                  <Users className="h-3.5 w-3.5 text-gold" />
-                  {session.seats === 0
-                    ? `${registeredCount} مسجل (مفتوح)`
-                    : `${registeredCount} / ${session.seats} مقعد`}
-                </span>
               </div>
 
-              <div className="mt-6 border-t border-border pt-5">
-                <h2 className="mb-2.5 text-sm font-extrabold text-gold-deep dark:text-gold-light">
-                  عن {isCourse ? "المحاضرة" : typeWord === "فعالية" ? "الفعالية" : "الورشة"}
-                </h2>
-                <p className="whitespace-pre-line text-sm leading-8 text-foreground/90">
-                  {session.description || activity.description}
+              <div className="absolute bottom-5 start-5 end-5">
+                <p className="mb-1 text-xs font-bold text-gold-light">
+                  {ACTIVITY_TYPE_ICONS[activity.type]} {typeWord}
+                  {activity.program ? ` · ${activity.program.name}` : ""}
                 </p>
+                <h1 className="text-2xl font-extrabold leading-relaxed text-white sm:text-3xl">
+                  {isCourse
+                    ? `${activity.title} — ${sessionLabel}`
+                    : isTeaserOnly
+                    ? activity.teaser
+                    : activity.title}
+                </h1>
               </div>
             </div>
 
+            {/* بطاقات المعلومات مع مؤشرات المقاعد بالأخضر/الأحمر */}
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <InfoCard icon={<CalendarDays className="h-5 w-5" />} label="التاريخ" value={formatDateAr(session.startsAt)} />
+              <InfoCard
+                icon={<Clock className="h-5 w-5" />}
+                label="الوقت"
+                value={
+                  session.endsAt
+                    ? `${formatTimeAr(session.startsAt)} — ${formatTimeAr(session.endsAt)}`
+                    : formatTimeAr(session.startsAt)
+                }
+              />
+              {session.location && (
+                <InfoCard icon={<MapPin className="h-5 w-5" />} label="المكان" value={session.location} />
+              )}
+              <div
+                className={`rounded-2xl border p-4 transition-colors ${
+                  state === "COMPLETED"
+                    ? "border-border bg-card"
+                    : seatsLeft <= 5 && seatsLeft > 0
+                    ? "border-rose-500/40 bg-rose-50/60 dark:bg-rose-950/20 shadow-sm"
+                    : "border-border bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      seatsLeft <= 5 && state !== "COMPLETED"
+                        ? "bg-rose-500/20 text-rose-600 dark:text-rose-400"
+                        : "bg-gold/15 text-gold"
+                    }`}
+                  >
+                    <Users className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-muted-foreground">المقاعد المتاحة</p>
+                    <p className="mt-0.5 text-sm font-black text-foreground">
+                      {state === "COMPLETED" ? (
+                        `${registeredCount} مسجلاً`
+                      ) : isUnlimitedSeats ? (
+                        <>
+                          <span>{registeredCount} مسجلاً</span>
+                          <span className="ms-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            (مقاعد مفتوحة للجميع ∞)
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            {registeredCount} / {session.seats} مقعد
+                          </span>
+                          {seatsLeft <= 5 && seatsLeft > 0 ? (
+                            <span className="ms-2 text-xs font-black text-rose-600 dark:text-rose-400 animate-pulse">
+                              (باقي {seatsLeft} فقط!)
+                            </span>
+                          ) : seatsLeft === 0 ? (
+                            <span className="ms-2 text-xs font-black text-rose-600 dark:text-rose-400">
+                              (مكتمل)
+                            </span>
+                          ) : (
+                            <span className="ms-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                              ({seatsLeft} متبقٍ)
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {presenterName && (
+                <InfoCard
+                  icon={<UserIcon className="h-5 w-5" />}
+                  label="المقدم"
+                  value={presenterName}
+                  className="sm:col-span-2"
+                />
+              )}
+            </div>
+
+            {/* العد التنازلي التسويقي */}
             {state !== "COMPLETED" && (
-              <div>
+              <div className="mt-6">
                 {session.registrationOpensAt && new Date() < session.registrationOpensAt ? (
                   <Countdown
                     to={session.registrationOpensAt.toISOString()}
                     prefix="يُفتح التسجيل بعد"
                     variant="blocks"
                     tone="gold"
-                    subtitle="جهّز بياناتك — التسجيل سيُفتح تلقائيًا عند انتهاء العداد"
+                    subtitle="جهّز بياناتك — التسجيل سيُفتح تلقائياً عند انتهاء العداد"
                   />
                 ) : decision.reason === "FULL" ? (
-                  <div className="rounded-3xl border border-rose-300/80 bg-rose-50 p-5 text-center dark:border-rose-500/30 dark:bg-rose-950/20">
+                  <div className="rounded-3xl border border-rose-300/80 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/20 p-5 text-center shadow-[0_8px_24px_-12px_rgba(190,18,60,0.2)] dark:shadow-none">
                     <p className="text-base font-black text-rose-600 dark:text-rose-300">
                       اكتمل عدد المقاعد الأساسية!
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
                       {canWaitlist
-                        ? "يمكنك الانضمام لقائمة الانتظار، وسيتم ترقيتك تلقائيًا عند أي إلغاء."
+                        ? "يمكنك الانضمام لقائمة الانتظار، وسيتم ترقيتك تلقائياً عند أي إلغاء."
                         : "نعتذر، تم إغلاق التسجيل لاكتمال المقاعد."}
                     </p>
                   </div>
@@ -325,33 +450,74 @@ export default async function ExternalSessionRegistrationPage({
                     }
                     autoUrgent={true}
                     subtitle={
-                      session.seats > 0 && seatsLeft <= 5
-                        ? `🔥 تنبيه: متبقي ${seatsLeft} مقاعد فقط!`
-                        : "⚡ سارع بحجز مقعدك الآن"
+                      !isUnlimitedSeats && seatsLeft <= 5
+                        ? `🔥 تنبيه: متبقي ${seatsLeft} مقاعد فقط قبل إغلاق القبول!`
+                        : "⚡ سارع بحجز مقعدك وتأكيد انضمامك معنا"
                     }
                   />
-                ) : (
+                ) : state === "UPCOMING" ? (
                   <Countdown
                     to={session.startsAt.toISOString()}
-                    prefix="يبدأ الموعد بعد"
+                    prefix="يبدأ موعد الجلسة بعد"
                     variant="blocks"
                     tone="gold"
+                    subtitle="تأكد من الحضور في الموعد المحدد"
                   />
+                ) : (
+                  <div className="rounded-3xl border border-emerald-300/80 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 p-5 text-center shadow-[0_8px_24px_-12px_rgba(5,120,85,0.2)] dark:shadow-none">
+                    <p className="text-base font-black text-emerald-700 dark:text-emerald-300">
+                      الجلسة جارية الآن! 🟢
+                    </p>
+                  </div>
                 )}
               </div>
             )}
+
+            {/* الوصف */}
+            {!isTeaserOnly && (
+              <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+                <h2 className="mb-3 text-base font-extrabold text-gold-deep dark:text-gold-light">
+                  عن {isCourse ? "المحاضرة" : typeWord === "فعالية" ? "الفعالية" : "الورشة"}
+                </h2>
+                <p className="whitespace-pre-line text-sm leading-8 text-foreground/90 dark:text-zinc-200">
+                  {session.description || activity.description}
+                </p>
+                {(session.materialUrl || session.onlineUrl) && (
+                  <div className="mt-4 flex flex-wrap gap-2.5 border-t border-black/[0.06] dark:border-white/[0.06] pt-4">
+                    {session.materialUrl && (
+                      <CtaLink
+                        label={session.materialLabel || "مواد الجلسة"}
+                        url={session.materialUrl}
+                        linkType={isDriveLink(session.materialUrl) ? "DRIVE" : undefined}
+                        size="md"
+                      />
+                    )}
+                    {session.onlineUrl && (
+                      <a
+                        href={safeExternalUrl(session.onlineUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.04] px-4 py-2.5 text-xs font-bold text-zinc-800 dark:text-zinc-200 hover:border-gold/40 dark:hover:border-gold/30"
+                      >
+                        {session.onlineLabel || "انضم أونلاين"}
+                      </a>
+                    )}
+                  </div>
+                )}
+              </section>
+            )}
           </article>
 
-          {/* استمارة التسجيل المستقلة — بدون دخول أو إنشاء حساب */}
+          {/* ── العمود الجانبي: استمارة التسجيل بدون أي تسجيل دخول أو إنشاء حساب ── */}
           <aside className="min-w-0 lg:sticky lg:top-8 lg:self-start">
             {state === "COMPLETED" ? (
               <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
                 <Archive className="mx-auto h-10 w-10 text-gold/60" />
                 <p className="mt-3 text-lg font-extrabold text-foreground">
-                  انتهى هذا الموعد
+                  انتهت هذه الجلسة
                 </p>
                 <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                  نعتذر، انتهت فعالية هذا الرابط.
+                  نعتذر، تم إغلاق التسجيل لانتهاء موعد الجلسة.
                 </p>
               </div>
             ) : decision.reason === "NOT_YET_OPEN" ? (
@@ -385,7 +551,7 @@ export default async function ExternalSessionRegistrationPage({
                 sessionTitle={`${activity.title}${sessionLabel !== activity.title ? ` — ${sessionLabel}` : ""}`}
                 fields={fields}
                 isFull={decision.reason === "FULL"}
-                seatsLeft={seatsLeft}
+                seatsLeft={isUnlimitedSeats ? 0 : seatsLeft}
                 externalToken={token}
                 whatsappUrl={whatsappUrl}
                 telegramUrl={telegramUrl}
@@ -394,6 +560,32 @@ export default async function ExternalSessionRegistrationPage({
           </aside>
         </div>
       </main>
+    </div>
+  );
+}
+
+function InfoCard({
+  icon,
+  label,
+  value,
+  className,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3.5 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-sm ${className ?? ""}`}
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 dark:border-gold/20 bg-gold/[0.08] dark:bg-gold/[0.07] text-gold">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-bold text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-bold text-foreground">{value}</p>
+      </div>
     </div>
   );
 }
