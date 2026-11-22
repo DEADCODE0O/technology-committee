@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import {
   CalendarDays,
   Clock,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { GuestRegisterForm } from "@/components/platform/guest-register-form";
+import ExternalRegistrationNotFound from "../not-found";
 import { type DynField } from "@/components/platform/session-register-form";
 import { Countdown } from "@/components/platform/countdown";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -69,7 +69,20 @@ export async function generateMetadata({
   ) {
     return {
       title: "الرابط غير متاح",
+      description: "رابط التسجيل غير متاح أو منتهي.",
       robots: { index: false, follow: false },
+      openGraph: {
+        title: "الرابط غير متاح",
+        description: "رابط التسجيل غير متاح أو منتهي.",
+        type: "website",
+        images: [],
+      },
+      twitter: {
+        card: "summary",
+        title: "الرابط غير متاح",
+        description: "رابط التسجيل غير متاح أو منتهي.",
+        images: [],
+      },
     };
   }
 
@@ -79,6 +92,7 @@ export async function generateMetadata({
       ? `${session.activity.title} — ${label}`
       : session.activity.title;
   const desc = (session.description || session.activity.description).slice(0, 160);
+  const metaImage = resolveImageSrc(session.image || session.activity.image);
 
   return {
     title: fullTitle,
@@ -88,6 +102,13 @@ export async function generateMetadata({
       title: fullTitle,
       description: desc,
       type: "website",
+      images: metaImage ? [metaImage] : [],
+    },
+    twitter: {
+      card: metaImage ? "summary_large_image" : "summary",
+      title: fullTitle,
+      description: desc,
+      images: metaImage ? [metaImage] : [],
     },
   };
 }
@@ -117,7 +138,7 @@ export default async function ExternalSessionRegistrationPage({
     session.status === "CANCELLED" ||
     (session.activity.publish !== "PUBLISHED" && session.activity.publish !== "UNLISTED")
   ) {
-    notFound();
+    return <ExternalRegistrationNotFound />;
   }
 
   const activity = session.activity;

@@ -3,7 +3,11 @@
 import { usePathname } from "next/navigation";
 import { type SiteThemeDefinition } from "@/lib/site-theme-defs";
 
-export function SeasonalDecorations({ theme }: { theme: SiteThemeDefinition }) {
+export function SeasonalDecorations({
+  theme,
+}: {
+  theme: Pick<SiteThemeDefinition, "id" | "decorations">;
+}) {
   const pathname = usePathname();
   if (pathname === "/r" || pathname?.startsWith("/r/")) {
     return null;

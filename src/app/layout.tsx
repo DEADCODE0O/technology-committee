@@ -93,9 +93,16 @@ export default async function RootLayout({
                 accentColor={activeThemeDef.accentColor}
               />
             )}
-            {themeConfig.enableDecorations && (
-              <SeasonalDecorations theme={activeThemeDef} />
-            )}
+            {themeConfig.enableDecorations &&
+              activeThemeDef.id !== "default" &&
+              activeThemeDef.decorations !== "none" && (
+                <SeasonalDecorations
+                  theme={{
+                    id: activeThemeDef.id,
+                    decorations: activeThemeDef.decorations,
+                  }}
+                />
+              )}
             {children}
             <Toaster
               position="top-center"
