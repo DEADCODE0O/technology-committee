@@ -18,7 +18,7 @@ function refreshAll() {
   revalidatePath("/panel");
   revalidatePath("/profile");
   revalidatePath("/admin/seasons");
-  revalidatePath("/welcome");
+  revalidatePath("/");
 }
 
 // ─── المواسم ───────────────────────────────────────────────
@@ -282,7 +282,7 @@ export async function grantReward(input: {
     await createNotificationForUsers({
       type: "ANNOUNCEMENT",
       title: `حصلت على ${reward.icon} ${reward.title}`,
-      body: reward.description ?? "مكافأة جديدة من اللجنة — ألف مبروك!",
+      body: reward.description ?? "مكافأة جديدة من المنصة — ألف مبروك!",
       target: { userIds: [input.userId] } as never,
       createdById: admin.id,
     });

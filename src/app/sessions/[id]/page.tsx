@@ -572,7 +572,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                       تسجيل الدخول
                     </Link>
                     <Link href={`/register?returnTo=/sessions/${session.id}`}
-                      className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]">
+                      className="flex h-12 items-center justify-center rounded-xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]">
                       إنشاء حساب جديد
                     </Link>
                   </div>

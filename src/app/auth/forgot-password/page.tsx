@@ -14,11 +14,11 @@ export default function ForgotPasswordPage() {
       <div className="gold-glow-bg pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70" aria-hidden="true" />
 
       <div className="relative z-10 w-full max-w-md">
-        <Link href="/welcome" className="mb-8 flex items-center justify-center gap-3" aria-label="اللجنة التكنولوجية">
-          <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={56} height={56} className="h-14 w-14" priority />
+        <Link href="/" className="mb-8 flex items-center justify-center gap-3" aria-label="النهاية والبداية">
+          <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={56} height={56} className="h-14 w-14" priority />
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-extrabold text-zinc-100">اللجنة التكنولوجية</span>
-            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold/70">TECHNOLOGY COMMITTEE</span>
+            <span className="text-lg font-extrabold text-zinc-100">النهاية والبداية</span>
+            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold/70">THE END &amp; THE BEGINNING</span>
           </span>
         </Link>
 

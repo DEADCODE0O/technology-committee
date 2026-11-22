@@ -91,7 +91,7 @@ export default async function MyTasksPage() {
             <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-gold/20 bg-gold/[0.06] text-3xl">🎯</span>
             <h2 className="mt-5 text-lg font-extrabold text-foreground">مفيش مهام دلوقتي</h2>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-7 text-muted-foreground">
-              كل ما اللجنة تكلفك بمهمة هتلاقيها هنا فورًا مع إشعار يوصلك — في الوقت ده، اكتشف الأنشطة وشارك تعلّم وأنجز.
+              كل ما يتم تكليفك بمهمة هتلاقيها هنا فورًا مع إشعار يوصلك — في الوقت ده، اكتشف الأنشطة وشارك تعلّم وأنجز.
             </p>
             <Link
               href="/activities"

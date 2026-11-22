@@ -217,7 +217,7 @@ export function MessageActionSheet({
               </div>
               <div className="flex-1 text-start">
                 <p>إبلاغ عن محتوى أو سلوك مخالف</p>
-                <span className="text-[10px] text-muted-foreground font-normal">إرسال بلاغ سري لإدارة اللجنة للمراجعة</span>
+                <span className="text-[10px] text-muted-foreground font-normal">إرسال بلاغ سري لإدارة المنصة للمراجعة</span>
               </div>
             </button>
           )}

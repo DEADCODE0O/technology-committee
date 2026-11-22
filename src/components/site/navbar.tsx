@@ -38,8 +38,11 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
   }, [open]);
 
   const isAdmin = !!user && user.role !== "STUDENT";
-  // روابط ظاهرة — المواهب تظهر فقط عند تفعيل القسم من الإعدادات
-  const visibleLinks = showTalents ? navLinks : navLinks.filter((l) => l.href !== "/talents");
+  const visibleLinks = user
+    ? showTalents
+      ? navLinks
+      : navLinks.filter((l) => l.href !== "/talents")
+    : [];
 
   return (
     <header
@@ -51,10 +54,10 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:h-20 lg:px-8">
         {/* الشعار الرسمي */}
-        <Link href="/welcome" prefetch={false} className="flex items-center gap-3" aria-label={siteConfig.nameEn}>
+        <Link href="/" prefetch={false} className="flex items-center gap-3" aria-label={siteConfig.nameEn}>
           <Image
             src={siteConfig.logo}
-            alt="شعار اللجنة التكنولوجية"
+            alt="شعار النهاية والبداية"
             width={64}
             height={64}
             className="h-10 w-10 lg:h-12 lg:w-12"
@@ -63,7 +66,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
           />
           <span className="hidden flex-col leading-tight sm:flex">
             <span className={`text-sm font-extrabold transition-colors duration-300 ${scrolled ? "text-foreground" : "text-foreground drop-shadow-none dark:text-white dark:drop-shadow-sm"}`}>
-              اللجنة التكنولوجية
+              النهاية والبداية
             </span>
             <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold">
               {siteConfig.nameEn}
@@ -192,7 +195,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
                     href={isAdmin ? "/admin" : "/panel"}
                     prefetch={false}
                     onClick={() => setOpen(false)}
-                    className="flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-gold-light to-gold px-4 text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-transform active:scale-[0.98]"
+                    className="flex h-14 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-gold-light to-gold px-4 text-base font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)] transition-transform active:scale-[0.98]"
                   >
                     <AvatarWithFrame
                       avatarUrl={user.avatarUrl}
@@ -238,7 +241,7 @@ export function Navbar({ user, showTalents = false }: { user: NavUser; showTalen
               transition={{ delay: 0.5 }}
               className="pb-8 text-center font-latin text-[10px] font-medium tracking-[0.35em] text-gold/50"
             >
-              TECHNOLOGY COMMITTEE
+              {siteConfig.nameEn}
             </motion.p>
           </motion.div>
         )}

@@ -67,14 +67,14 @@ export function ExecutiveReportModal({ data }: ExecutiveReportModalProps) {
                     المعهد العالي للعلوم التجارية والحاسب الآلي بالعريش
                   </h2>
                   <p className="text-sm font-bold text-gold-deep dark:text-gold">
-                    اللجنة التكنولوجية — منظومة الاستخبارات ودعم اتخاذ القرار
+                    النهاية والبداية — منظومة الاستخبارات ودعم اتخاذ القرار
                   </p>
                   <p className="text-xs text-muted-foreground">
                     تقرير الموقف التنفيذي ومؤشرات الأداء الفصلية
                   </p>
                 </div>
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-gold/30 bg-gold/5 p-2">
-                  <Image src="/images/logo.png" alt="شعار اللجنة" width={48} height={48} className="h-auto w-auto" />
+                  <Image src="/images/logo.png" alt="شعار المنصة" width={48} height={48} className="h-auto w-auto" />
                 </div>
               </div>
 
@@ -85,7 +85,7 @@ export function ExecutiveReportModal({ data }: ExecutiveReportModalProps) {
                   <span className="font-bold">{new Date().toLocaleDateString("ar-EG")}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block">مؤشر صحة اللجنة:</span>
+                  <span className="text-muted-foreground block">مؤشر صحة المنصة:</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">{data.healthScore.score} / 100</span>
                 </div>
                 <div>
@@ -169,7 +169,7 @@ export function ExecutiveReportModal({ data }: ExecutiveReportModalProps) {
               {/* توقيعات الاعتماد الرسمية */}
               <div className="mt-12 pt-8 border-t border-border/60 grid grid-cols-2 text-center text-xs">
                 <div className="space-y-6">
-                  <p className="font-bold">مسؤول ومقرر اللجنة التكنولوجية</p>
+                  <p className="font-bold">مسؤول ومسؤول منصة النهاية والبداية</p>
                   <p className="font-mono text-muted-foreground">...................................</p>
                 </div>
                 <div className="space-y-6">

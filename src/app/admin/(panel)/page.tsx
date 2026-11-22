@@ -61,7 +61,7 @@ export default async function AdminDashboardPage() {
         </div>
         <Link
           href="/admin/activities/new"
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-b from-gold-light to-gold px-5 text-sm font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.5)]"
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-gradient-to-b from-gold-light to-gold px-5 text-sm font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.5)]"
         >
           + نشاط جديد
         </Link>

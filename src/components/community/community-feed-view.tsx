@@ -89,7 +89,7 @@ export function CommunityFeedView({
             </h1>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            أحدث الإعلانات والورش والاستبيانات الرسمية من إدارة اللجنة ومشاركات الطلاب.
+            أحدث الإعلانات والورش والاستبيانات الرسمية من إدارة المنصة ومشاركات الطلاب.
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export function CommunityFeedView({
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-xs sm:text-sm font-extrabold text-foreground">
-                                {p.createdBy?.displayName || p.createdBy?.profile?.fullName || "إدارة اللجنة التكنولوجية"}
+                                {p.createdBy?.displayName || p.createdBy?.profile?.fullName || "إدارة منصة النهاية والبداية"}
                               </span>
                               <span className="rounded-full bg-gold/15 text-gold px-2 py-0.2 text-[9px] font-black border border-gold/30">
                                 رسمي
@@ -329,7 +329,7 @@ export function CommunityFeedView({
               لا توجد منشورات في هذا القسم حالياً
             </h3>
             <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-              تابعنا باستمرار للاطلاع على أحدث إعلانات وورش وأنشطة اللجنة التكنولوجية.
+              تابعنا باستمرار للاطلاع على أحدث إعلانات وورش وأنشطة النهاية والبداية.
             </p>
           </div>
         )}

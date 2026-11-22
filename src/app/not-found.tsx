@@ -11,7 +11,7 @@ export default function NotFound() {
       <div className="relative z-10 w-full max-w-md text-center">
         <Image
           src="/images/logo.png"
-          alt="شعار اللجنة التكنولوجية"
+          alt="شعار النهاية والبداية"
           width={64}
           height={64}
           className="mx-auto h-16 w-16"
@@ -29,18 +29,18 @@ export default function NotFound() {
 
         <div className="mt-7 flex flex-col sm:flex-row gap-3">
           <Link
-            href="/welcome"
-            className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-light to-gold px-5 text-sm font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] transition-all hover:brightness-110 active:scale-[0.98]"
+            href="/"
+            className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-light to-gold px-5 text-sm font-extrabold text-night shadow-[0_10px_35px_-10px_rgba(34,211,238,0.45)] transition-all hover:brightness-110 active:scale-[0.98]"
           >
             <Home className="h-4 w-4" />
             الرئيسية
           </Link>
           <Link
-            href="/activities"
+            href="/login"
             className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-bold text-zinc-200 transition-colors hover:border-gold/40 hover:bg-white/[0.08]"
           >
             <Sparkles className="h-4 w-4 text-gold" />
-            استكشف الورش
+            تسجيل الدخول
           </Link>
         </div>
       </div>

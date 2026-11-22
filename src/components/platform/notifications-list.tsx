@@ -153,7 +153,7 @@ export function NotificationsList({ notifications }: { notifications: CenterNoti
       <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <p className="text-2xl">🔔</p>
         <p className="mt-2 text-sm font-bold text-foreground">لا توجد إشعارات حاليًا</p>
-        <p className="mt-1 text-xs text-muted-foreground">كل إعلانات اللجنة ومهامك وروابط الجروبات ستظهر هنا</p>
+        <p className="mt-1 text-xs text-muted-foreground">كل إعلانات المنصة ومهامك وروابط الجروبات ستظهر هنا</p>
       </div>
     );
   }

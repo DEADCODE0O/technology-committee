@@ -308,7 +308,7 @@ export async function restoreAccountAvatarAction(): Promise<{
     revalidatePath("/activities");
     revalidatePath("/leaderboard");
     revalidatePath("/community");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     revalidatePath("/");
 
     return { ok: true, avatarUrl: cleanedAvatar };
@@ -366,7 +366,7 @@ export async function setAvatarUrlAction(
     revalidatePath("/activities");
     revalidatePath("/leaderboard");
     revalidatePath("/community");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     revalidatePath("/");
 
     return { ok: true };

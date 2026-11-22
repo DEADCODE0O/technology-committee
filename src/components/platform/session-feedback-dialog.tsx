@@ -91,7 +91,7 @@ export function SessionFeedbackDialog({
                   شكراً لمساهمتك الصادقة!
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                  تم استلام تقييمك وملاحظاتك بسرية تامة وتوجيهها مباشرة لقيادة اللجنة التكنولوجية لتدارك العيوب وتطوير الورش القادمة.
+                  تم استلام تقييمك وملاحظاتك بسرية تامة وتوجيهها مباشرة لإدارة منصة النهاية والبداية لتدارك العيوب وتطوير الورش القادمة.
                 </p>
                 <div className="pt-3">
                   <button
@@ -124,7 +124,7 @@ export function SessionFeedbackDialog({
                   <Lock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                   <div className="leading-relaxed">
                     <span className="font-bold text-foreground block">ملاحظاتك سرية 100%:</span>
-                    لن يرى المحاضر ولا زملاؤك الطلاب اسمك أو تقييمك نهائياً؛ تظهر الملاحظات فقط لإدارة اللجنة لدراسة العيوب ونقاط القوة.
+                    لن يرى المحاضر ولا زملاؤك الطلاب اسمك أو تقييمك نهائياً؛ تظهر الملاحظات فقط لإدارة المنصة لدراسة العيوب ونقاط القوة.
                   </div>
                 </div>
 
@@ -235,7 +235,7 @@ export function SessionFeedbackDialog({
                 {/* 5. ملاحظات حرة سرية */}
                 <div className="space-y-1.5 pt-2 border-t border-border/40">
                   <label className="text-xs font-bold text-foreground block">
-                    ملاحظات سرية أو عيوب لاحظتها (تصل لقيادة اللجنة فقط):
+                    ملاحظات سرية أو عيوب لاحظتها (تصل لإدارة المنصة فقط):
                   </label>
                   <textarea
                     rows={2}

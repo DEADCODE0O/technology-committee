@@ -158,5 +158,5 @@ function styleHeaderCell(cell: ExcelJS.Cell) {
   cell.font = { name: "Cairo", bold: true, size: 10, color: { argb: "FF7A5A20" } };
   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFE2C2" } };
   cell.alignment = { horizontal: "right", vertical: "middle" };
-  cell.border = { bottom: { style: "thin", color: { argb: "FFC9A45C" } } };
+  cell.border = { bottom: { style: "thin", color: { argb: "FF0891B2" } } };
 }

@@ -8,7 +8,7 @@ import { SettingsManager } from "@/components/student/settings-manager";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "الإعدادات — منصة اللجنة التكنولوجية",
+  title: "الإعدادات — منصة النهاية والبداية",
   description: "تعديل بيانات الحساب، الأمان، وتخصيص المظهر",
 };
 

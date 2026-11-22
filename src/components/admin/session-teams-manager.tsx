@@ -80,7 +80,7 @@ export interface CandidateStudent {
 }
 
 const PRESET_COLORS = [
-  "#c9a45c", "#3b82f6", "#10b981", "#8b5cf6",
+  "#22d3ee", "#3b82f6", "#10b981", "#8b5cf6",
   "#f59e0b", "#ec4899", "#06b6d4", "#ef4444"
 ];
 
@@ -119,7 +119,7 @@ export function SessionTeamsManager({
 
   // Manual create form state
   const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamColor, setNewTeamColor] = useState("#c9a45c");
+  const [newTeamColor, setNewTeamColor] = useState("#22d3ee");
   const [newTeamIcon, setNewTeamIcon] = useState("🛡️");
   const [newTeamWhatsapp, setNewTeamWhatsapp] = useState("");
   const [newTeamTelegram, setNewTeamTelegram] = useState("");
@@ -128,7 +128,7 @@ export function SessionTeamsManager({
 
   // Edit form state
   const [editName, setEditName] = useState("");
-  const [editColor, setEditColor] = useState("#c9a45c");
+  const [editColor, setEditColor] = useState("#22d3ee");
   const [editIcon, setEditIcon] = useState("🛡️");
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editTelegram, setEditTelegram] = useState("");
@@ -146,7 +146,7 @@ export function SessionTeamsManager({
   const handleOpenEdit = (team: SessionTeamData) => {
     setEditingTeam(team);
     setEditName(team.name);
-    setEditColor(team.color || "#c9a45c");
+    setEditColor(team.color || "#22d3ee");
     setEditIcon(team.icon || "🛡️");
     setEditWhatsapp(team.whatsappUrl || "");
     setEditTelegram(team.telegramUrl || "");

@@ -36,7 +36,7 @@ export async function SitePageShell({
         <section className="relative mx-auto max-w-6xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
           <div className="gold-glow-bg pointer-events-none absolute inset-x-0 -top-24 h-64 opacity-60" aria-hidden="true" />
           <nav className="mb-4 flex items-center gap-2 text-xs text-muted-foreground" aria-label="مسار التنقل">
-            <Link href="/welcome" className="transition-colors hover:text-gold-light">
+            <Link href="/" className="transition-colors hover:text-gold-light">
               الرئيسية
             </Link>
             <span className="text-muted-foreground/50">/</span>

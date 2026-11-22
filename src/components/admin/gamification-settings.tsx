@@ -59,7 +59,7 @@ export function GamificationSettings({
       {/* ── 1. مفتاح إطارات الصور الرمزية ── */}
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-gold/25 bg-gold/[0.04] p-4.5 transition-colors hover:border-gold/35">
         <div className="flex min-w-0 items-start gap-3.5">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.1] text-gold shadow-[0_0_15px_rgba(201,164,92,0.15)]">
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.1] text-gold shadow-[0_0_15px_rgba(34,211,238,0.15)]">
             <Sparkles className="h-5 w-5" />
           </span>
           <div className="min-w-0">
@@ -89,7 +89,7 @@ export function GamificationSettings({
       {/* ── 2. مفتاح قلوب التفاعل والمستويات ── */}
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-gold/25 bg-gold/[0.04] p-4.5 transition-colors hover:border-gold/35">
         <div className="flex min-w-0 items-start gap-3.5">
-          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.1] text-gold shadow-[0_0_15px_rgba(201,164,92,0.15)]">
+          <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gold/30 bg-gold/[0.1] text-gold shadow-[0_0_15px_rgba(34,211,238,0.15)]">
             <Heart className="h-5 w-5 fill-gold/20" />
           </span>
           <div className="min-w-0">

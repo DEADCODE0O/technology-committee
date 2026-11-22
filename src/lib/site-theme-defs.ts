@@ -30,14 +30,14 @@ export interface SiteThemeDefinition {
 export const SITE_THEMES: SiteThemeDefinition[] = [
   {
     id: "default",
-    name: "الملكي التقني (الافتراضي)",
-    tagline: "الأسود الفاحم والذهب الخالص",
-    description: "الهوية الرسمية الفاخرة للجنة التكنولوجية — عمق داكن مع لمسات الذهب الأنيق والتوهج الهادئ.",
-    icon: "🛡️",
+    name: "السايبر العميق (الافتراضي)",
+    tagline: "الأزرق السايبر والسيان المتوهج",
+    description: "الهوية البصرية الرسمية لمنصة النهاية والبداية — عمق ليلي سايبر مع إضاءة السيان والبنفسجي الحديث.",
+    icon: "♾️",
     badge: "الرسمي",
-    accentColor: "#c9a45c",
-    secondaryColor: "#e6cb8b",
-    defaultBannerText: "مرحبًا بكم في منصة اللجنة التكنولوجية — تجربة جامعية مختلفة.",
+    accentColor: "#22d3ee",
+    secondaryColor: "#8b5cf6",
+    defaultBannerText: "مرحبًا بكم في منصة النهاية والبداية — بداية جديدة وتجربة متكاملة.",
     decorations: "none",
   },
   {

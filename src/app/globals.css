@@ -3,6 +3,51 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "Cairo";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("/fonts/cairo-arabic.woff2") format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
+@font-face {
+  font-family: "Cairo";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("/fonts/cairo-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Cairo";
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url("/fonts/cairo-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/outfit-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/outfit-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -42,7 +87,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* ── هوية اللجنة التكنولوجية ── */
+  /* ── هوية النهاية والبداية (Cyber Navy & Electric Cyan/Violet) ── */
   --color-gold: var(--gold);
   --color-gold-light: var(--gold-light);
   --color-gold-pale: var(--gold-pale);
@@ -65,106 +110,107 @@
 }
 
 :root, .dark {
+  --font-cairo: "Cairo", system-ui, -apple-system, sans-serif;
+  --font-outfit: "Outfit", system-ui, -apple-system, sans-serif;
   --radius: 0.875rem;
-  --background: #09090b;
-  --foreground: #f4f3ef;
-  --night: #09090b;
-  --surface: #0e0e12;
-  --card: #0e0e12;
-  --card-foreground: #f4f3ef;
-  --popover: #101014;
-  --popover-foreground: #f4f3ef;
-  --primary: #c9a45c;
-  --primary-foreground: #0b0b0d;
-  --secondary: #17171c;
-  --secondary-foreground: #f4f3ef;
-  --muted: #17171c;
-  --muted-foreground: #a3a099;
-  --accent: #1c1a14;
-  --accent-foreground: #e6cb8b;
+  --background: #050a18;
+  --foreground: #eef6ff;
+  --night: #050a18;
+  --surface: #0b1224;
+  --card: #0b1224;
+  --card-foreground: #eef6ff;
+  --popover: #0e1730;
+  --popover-foreground: #eef6ff;
+  --primary: #06b6d4;
+  --primary-foreground: #04101d;
+  --secondary: #121c36;
+  --secondary-foreground: #eef6ff;
+  --muted: #121c36;
+  --muted-foreground: #94a3b8;
+  --accent: #161e3a;
+  --accent-foreground: #67e8f9;
   --destructive: #e5484d;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #c9a45c;
-  --chart-1: #c9a45c;
-  --chart-2: #e6cb8b;
-  --chart-3: #8a6d33;
-  --chart-4: #a3a099;
-  --chart-5: #f2e5c4;
-  --sidebar: #0e0e12;
-  --sidebar-foreground: #f4f3ef;
-  --sidebar-primary: #c9a45c;
-  --sidebar-primary-foreground: #0b0b0d;
-  --sidebar-accent: #17171c;
-  --sidebar-accent-foreground: #f4f3ef;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #c9a45c;
+  --border: rgba(148, 163, 184, 0.14);
+  --input: rgba(148, 163, 184, 0.18);
+  --ring: #22d3ee;
+  --chart-1: #06b6d4;
+  --chart-2: #8b5cf6;
+  --chart-3: #38bdf8;
+  --chart-4: #94a3b8;
+  --chart-5: #a78bfa;
+  --sidebar: #080f20;
+  --sidebar-foreground: #eef6ff;
+  --sidebar-primary: #06b6d4;
+  --sidebar-primary-foreground: #04101d;
+  --sidebar-accent: #121c36;
+  --sidebar-accent-foreground: #eef6ff;
+  --sidebar-border: rgba(148, 163, 184, 0.12);
+  --sidebar-ring: #22d3ee;
 
-  --gold: #c9a45c;
-  --gold-light: #e6cb8b;
-  --gold-pale: #f2e5c4;
-  --gold-deep: #8a6d33;
+  --gold: #22d3ee;
+  --gold-light: #67e8f9;
+  --gold-pale: #cffafe;
+  --gold-deep: #0891b2;
 
-  /* رماديات الوضع الليلي الأصلي */
-  --zinc-50: #fafafa;
-  --zinc-100: #f4f4f5;
-  --zinc-200: #e4e4e7;
-  --zinc-300: #d4d4d8;
-  --zinc-400: #a1a1aa;
-  --zinc-500: #71717a;
-  --zinc-600: #52525b;
-  --zinc-700: #3f3f46;
-  --zinc-800: #27272a;
-  --zinc-900: #18181b;
-  --zinc-950: #09090b;
+  /* رماديات الوضع الليلي المتناغمة مع الأزرق السايبر */
+  --zinc-50: #f8fafc;
+  --zinc-100: #f1f5f9;
+  --zinc-200: #e2e8f0;
+  --zinc-300: #cbd5e1;
+  --zinc-400: #94a3b8;
+  --zinc-500: #64748b;
+  --zinc-600: #475569;
+  --zinc-700: #334155;
+  --zinc-800: #1e293b;
+  --zinc-900: #0f172a;
+  --zinc-950: #050a18;
 
-  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(9,9,11,0.6) 100%);
+  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(5,10,24,0.68) 100%);
 }
 
 .light {
   --radius: 0.875rem;
-  /* ══ «الملكي العاجي» — لوحة نهارية فاخرة وفق المعايير العالمية ══
-     ورق عاجي دافئ + حبر غني + ذهب مصقول — بطاقات بيضاء مرتفعة بظلال ناعمة */
-  --background: #f6f4ee;
-  --foreground: #201d19;
-  --night: #09090b;
+  /* ══ لوحة نهارية حديثة (Cool Ice & Deep Cyber Cyan/Violet) ══ */
+  --background: #f4f7fb;
+  --foreground: #0f172a;
+  --night: #050a18;
   --surface: #ffffff;
   --card: #ffffff;
-  --card-foreground: #201d19;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #201d19;
-  --primary: #96711f;
+  --popover-foreground: #0f172a;
+  --primary: #0891b2;
   --primary-foreground: #ffffff;
-  --secondary: #eeebe1;
-  --secondary-foreground: #29261f;
-  --muted: #efece3;
-  --muted-foreground: #5c574d;
-  --accent: #f7f1e2;
-  --accent-foreground: #71541c;
+  --secondary: #e8eff8;
+  --secondary-foreground: #1e293b;
+  --muted: #eaf0f8;
+  --muted-foreground: #475569;
+  --accent: #e0f7fa;
+  --accent-foreground: #0e7490;
   --destructive: #d92d20;
-  --border: rgba(32, 29, 25, 0.1);
-  --input: rgba(32, 29, 25, 0.13);
-  --ring: #96711f;
-  --chart-1: #96711f;
-  --chart-2: #6e4e12;
-  --chart-3: #b8892e;
-  --chart-4: #5c574d;
-  --chart-5: #f0e6cc;
+  --border: rgba(15, 23, 42, 0.1);
+  --input: rgba(15, 23, 42, 0.14);
+  --ring: #0891b2;
+  --chart-1: #0891b2;
+  --chart-2: #7c3aed;
+  --chart-3: #06b6d4;
+  --chart-4: #475569;
+  --chart-5: #a78bfa;
   --sidebar: #ffffff;
-  --sidebar-foreground: #201d19;
-  --sidebar-primary: #96711f;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0891b2;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f7f1e2;
-  --sidebar-accent-foreground: #29261f;
-  --sidebar-border: rgba(32, 29, 25, 0.1);
-  --sidebar-ring: #96711f;
+  --sidebar-accent: #ecfeff;
+  --sidebar-accent-foreground: #0e7490;
+  --sidebar-border: rgba(15, 23, 42, 0.09);
+  --sidebar-ring: #0891b2;
 
-  --gold: #96711f;
-  --gold-light: #b8892e;
-  --gold-pale: #faf3e1;
-  --gold-deep: #6e4e12;
+  --gold: #0891b2;
+  --gold-light: #06b6d4;
+  --gold-pale: #ecfeff;
+  --gold-deep: #0e7490;
 
-  /* رماديات نهارية قياسية متوافقة 100% مع معايير Tailwind وتضمن وضوحاً كاملاً للقراءة */
+  /* رماديات نهارية قياسية متوافقة 100% مع معايير Tailwind */
   --zinc-50: #fafafa;
   --zinc-100: #f4f4f5;
   --zinc-200: #e4e4e7;
@@ -177,7 +223,7 @@
   --zinc-900: #18181b;
   --zinc-950: #09090b;
 
-  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(9,9,11,0.6) 100%);
+  --hero-vignette: radial-gradient(ellipse at center, transparent 35%, rgba(5,10,24,0.6) 100%);
 }
 
 @layer base {
@@ -199,12 +245,12 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: rgba(201, 164, 92, 0.35);
-    color: #f7f3e8;
+    background: rgba(34, 211, 238, 0.3);
+    color: #eef6ff;
   }
   .light ::selection {
-    background: rgba(150, 109, 33, 0.22);
-    color: #18181b;
+    background: rgba(8, 145, 178, 0.22);
+    color: #0f172a;
   }
 }
 
@@ -224,40 +270,40 @@
   background: var(--gold);
 }
 html.dark {
-  scrollbar-color: #232328 #09090b;
+  scrollbar-color: #1e293b #050a18;
 }
 html.light {
-  scrollbar-color: #d4d4d8 #fbfaf8;
+  scrollbar-color: #cbd5e1 #f4f7fb;
 }
 
 /* ── أدوات الهوية البصرية ── */
 
-/* نص بتدرج ذهبي فاخر متكيف */
+/* نص بتدرج سيان-بنفسجي سايبر متكيف */
 .text-gold-gradient {
-  background: linear-gradient(160deg, #f5e9c8 8%, #e6cb8b 38%, #c9a45c 68%, #a9853f 100%);
+  background: linear-gradient(135deg, #a5f3fc 0%, #22d3ee 40%, #818cf8 74%, #a78bfa 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .light .text-gold-gradient {
-  background: linear-gradient(135deg, #6b4b10 0%, #966d21 38%, #b58832 72%, #785315 100%);
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 42%, #6366f1 78%, #7c3aed 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* لمعة ذهبية خفيفة للخلفيات الكبيرة */
+/* توهج سايبر خفيف للخلفيات الكبيرة */
 .gold-glow-bg {
   background:
-    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(201, 164, 92, 0.13), transparent 70%),
-    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(201, 164, 92, 0.07), transparent 70%);
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(34, 211, 238, 0.14), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(139, 92, 246, 0.11), transparent 70%);
 }
 
 .light .gold-glow-bg {
   background:
-    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(150, 109, 33, 0.08), transparent 70%),
-    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(150, 109, 33, 0.04), transparent 70%);
+    radial-gradient(ellipse 55% 42% at 50% 0%, rgba(8, 145, 178, 0.09), transparent 70%),
+    radial-gradient(ellipse 70% 55% at 50% 108%, rgba(124, 58, 237, 0.06), transparent 70%);
 }
 
 /* طبقة حبيبات سينمائية خفيفة جدًا */
@@ -274,14 +320,14 @@ html.light {
   opacity: 0.012;
 }
 
-/* خط زخرفي ذهبي رفيع */
+/* خط زخرفي سايبر رفيع */
 .gold-hairline {
-  background: linear-gradient(to left, transparent, rgba(201, 164, 92, 0.55), transparent);
+  background: linear-gradient(to left, transparent, rgba(34, 211, 238, 0.55), rgba(139, 92, 246, 0.45), transparent);
   height: 1px;
 }
 
 .light .gold-hairline {
-  background: linear-gradient(to left, transparent, rgba(150, 109, 33, 0.35), transparent);
+  background: linear-gradient(to left, transparent, rgba(8, 145, 178, 0.35), rgba(124, 58, 237, 0.25), transparent);
   height: 1px;
 }
 
@@ -320,74 +366,76 @@ html.light {
 /* ── حل مشكلة القوائم المنسدلة وخلفيات الاختيار في الوضعين ── */
 select, option, optgroup {
   color-scheme: dark;
-  background-color: #121217;
-  color: #f4f3ef;
+  background-color: #0b1224;
+  color: #eef6ff;
 }
 
 select {
-  background-color: #121217;
-  color: #f4f3ef;
-  border-color: rgba(255, 255, 255, 0.12);
+  background-color: #0b1224;
+  color: #eef6ff;
+  border-color: rgba(148, 163, 184, 0.18);
 }
 
 select:focus {
-  border-color: #c9a45c !important;
+  border-color: #22d3ee !important;
   outline: none;
-  box-shadow: 0 0 0 2px rgba(201, 164, 92, 0.25);
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25);
 }
 
 option {
-  background-color: #14141a;
-  color: #f4f3ef;
+  background-color: #0e1730;
+  color: #eef6ff;
   padding: 10px 14px;
 }
 
 option:hover,
 option:focus,
 option:checked {
-  background-color: #2a2518;
-  color: #e6cb8b;
+  background-color: #162447;
+  color: #67e8f9;
 }
 
 .light select, .light option, .light optgroup {
   color-scheme: light;
   background-color: #ffffff;
-  color: #18181b;
+  color: #0f172a;
 }
 
 .light select {
   background-color: #ffffff;
-  color: #18181b;
-  border-color: rgba(24, 24, 27, 0.12);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.14);
 }
 
 .light select:focus {
-  border-color: #966d21 !important;
+  border-color: #0891b2 !important;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(150, 109, 33, 0.18);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.18);
 }
 
 .light option {
   background-color: #ffffff;
-  color: #18181b;
+  color: #0f172a;
   padding: 10px 14px;
 }
 
 .light option:hover,
 .light option:focus,
 .light option:checked {
-  background-color: #fdf8ed;
-  color: #6b4b10;
+  background-color: #ecfeff;
+  color: #0e7490;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   نظام وضع النهار «الملكي العاجي» (Royal Ivory Light System)
+   نظام وضع النهار (Cool Ice Light System)
    — طبقة تحويل شاملة للهيكل والبطاقات والحوارات والقوائم —
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── 1) شبكة الأمان: تحويل أي خلفية داكنة صلبة متبقية إلى سطح نهاري ── */
+.light .bg-\[\#050a18\],
 .light .bg-\[\#060608\],
 .light .bg-\[\#0a0a0d\],
+.light .bg-\[\#0b1224\],
 .light .bg-\[\#0d0d12\],
 .light .bg-\[\#121217\],
 .light .bg-\[\#14141a\] {
@@ -412,16 +460,16 @@ option:checked {
 
 /* تحويل الفئات الشفافة تلقائياً إلى ظلال ناعمة وحواف واضحة في وضع النهار */
 .light [class*="border-white\/"] {
-  border-color: rgba(32, 29, 25, 0.09) !important;
+  border-color: rgba(15, 23, 42, 0.09) !important;
 }
 .light [class*="hover:border-white\/"]:hover {
-  border-color: rgba(150, 113, 31, 0.38) !important;
+  border-color: rgba(8, 145, 178, 0.38) !important;
 }
 .light [class*="bg-white\/"] {
-  background-color: rgba(32, 29, 25, 0.028) !important;
+  background-color: rgba(15, 23, 42, 0.028) !important;
 }
 .light [class*="hover:bg-white\/"]:hover {
-  background-color: rgba(150, 113, 31, 0.05) !important;
+  background-color: rgba(8, 145, 178, 0.05) !important;
 }
 
 /* ── 2) نظام الارتفاع البصري (Elevation) — عنصر الهوية في الثيمات النهارية ── */
@@ -504,22 +552,22 @@ option:checked {
   color: #7a5a15 !important;
 }
 .light #home .text-gold\/75 {
-  color: rgba(110, 78, 18, 0.85) !important;
+  color: rgba(14, 116, 144, 0.85) !important;
 }
 .light #home .border-border {
-  border-color: rgba(110, 78, 18, 0.28) !important;
+  border-color: rgba(14, 116, 144, 0.28) !important;
 }
 .light #home a.border-border {
-  background-color: rgba(255, 255, 255, 0.66) !important;
-  color: #29261f !important;
-  box-shadow: 0 2px 10px rgba(32, 29, 25, 0.05);
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
 .light #home a.border-border:hover {
-  border-color: rgba(150, 113, 31, 0.55) !important;
-  color: #6e4e12 !important;
+  border-color: rgba(8, 145, 178, 0.55) !important;
+  color: #0e7490 !important;
 }
 .light #home .text-gold-gradient {
-  background: linear-gradient(160deg, #7a5a15 5%, #96711f 40%, #b8892e 72%, #7a5a15 100%) !important;
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 42%, #6366f1 78%, #7c3aed 100%) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35));
@@ -794,10 +842,10 @@ html[data-avatar-frames="hidden"] .avatar-frame-layer {
 
 /* وهج الاسم (مستوى 7+) — خفيف في النهار ومتوهج في الليل */
 .account-name-glow {
-  filter: drop-shadow(0 0.5px 0.5px rgba(150, 113, 31, 0.35));
+  filter: drop-shadow(0 0.5px 0.5px rgba(8, 145, 178, 0.35));
 }
 .dark .account-name-glow {
-  filter: drop-shadow(0 0 12px rgba(201, 164, 92, 0.45));
+  filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.45));
 }
 
 /* اللمعان المتحرك (مستوى 10+) — شعاع ضوء يمسح الاسم */

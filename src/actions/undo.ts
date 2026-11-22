@@ -99,7 +99,7 @@ async function undoProgramDeleted(log: AuditRow, d: Details): Promise<void> {
     data: {
       id: log.entityId ?? undefined,
       name: before.name, description: before.description, icon: before.icon,
-      color: before.color ?? "#c9a45c", status: before.status ?? "ACTIVE", order: before.order ?? 0,
+      color: before.color ?? "#22d3ee", status: before.status ?? "ACTIVE", order: before.order ?? 0,
     },
   });
 }

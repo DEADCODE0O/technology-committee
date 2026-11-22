@@ -187,7 +187,7 @@ export default async function AdminStudentDetailPage({ params }: { params: Promi
 
           {student.studentData.length > 0 && (
             <section className="rounded-3xl border border-white/[0.06] bg-surface p-5">
-              <h2 className="mb-4 text-sm font-extrabold text-zinc-100">بيانات محفوظة من طلبات اللجنة</h2>
+              <h2 className="mb-4 text-sm font-extrabold text-zinc-100">بيانات محفوظة من طلبات المنصة</h2>
               <div className="space-y-2">
                 {student.studentData.map((item) => (
                   <div key={item.id} className="rounded-xl border border-white/[0.05] bg-white/[0.02] px-3 py-2.5">

@@ -53,10 +53,12 @@ export function Contact() {
           description="اختر الطريقة الأنسب لك وسنكون سعداء بانضمامك."
         />
 
-        <div className="mt-12 grid grid-cols-1 gap-3.5 sm:mt-16 sm:grid-cols-3 sm:gap-4">
-          {socialCards.map((card, i) => (
+        <div className="mt-12 grid grid-cols-1 justify-center gap-3.5 sm:mt-16 sm:flex sm:flex-wrap sm:gap-4">
+          {socialCards
+            .filter((card) => Boolean(card.data.url))
+            .map((card, i) => (
             <Reveal key={card.key} delay={0.08 * i}>
-              <div className={`group flex h-full flex-col items-center rounded-2xl border border-border bg-card p-6 text-center shadow-xs transition-all duration-300 hover:-translate-y-1 ${card.hoverBorder} hover:shadow-md sm:p-7`}>
+              <div className={`group flex h-full min-w-[260px] flex-col items-center rounded-2xl border border-border bg-card p-6 text-center shadow-xs transition-all duration-300 hover:-translate-y-1 ${card.hoverBorder} hover:shadow-md sm:p-7`}>
                 <span className={`flex h-14 w-14 items-center justify-center rounded-full border transition-all duration-300 ${card.iconContainer}`}>
                   <card.icon className="h-7 w-7" />
                 </span>

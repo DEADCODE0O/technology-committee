@@ -510,7 +510,7 @@ export async function getUnifiedConversations(): Promise<UnifiedConversation[]> 
         title: team.name,
         subtitle: "شات الفريق",
         icon: team.icon || "🛡️",
-        color: team.color || "#c9a45c",
+        color: team.color || "#22d3ee",
         href: `/messages/room/${room.id}`,
         lastMessage: lastMsg
           ? {

@@ -230,7 +230,7 @@ export function FrameWardrobeModal({
                 onClick={() => setPreviewFrameId(null)}
                 className={`group relative flex flex-col items-center justify-between rounded-2xl border p-3 text-center transition-all ${
                   previewFrameId === null
-                    ? "border-gold bg-gold/[0.12] shadow-[0_0_20px_-5px_rgba(201,164,92,0.35)]"
+                    ? "border-gold bg-gold/[0.12] shadow-[0_0_20px_-5px_rgba(34,211,238,0.35)]"
                     : "border-border bg-card hover:border-gold/30 hover:bg-gold/[0.04]"
                 }`}
               >
@@ -270,7 +270,7 @@ export function FrameWardrobeModal({
                     onClick={() => setPreviewFrameId(frame.id)}
                     className={`group relative flex flex-col items-center justify-between rounded-2xl border p-3 text-center transition-all ${
                       isSelected
-                        ? "border-gold bg-gold/[0.12] shadow-[0_0_20px_-5px_rgba(201,164,92,0.35)] ring-1 ring-gold"
+                        ? "border-gold bg-gold/[0.12] shadow-[0_0_20px_-5px_rgba(34,211,238,0.35)] ring-1 ring-gold"
                         : isUnlocked
                         ? "border-border bg-card hover:border-gold/30 hover:bg-gold/[0.04]"
                         : "border-border/50 bg-muted/20 opacity-70 hover:opacity-90"

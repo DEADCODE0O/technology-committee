@@ -286,8 +286,8 @@ export function MessagingHub({
                         <div
                           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-xl shadow-inner group-hover:scale-105 transition-transform"
                           style={{
-                            backgroundColor: `${c.color || "#c9a45c"}15`,
-                            borderColor: `${c.color || "#c9a45c"}35`,
+                            backgroundColor: `${c.color || "#22d3ee"}15`,
+                            borderColor: `${c.color || "#22d3ee"}35`,
                           }}
                         >
                           {c.icon || (isTeam ? "🛡️" : "💬")}

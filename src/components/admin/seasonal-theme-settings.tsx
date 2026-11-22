@@ -71,7 +71,7 @@ export function SeasonalThemeSettings({
               key={theme.id}
               className={`relative flex flex-col justify-between rounded-2xl border p-4 transition-all ${
                 isActive
-                  ? "border-gold bg-gold/[0.08] shadow-[0_0_30px_-5px_rgba(201,164,92,0.3)]"
+                  ? "border-gold bg-gold/[0.08] shadow-[0_0_30px_-5px_rgba(34,211,238,0.3)]"
                   : "border-white/[0.08] bg-surface hover:border-white/20 hover:bg-white/[0.02]"
               }`}
             >

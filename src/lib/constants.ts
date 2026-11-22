@@ -71,7 +71,7 @@ export const DISCOVERY_SOURCES = [
   { value: "TANSIQ", label: "أثناء التنسيق", firstYearOnly: true },
   { value: "PARTY", label: "يوم حفل الاستقبال" },
   { value: "LECTURES", label: "من المدرجات" },
-  { value: "MEMBER", label: "عن طريق أحد أعضاء اللجنة" },
+  { value: "MEMBER", label: "عن طريق أحد الأعضاء" },
   { value: "ADS", label: "عن طريق أحد الإعلانات" },
   { value: "OTHER", label: "مصدر آخر" },
 ] as const;
@@ -292,7 +292,7 @@ export const LINK_TYPES = [
   { value: "DRIVE", label: "جوجل درايف", icon: "📁", color: "#1FA463" },
   { value: "FORM", label: "نموذج", icon: "📝", color: "#7B61FF" },
   { value: "GITHUB", label: "GitHub", icon: "🐙", color: "#24292F" },
-  { value: "LINK", label: "رابط", icon: "🔗", color: "#c9a45c" },
+  { value: "LINK", label: "رابط", icon: "🔗", color: "#22d3ee" },
 ] as const;
 
 export const LINK_TYPE_LABELS: Record<string, string> = Object.fromEntries(
@@ -381,12 +381,12 @@ export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   google_failed: "تعذر إكمال الدخول بـ Google — حاول مرة أخرى",
   google_email: "بريد Google غير موثق — استخدم بريدًا موثقًا",
   google_admin: "حسابات الإدارة تسجل بالبريد وكلمة السر فقط من بوابة الإدارة",
-  google_suspended: "هذا الحساب معلق — تواصل مع إدارة اللجنة",
+  google_suspended: "هذا الحساب معلق — تواصل مع إدارة المنصة",
   facebook_not_configured: "الدخول بـ Facebook غير مفعّل حاليًا",
   facebook_failed: "تعذر إكمال الدخول بـ Facebook — حاول مرة أخرى",
   facebook_email: "بريد Facebook غير موثق أو غير متوفر — استخدم طريقة أخرى",
   facebook_admin: "حسابات الإدارة تسجل بالبريد وكلمة السر فقط من بوابة الإدارة",
-  facebook_suspended: "هذا الحساب معلق — تواصل مع إدارة اللجنة",
+  facebook_suspended: "هذا الحساب معلق — تواصل مع إدارة المنصة",
   oauth_failed: "تعذر إكمال تسجيل الدخول بالحساب الخارجي — حاول مرة أخرى",
 };
 
@@ -412,7 +412,7 @@ export const DEFAULT_BADGES = [
   { name: "الطالب النشط", description: "حضر 10 ورش أو أكثر خلال العام", icon: "🏆" },
   { name: "الموهبة المبدعة", description: "موهبة موثّقة ومميزة على المنصة", icon: "🎨" },
   { name: "خبير الورش", description: "حضر 15 ورشة أو أكثر", icon: "🎯" },
-  { name: "عضو متميز", description: "إسهامات متكررة في أنشطة اللجنة", icon: "⭐" },
+  { name: "عضو متميز", description: "إسهامات متكررة في أنشطة المنصة", icon: "⭐" },
   { name: "أكبر مساهم", description: "أعلى مساهمة في الفعاليات خلال الترم", icon: "🥇" },
 ];
 
@@ -552,8 +552,8 @@ export const REWARD_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 
 // ─── المجتمع (Community) ───────────────────────────────────
 export const COMMUNITY_POST_TYPES = [
-  { value: "NEWS", label: "خبر", icon: "📰", color: "#c9a45c" },
-  { value: "ANNOUNCEMENT", label: "إعلان", icon: "📢", color: "#e6cb8b" },
+  { value: "NEWS", label: "خبر", icon: "📰", color: "#22d3ee" },
+  { value: "ANNOUNCEMENT", label: "إعلان", icon: "📢", color: "#8b5cf6" },
   { value: "SURVEY", label: "استبيان واستطلاع", icon: "📊", color: "#38bdf8" },
   { value: "HIGHLIGHT", label: "لقطة مميزة", icon: "✨", color: "#f2e5c4" },
   { value: "ACHIEVEMENT", label: "إنجاز", icon: "🏆", color: "#ffd700" },

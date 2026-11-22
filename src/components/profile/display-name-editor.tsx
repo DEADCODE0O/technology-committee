@@ -66,7 +66,7 @@ export function DisplayNameEditor({
             </span>
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            الاسم المسجل في كشوف الكلية لا يمكن تغييره إلا عبر مسؤولي اللجنة.
+            الاسم المسجل في كشوف الكلية لا يمكن تغييره إلا عبر إدارة المنصة.
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export function DisplayNameEditor({
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="اكتب سطرين عن اهتماماتك البرمجية، تقنياتك المفضلة، أو أهدافك في اللجنة..."
+            placeholder="اكتب سطرين عن اهتماماتك البرمجية، تقنياتك المفضلة، أو أهدافك في المنصة..."
             rows={3}
             maxLength={160}
             className="w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold resize-none leading-relaxed"

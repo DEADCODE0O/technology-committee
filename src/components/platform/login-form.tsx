@@ -139,7 +139,7 @@ export function LoginForm({
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+        className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]"
       >
         {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
         {isRedirecting
@@ -150,7 +150,7 @@ export function LoginForm({
       </Button>
 
       <p className="text-center text-xs leading-6 text-zinc-600">
-        مش قادر تدخل؟ استخدم <Link href="/auth/forgot-password" className="text-gold/80 hover:text-gold">استعادة كلمة السر</Link> أو تواصل مع <Link href="/#contact" className="text-gold/80 hover:text-gold">إدارة اللجنة</Link>
+        مش قادر تدخل؟ استخدم <Link href="/auth/forgot-password" className="text-gold/80 hover:text-gold">استعادة كلمة السر</Link> أو تواصل مع <Link href="https://wa.me/201115322803" className="text-gold/80 hover:text-gold">إدارة المنصة</Link>
       </p>
     </form>
   );

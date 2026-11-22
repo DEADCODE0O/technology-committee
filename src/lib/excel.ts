@@ -95,8 +95,8 @@ export function styleHeader(ws: ExcelJS.Worksheet, headers: string[], headerRow 
     const cell = row.getCell(i);
     cell.font = { name: "Cairo", size: 11, bold: true, color: { argb: "FF111111" } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6CB8B" } };
-    cell.border = { bottom: { style: "thin", color: { argb: "FFC9A45C" } } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF67E8F9" } };
+    cell.border = { bottom: { style: "thin", color: { argb: "FF0891B2" } } };
   }
   row.height = 30;
 }

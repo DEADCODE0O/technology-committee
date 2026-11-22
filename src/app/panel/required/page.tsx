@@ -38,10 +38,10 @@ export default async function RequiredDataPage() {
       <header className="border-b border-white/[0.06]">
         <div className="mx-auto flex h-16 max-w-3xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/panel/required" className="flex items-center gap-2.5" aria-label="البيانات المطلوبة">
-            <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-9 w-9" />
+            <Image src="/images/logo.png" alt="شعار المنصة" width={40} height={40} className="h-9 w-9" />
             <span className="flex flex-col leading-tight">
               <span className="text-sm font-extrabold text-zinc-100">البيانات المطلوبة</span>
-              <span className="font-latin text-[8px] tracking-[0.25em] text-gold/60">TECHNOLOGY COMMITTEE</span>
+              <span className="font-latin text-[8px] tracking-[0.25em] text-gold/60">THE END & THE BEGINNING</span>
             </span>
           </Link>
           <form action={logoutAction}>
@@ -69,7 +69,7 @@ export default async function RequiredDataPage() {
               أهلاً {profile.fullName.split(" ")[0]} — عندنا {remaining === 1 ? "طلب واحد ينتظرك" : `${remaining} طلبات تنتظرك`}
             </h1>
             <p className="mt-3 text-sm leading-loose text-zinc-400">
-              اللجنة محتاجة منك بيانات مهمة قبل ما تكمل استخدام المنصة — بمجرد ما تسلّمها هتقدر تدخل لوحتك
+              تحتاج إدارة المنصة منك بيانات مهمة قبل ما تكمل استخدام المنصة — بمجرد ما تسلّمها هتقدر تدخل لوحتك
               وتتابع ورشك ونقاطك بشكل طبيعي. الطلبات دي إلزامية ومفعّلة الآن.
             </p>
           </div>
@@ -116,7 +116,7 @@ export default async function RequiredDataPage() {
       <footer className="border-t border-white/[0.06] py-5">
         <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-zinc-600">
           <CheckCircle2 className="h-3 w-3 text-gold/40" />
-          منصة أنشطة اللجنة التكنولوجية
+          منصة النهاية والبداية
         </p>
       </footer>
     </div>

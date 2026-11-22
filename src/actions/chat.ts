@@ -18,9 +18,9 @@ export async function ensureGeneralChatRoom() {
   if (!room) {
     room = await db.chatRoom.create({
       data: {
-        name: "شات مجتمع اللجنة التكنولوجية",
+        name: "شات مجتمع النهاية والبداية",
         type: "GENERAL",
-        description: "شات عام لجميع طلاب اللجنة التكنولوجية للتعارف والنقاشات التقنية المفيدة.",
+        description: "شات عام لجميع أعضاء منصة النهاية والبداية للتعارف والنقاشات التقنية المفيدة.",
         icon: "💬",
       },
     });

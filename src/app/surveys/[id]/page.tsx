@@ -13,15 +13,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!survey) {
     return {
-      title: "الاستبيان غير موجود | اللجنة التكنولوجية",
+      title: "الاستبيان غير موجود | النهاية والبداية",
     };
   }
 
   return {
-    title: `${survey.title} | استبيانات اللجنة التكنولوجية`,
-    description: survey.description || "شارك برأيك في استبيان واستطلاع رأي طلاب الكلية الرسمي من اللجنة التكنولوجية.",
+    title: `${survey.title} | استبيانات النهاية والبداية`,
+    description: survey.description || "شارك برأيك في استبيان واستطلاع رأي طلاب الكلية الرسمي من النهاية والبداية.",
     openGraph: {
-      title: `${survey.title} | اللجنة التكنولوجية`,
+      title: `${survey.title} | النهاية والبداية`,
       description: survey.description || "استطلاع رأي رسمي لطلاب الكلية",
       type: "website",
     },

@@ -215,7 +215,7 @@ export function FrameWardrobeInline({
         <div
           className="pointer-events-none absolute -top-10 inset-x-0 h-44 opacity-25 blur-3xl transition-all duration-500"
           style={{
-            backgroundColor: tierCfg?.color || "#c9a45c",
+            backgroundColor: tierCfg?.color || "#22d3ee",
           }}
           aria-hidden="true"
         />

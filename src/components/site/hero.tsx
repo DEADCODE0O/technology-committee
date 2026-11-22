@@ -26,7 +26,7 @@ export function Hero() {
       id="home"
       className="relative flex min-h-svh items-center justify-center overflow-hidden"
     >
-      {/* ── الخلفية السينمائية — صورة حقيقية من أنشطة اللجنة (Bokeh مموهة مسبقًا) ── */}
+      {/* ── الخلفية السينمائية — صورة حقيقية من أنشطة المنصة (Bokeh مموهة مسبقًا) ── */}
       <div className="absolute inset-0" aria-hidden="true">
         <Image
           src={siteConfig.hero.background}
@@ -38,7 +38,7 @@ export function Hero() {
         />
         {/* تعتيم متكيف: داكن سينمائي ليلًا / حجاب عاجي حريري نهارًا */}
         <div className="hero-scrim absolute inset-0" />
-        {/* إضاءة ذهبية خفيفة تلوّن الصورة بهوية اللجنة */}
+        {/* إضاءة سايبر خفيفة تلوّن الخلفية بالهوية الجديدة */}
         <div className="gold-glow-bg absolute inset-0 opacity-80" />
         {/* Vignette سينمائي يُبرز المركز ويُنعش الأطراف */}
         <div className="hero-vignette absolute inset-0" />
@@ -62,7 +62,7 @@ export function Hero() {
           />
           <Image
             src={siteConfig.logo}
-            alt={isEn ? "Official Logo of Technology Committee" : "الشعار الرسمي للجنة التكنولوجية"}
+            alt={isEn ? "Official Logo of The End & The Beginning" : "الشعار الرسمي لمنصة النهاية والبداية"}
             width={256}
             height={256}
             priority
@@ -76,12 +76,10 @@ export function Hero() {
         {/* الاسم */}
         <motion.h1 {...anim(0.12)} className="mt-9 sm:mt-11">
           <span className="block text-2xl font-bold text-foreground/90 drop-shadow-none dark:text-zinc-200 sm:text-3xl">
-            {isEn ? "TECHNOLOGY" : siteConfig.nameFirstPart}
+            {isEn ? "THE END &" : siteConfig.nameFirstPart}
           </span>
-          {/* leading-[1.95] ≥ امتداد خط Cairo (1.874em) — يمنع مسح ذيل الياء والنقاط مع تدرج النص الذهبي،
-              والهوامش السالبة تحافظ على نفس المسافات البصرية السابقة */}
           <span className="text-gold-gradient mt-[calc(0.25rem_-_0.4em)] -mb-[0.4em] block text-6xl font-black leading-[1.95] sm:text-7xl lg:text-8xl">
-            {isEn ? "COMMITTEE" : siteConfig.nameSecondPart}
+            {isEn ? "THE BEGINNING" : siteConfig.nameSecondPart}
           </span>
         </motion.h1>
 
@@ -89,7 +87,7 @@ export function Hero() {
           {...anim(0.22)}
           className="mt-4 font-latin text-[10px] font-medium tracking-[0.42em] text-gold-deep dark:text-gold/75 sm:text-xs sm:tracking-[0.5em]"
         >
-          {isEn ? "اللجنة التكنولوجية — اتحاد الطلاب" : siteConfig.nameEn}
+          {isEn ? "النهاية والبداية" : siteConfig.nameEn}
         </motion.p>
 
         {/* العبارة الرئيسية */}
@@ -118,7 +116,7 @@ export function Hero() {
         >
           <a
             href="#offerings"
-            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-gold-light to-gold px-8 py-3.5 text-base font-extrabold text-night shadow-[0_12px_40px_-10px_rgba(201,164,92,0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-10px_rgba(201,164,92,0.75)] active:translate-y-0"
+            className="inline-flex h-13 w-full sm:w-auto items-center justify-center gap-2.5 rounded-full bg-gradient-to-b from-gold-light to-gold px-8 py-3.5 text-base font-extrabold text-night shadow-[0_12px_40px_-10px_rgba(34,211,238,0.6)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_-10px_rgba(34,211,238,0.75)] active:translate-y-0"
           >
             <Sparkles className="h-4 w-4 text-night" />
             {isEn ? "Explore Activities & Programs" : "تصفح الفعاليات والأنشطة"}

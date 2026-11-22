@@ -34,6 +34,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // كل الصفحات ما عدا الملفات الثابتة والوسائط وAPI
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|ico|txt|webmanifest)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2|mp4|ico|txt|webmanifest)$).*)",
   ],
 };

@@ -222,7 +222,7 @@ export function NotificationComposer({
                   ...p,
                   type: "WELCOME",
                   pinned: true,
-                  title: "انضم لجروب شباب اللجنة التكنولوجية 💬",
+                  title: "انضم لجروب شباب منصة النهاية والبداية 💬",
                   body: "أهلاً بك يا بطل! انضم لجروب الواتساب أو التيليجرام الخاص بالشباب لمتابعة الإعلانات والورش والأنشطة أولاً بأول.",
                 }));
                 setGenders(["MALE"]);
@@ -248,8 +248,8 @@ export function NotificationComposer({
                   ...p,
                   type: "WELCOME",
                   pinned: true,
-                  title: "انضمي لجروب طالبات اللجنة التكنولوجية 🌸",
-                  body: "أهلاً بكِ في اللجنة التكنولوجية! انضمي لجروب الواتساب أو التيليجرام الخاص بالطالبات لمتابعة الفعاليات والورش والتواصل.",
+                  title: "انضمي لجروب طالبات منصة النهاية والبداية 🌸",
+                  body: "أهلاً بكِ في النهاية والبداية! انضمي لجروب الواتساب أو التيليجرام الخاص بالطالبات لمتابعة الفعاليات والورش والتواصل.",
                 }));
                 setGenders(["FEMALE"]);
                 setButtons([
@@ -274,7 +274,7 @@ export function NotificationComposer({
                   ...p,
                   type: "WELCOME",
                   pinned: true,
-                  title: "تابع صفحات اللجنة التكنولوجية الرسمية 🚀",
+                  title: "تابع تحديثات منصة النهاية والبداية 🚀",
                   body: "خليك على تواصل دائم وتابع التغطيات الحصرية، الصور، والملخصات على منصاتنا الرسمية.",
                 }));
                 setGenders([]);
@@ -302,14 +302,14 @@ export function NotificationComposer({
                   type: "WELCOME",
                   pinned: true,
                   title: "دليل الطلاب والتعليمات الهامة 📋",
-                  body: "أهلاً بكم جميعاً في اللجنة التكنولوجية! ننصحكم بالاطلاع على نظام النقاط والورش المتاحة واللوائح وطريقة تأكيد حضوركم في الفعاليات.",
+                  body: "أهلاً بكم جميعاً في النهاية والبداية! ننصحكم بالاطلاع على نظام النقاط والورش المتاحة واللوائح وطريقة تأكيد حضوركم في الفعاليات.",
                 }));
                 setGrades([]);
                 setGenders([]);
                 setSections([]);
                 setButtons([
                   { label: "تصفح الفعاليات والورش", url: "/activities", newTab: false },
-                  { label: "لوائح وتعليمات اللجنة", url: "/#rules", newTab: false },
+                  { label: "لوائح وتعليمات المنصة", url: "/panel", newTab: false },
                 ]);
                 toast.success("تم تجهيز دليل الطلاب (يستهدف جميع الطلاب الحاليين والجدد)");
               }}
@@ -591,7 +591,7 @@ export function NotificationComposer({
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={submit} disabled={pending} className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]">
+        <Button onClick={submit} disabled={pending} className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]">
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : editing ? <Save className="h-5 w-5" /> : <Send className="h-5 w-5" />}
           {editing ? "حفظ التعديلات" : "إرسال الإشعار"}
         </Button>

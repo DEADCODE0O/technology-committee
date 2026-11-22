@@ -105,7 +105,7 @@ export async function registerStudent(data: RegisterData): Promise<ActionResult>
     let studentCode: string | undefined;
     if (codeRequired) {
       const code = (data.studentCode || "").trim();
-      if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات اللجنة" };
+      if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات المنصة" };
       const codeCheck = validateStudentCodeFormat(code, data.grade);
       if (!codeCheck.ok) return { ok: false, error: codeCheck.error! };
       const exists = await db.studentProfile.findFirst({
@@ -570,7 +570,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
 
     const user = await db.user.findUnique({ where: { email }, include: { profile: true } });
     if (!user) return { error: "هذا البريد الإلكتروني غير مسجل — يمكنك إنشاء حساب جديد أولاً" };
-    if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة اللجنة" };
+    if (user.status === "SUSPENDED") return { error: "هذا الحساب معلق — تواصل مع إدارة المنصة" };
 
     // تحديد الوجهة المناسبة
     const rawReturnTo = String(formData.get("returnTo") || "").trim();
@@ -878,7 +878,7 @@ export async function completeGoogleProfile(data: CompleteProfileData): Promise<
     let studentCode: string | undefined;
     if (codeRequired) {
       const code = (data.studentCode || "").trim();
-      if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات اللجنة" };
+      if (!code) return { ok: false, error: "كود الطالب مطلوب لفرقتك حسب إعدادات المنصة" };
       const codeCheck = validateStudentCodeFormat(code, data.grade);
       if (!codeCheck.ok) return { ok: false, error: codeCheck.error! };
       const existsCode = await db.studentProfile.findFirst({ where: { studentCode: code } });

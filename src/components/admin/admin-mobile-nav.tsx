@@ -156,7 +156,7 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
               style={{ willChange: "transform" }}
               aria-label="قائمة لوحة التحكم للهاتف"
             >
-              {/* أ) هيدر القائمة: شعار اللجنة + عنوان + زر الإغلاق الواضح */}
+              {/* أ) هيدر القائمة: شعار المنصة + عنوان + زر الإغلاق الواضح */}
               <div className="flex items-center justify-between border-b border-border p-3.5 bg-muted/30 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="flex h-9.5 w-9.5 items-center justify-center rounded-2xl border border-gold/30 bg-gold/15 shrink-0 shadow-2xs">
@@ -310,13 +310,13 @@ export function AdminMobileNav({ items, userEmail, userRoleLabel }: AdminMobileN
               {/* هـ) فوتر القائمة: الموقع العام وبيانات المشرف وتسجيل الخروج مع مراعاة منطقة الأمان */}
               <div className="border-t border-border p-3 bg-muted/20 space-y-2.5 pb-8 sm:pb-5 shrink-0">
                 <Link
-                  href="/welcome"
+                  href="/activities"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-between rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs font-bold text-muted-foreground hover:bg-muted hover:text-gold transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <Globe className="h-4 w-4 text-gold" />
-                    زيارة الموقع العام
+                    عرض الأنشطة
                   </span>
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>

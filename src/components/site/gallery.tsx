@@ -81,7 +81,7 @@ export function Gallery() {
               {isEn ? "From Our " : "من "}<span className="text-gold-gradient">{isEn ? "Journey" : "رحلتنا"}</span>
             </>
           }
-          description={isEn ? "Moments and memories from committee activities, workshops, and gatherings." : "لحظات من أنشطة وفعاليات وتجارب اللجنة."}
+          description={isEn ? "Moments and memories from committee activities, workshops, and gatherings." : "لحظات من أنشطة وفعاليات وتجارب المنصة."}
         />
 
         {/* شبكة Bento */}
@@ -213,7 +213,7 @@ export function Gallery() {
                 {items[activeIndex].caption}
               </p>
               <p className="mt-1.5 font-latin text-[10px] font-medium tracking-[0.3em] text-gold/50">
-                TECHNOLOGY COMMITTEE
+                THE END & THE BEGINNING
               </p>
             </div>
           </motion.div>

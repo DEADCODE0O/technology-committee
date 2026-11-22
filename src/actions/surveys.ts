@@ -201,7 +201,7 @@ export async function createSurvey(
           title: input.title.trim(),
           body:
             input.description?.trim() ||
-            "شاركونا آراءكم ومقترحاتكم في هذا الاستبيان الهام للمساعدة في اتخاذ القرارات وتطوير أنشطة اللجنة! 📊💡",
+            "شاركونا آراءكم ومقترحاتكم في هذا الاستبيان الهام للمساعدة في اتخاذ القرارات وتطوير أنشطة المنصة! 📊💡",
           imageUrl: input.bannerUrl?.trim() || null,
           links: JSON.stringify([{ label: "DATA_REQUEST", url: request.id }]),
           status: "PUBLISHED",

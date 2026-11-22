@@ -244,7 +244,7 @@ export async function addComment(
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "انتهت الجلسة — سجّل دخولك مرة أخرى" };
-    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة اللجنة" };
+    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة المنصة" };
     const text = body?.trim();
     if (!text) return { ok: false, error: "اكتب تعليقًا أولًا" };
     if (text.length > 1000) return { ok: false, error: "التعليق طويل جدًا (الحد 1000 حرف)" };
@@ -335,7 +335,7 @@ export async function editComment(commentId: string, newBody: string): Promise<{
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "انتهت الجلسة — سجّل دخولك مرة أخرى" };
-    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة اللجنة" };
+    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة المنصة" };
     const text = newBody?.trim();
     if (!text) return { ok: false, error: "نص التعليق مطلوب" };
     if (text.length > 1000) return { ok: false, error: "التعليق طويل جدًا (الحد 1000 حرف)" };
@@ -387,7 +387,7 @@ export async function deleteMyComment(commentId: string): Promise<{ ok: boolean;
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "انتهت الجلسة — سجّل دخولك مرة أخرى" };
-    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة اللجنة" };
+    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة المنصة" };
     const comment = await db.comment.findUnique({ where: { id: commentId } });
     if (!comment) return { ok: false, error: "التعليق غير موجود" };
     const isAdmin = isAdminRole(user.role);

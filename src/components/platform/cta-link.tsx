@@ -26,7 +26,7 @@ export function CtaLink({
 }) {
   const type = (linkType || "LINK").toUpperCase();
   const icon = LINK_TYPE_ICONS[type] ?? "🔗";
-  const color = LINK_TYPE_COLORS[type] ?? "#c9a45c";
+  const color = LINK_TYPE_COLORS[type] ?? "#22d3ee";
   const typeName = LINK_TYPE_LABELS[type];
 
   return (

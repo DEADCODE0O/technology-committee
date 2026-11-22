@@ -218,7 +218,7 @@ export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
               onKeyDown={(e) => handleKeyDown(idx, e)}
               className={`h-12 w-11 sm:h-14 sm:w-13 text-center text-xl sm:text-2xl font-black rounded-xl border bg-black/40 text-zinc-100 transition-all outline-none ${
                 digit
-                  ? "border-gold bg-gold/10 text-gold shadow-[0_0_15px_rgba(201,164,92,0.25)]"
+                  ? "border-gold bg-gold/10 text-gold shadow-[0_0_15px_rgba(34,211,238,0.25)]"
                   : "border-white/15 hover:border-white/30 focus:border-gold focus:ring-2 focus:ring-gold/30"
               }`}
             />
@@ -241,7 +241,7 @@ export function OtpVerifyForm({ email, returnTo, notice }: OtpVerifyFormProps) {
         type="button"
         onClick={() => handleVerify()}
         disabled={!isComplete || isPending}
-        className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)] disabled:opacity-50"
+        className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night transition-all hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)] disabled:opacity-50"
       >
         {isPending ? (
           <>

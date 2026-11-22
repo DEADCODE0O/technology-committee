@@ -93,7 +93,7 @@ export async function sendFriendRequest(receiverId: string): Promise<{ ok: boole
 
     // إرسال إشعار للمستقبل مع إيضاح الاسم والجنس
     try {
-      const senderName = user.displayName || user.profile?.fullName || "طالب باللجنة";
+      const senderName = user.displayName || user.profile?.fullName || "عضو بالمنصة";
       const senderGender = user.profile?.gender === "FEMALE" ? "طالبة" : "طالب";
       await createNotificationForUsers({
         type: "COMMUNITY",

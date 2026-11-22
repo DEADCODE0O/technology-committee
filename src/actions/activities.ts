@@ -60,7 +60,7 @@ export async function saveProgram(input: ProgramInput): Promise<{ ok: boolean; i
       name,
       description: (input.description || "").trim() || null,
       icon: (input.icon || "").trim() || "✨",
-      color: (input.color || "").trim() || "#c9a45c",
+      color: (input.color || "").trim() || "#22d3ee",
       order: Number.isInteger(input.order) ? (input.order as number) : 0,
       status: input.status === "ARCHIVED" ? "ARCHIVED" : "ACTIVE",
     };

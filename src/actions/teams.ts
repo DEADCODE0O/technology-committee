@@ -36,7 +36,7 @@ export async function saveTeam(input: {
     const data = {
       name: input.name.trim(),
       description: input.description?.trim()?.slice(0, 400) ?? null,
-      color: input.color || "#c9a45c",
+      color: input.color || "#22d3ee",
       icon: (input.icon || "🛡️").slice(0, 4),
     };
 
@@ -290,7 +290,7 @@ export async function createSessionTeam(input: {
       data: {
         name: input.name.trim(),
         description: input.description?.trim() || null,
-        color: input.color || "#c9a45c",
+        color: input.color || "#22d3ee",
         icon: (input.icon || "🛡️").slice(0, 4),
         sessionId: input.sessionId,
         activityId: activityId || null,

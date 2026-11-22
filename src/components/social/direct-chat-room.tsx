@@ -1126,7 +1126,7 @@ export function DirectChatRoom({
             </div>
 
             <p className="text-xs text-muted-foreground leading-relaxed">
-              تلتزم اللجنة التكنولوجية بتوفير بيئة طلابية آمنة ومحترمة. سيتم فحص بلاغك بسرية تامة من قِبل إدارة اللجنة.
+              تلتزم النهاية والبداية بتوفير بيئة طلابية آمنة ومحترمة. سيتم فحص بلاغك بسرية تامة من قِبل إدارة المنصة.
             </p>
 
             <form onSubmit={handleSubmitReport} className="space-y-3.5">

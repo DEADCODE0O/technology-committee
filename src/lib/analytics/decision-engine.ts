@@ -58,7 +58,7 @@ export function classifyBCGWorkshops(workshops: RawWorkshopStat[]): WorkshopBCGI
       category = 'RISK';
       categoryLabel = 'ورشة خطر (Risk)';
       badgeClass = 'text-rose-500 bg-rose-500/10 border-rose-500/20';
-      recommendation = 'إقبال ضعيف وتقييم سلبي؛ تمثل هدراً لموارد اللجنة والجهد. التوصية: إيقافها فوراً، ومراجعة أسلوب المحاضر والمحتوى كلياً.';
+      recommendation = 'إقبال ضعيف وتقييم سلبي؛ تمثل هدراً لموارد المنصة والجهد. التوصية: إيقافها فوراً، ومراجعة أسلوب المحاضر والمحتوى كلياً.';
     }
 
     return {
@@ -159,7 +159,7 @@ export function simulateTradeOff(
     rationale = `الخيار الأول «${optionA.title}» يتفوق بمؤشر جدارة قدره (${scoreA} مقابل ${scoreB}) بفضل توازن حجم الطلب وسهولة التنفيذ ومعدل الحضور التاريخي.`;
   } else if (scoreB > scoreA) {
     winner = 'B';
-    rationale = `الخيار الثاني «${optionB.title}» يتفوق بمؤشر جدارة قدره (${scoreB} مقابل ${scoreA})، مما يجعله القرار الأكثر استثماراً لجهود اللجنة.`;
+    rationale = `الخيار الثاني «${optionB.title}» يتفوق بمؤشر جدارة قدره (${scoreB} مقابل ${scoreA})، مما يجعله القرار الأكثر استثماراً لجهود المنصة.`;
   } else {
     rationale = `الخياران متقاربان جداً بالأرقام (${scoreA} نقطة)؛ يمكن تنفيذهما بالتتابع أو طرح استطلاع فوري للطلاب لحسم القرار.`;
   }

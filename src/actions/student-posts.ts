@@ -234,7 +234,7 @@ export async function getStudentFeed(options?: {
 }
 
 /**
- * إنشاء منشور في المجتمع — مقتصر حصراً على إدارة اللجنة لضمان الامتثال
+ * إنشاء منشور في المجتمع — مقتصر حصراً على إدارة المنصة لضمان الامتثال
  */
 export async function createStudentPost(input: {
   body: string;
@@ -246,7 +246,7 @@ export async function createStudentPost(input: {
     if (!user || (user.role !== "SUPER_ADMIN" && user.role !== "ADMIN")) {
       return {
         ok: false,
-        error: "نشر المنشورات في المجتمع مقتصر حالياً على إدارة اللجنة والمنسقين الأكاديميين المعتمدين.",
+        error: "نشر المنشورات في المجتمع مقتصر حالياً على إدارة المنصة والمنسقين الأكاديميين المعتمدين.",
       };
     }
     const text = input.body?.trim();

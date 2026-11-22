@@ -24,8 +24,8 @@ import { getCachedPublishedActivities, getCachedCommunityPosts } from "@/lib/cac
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الرئيسية | مجتمع اللجنة التكنولوجية",
-  description: "المنصة الطلابية التفاعلية للتسجيل في الورش والكورسات والتواصل والمشاركة في مجتمع اللجنة التكنولوجية",
+  title: "الرئيسية | مجتمع النهاية والبداية",
+  description: "المنصة الطلابية التفاعلية للتسجيل في الورش والكورسات والتواصل والمشاركة في مجتمع النهاية والبداية",
 };
 
 function timeAgo(d: Date): string {
@@ -372,7 +372,7 @@ export default async function StudentDashboardPage() {
       type: p.type,
       pinned: p.pinned,
       createdAt: p.createdAt.toISOString(),
-      author: p.createdBy ? (p.createdBy.displayName || p.createdBy.email.split("@")[0]) : "اللجنة التكنولوجية",
+      author: p.createdBy ? (p.createdBy.displayName || p.createdBy.email.split("@")[0]) : "النهاية والبداية",
       authorRole: p.createdBy?.role,
       authorAvatar: p.createdBy?.avatarUrl,
       authorFrameId: p.createdBy?.avatarFrameId,

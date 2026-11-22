@@ -170,7 +170,10 @@ export default async function ActivitiesPage({
   }
 
   const user = await getCurrentUser();
-  const isStudent = !!user && user.role === "STUDENT";
+  if (!user) {
+    redirect("/login?returnTo=/activities");
+  }
+  const isStudent = user.role === "STUDENT";
 
   let shellUser: {
     name: string;
@@ -375,7 +378,7 @@ function ActivityCard({ a, state, now }: { a: Card; state: "OPEN" | "UPCOMING" |
           ? isAlmostFull
             ? "border-rose-500/30 bg-card hover:border-rose-500/50 hover:shadow-[0_20px_50px_-20px_rgba(244,63,94,0.3)]"
             : "border-emerald-500/25 bg-card hover:border-emerald-500/45 hover:shadow-[0_20px_50px_-20px_rgba(16,185,129,0.25)]"
-          : "border-border bg-card hover:border-gold/30 hover:shadow-[0_20px_50px_-20px_rgba(201,164,92,0.25)]"
+          : "border-border bg-card hover:border-gold/30 hover:shadow-[0_20px_50px_-20px_rgba(34,211,238,0.25)]"
       }`}>
       <div className="relative aspect-[16/9] overflow-hidden">
         {useNextImage ? (

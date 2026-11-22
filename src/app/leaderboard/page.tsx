@@ -70,7 +70,10 @@ export default async function LeaderboardPage({
   }
 
   const user = await getCurrentUser();
-  const isStudent = !!user && user.role === "STUDENT";
+  if (!user) {
+    redirect("/login?returnTo=/leaderboard");
+  }
+  const isStudent = user.role === "STUDENT";
 
   let shellUser: {
     name: string;
@@ -113,7 +116,7 @@ export default async function LeaderboardPage({
             aria-selected={activeTab === t.key}
             className={`inline-flex h-11 items-center gap-2 rounded-full border px-5 text-xs sm:text-sm font-extrabold transition-all shadow-sm ${
               activeTab === t.key
-                ? "border-gold/60 bg-gold/[0.15] text-gold-deep dark:text-gold-light shadow-[0_0_20px_-5px_rgba(201,164,92,0.4)]"
+                ? "border-gold/60 bg-gold/[0.15] text-gold-deep dark:text-gold-light shadow-[0_0_20px_-5px_rgba(34,211,238,0.4)]"
                 : "border-border bg-card text-muted-foreground hover:border-gold/30 hover:text-foreground"
             }`}
           >
@@ -139,7 +142,7 @@ export default async function LeaderboardPage({
           {/* حالة 1: طالب واحد فقط متصدر المنصة */}
           {rows.length === 1 && first && (
             <div className="mb-14 flex flex-col items-center">
-              <div className="relative w-full max-w-md rounded-3xl border-2 border-gold/60 bg-gradient-to-b from-surface via-[#14120e] to-surface p-6 sm:p-8 text-center shadow-[0_0_60px_-10px_rgba(201,164,92,0.4)]">
+              <div className="relative w-full max-w-md rounded-3xl border-2 border-gold/60 bg-gradient-to-b from-surface via-[#0b182e] to-surface p-6 sm:p-8 text-center shadow-[0_0_60px_-10px_rgba(34,211,238,0.4)]">
                 {/* توهج خلفي */}
                 <div className="gold-glow-bg pointer-events-none absolute inset-x-0 -top-20 h-44 opacity-80" />
 
@@ -215,7 +218,7 @@ export default async function LeaderboardPage({
 
               {/* المركز الأول */}
               <div className="flex flex-col items-center">
-                <div className="w-full rounded-3xl border-2 border-gold/60 bg-gradient-to-b from-surface to-[#14120e] p-6 text-center shadow-[0_0_40px_-10px_rgba(201,164,92,0.4)]">
+                <div className="w-full rounded-3xl border-2 border-gold/60 bg-gradient-to-b from-surface to-[#0b182e] p-6 text-center shadow-[0_0_40px_-10px_rgba(34,211,238,0.4)]">
                   <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-gold-light">
                     <Crown className="h-7 w-7 text-gold" />
                   </div>
@@ -248,7 +251,7 @@ export default async function LeaderboardPage({
               {/* 📱 عرض الهواتف الذكية (< sm): ترتيب فاخر ومريح دون تكدس */}
               <div className="sm:hidden space-y-4 mb-10" aria-label="أفضل ثلاثة طلاب على الموبايل">
                 {/* 🥇 بطل المنصة - المركز الأول */}
-                <div className="relative overflow-hidden rounded-3xl border-2 border-gold/70 bg-gradient-to-b from-surface via-[#16130b] to-surface p-5 text-center shadow-[0_0_40px_-10px_rgba(201,164,92,0.45)]">
+                <div className="relative overflow-hidden rounded-3xl border-2 border-gold/70 bg-gradient-to-b from-surface via-[#0e1b36] to-surface p-5 text-center shadow-[0_0_40px_-10px_rgba(34,211,238,0.45)]">
                   <div className="flex items-center justify-between mb-3">
                     <span className="flex items-center gap-1.5 rounded-full bg-gold/20 px-3 py-1 text-xs font-black text-gold-light border border-gold/50 shadow-sm">
                       <Crown className="h-4 w-4 text-gold inline" />
@@ -386,7 +389,7 @@ export default async function LeaderboardPage({
 
               {/* 🥇 المركز الأول (المنتصف — مرفوع ومتوج) */}
               <div className="flex flex-col items-center">
-                <div className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-gold/70 bg-gradient-to-b from-surface via-[#16130b] to-surface p-3.5 sm:p-6 text-center shadow-[0_0_50px_-10px_rgba(201,164,92,0.45)] transition-transform hover:-translate-y-1">
+                <div className="relative w-full rounded-2xl sm:rounded-3xl border-2 border-gold/70 bg-gradient-to-b from-surface via-[#0e1b36] to-surface p-3.5 sm:p-6 text-center shadow-[0_0_50px_-10px_rgba(34,211,238,0.45)] transition-transform hover:-translate-y-1">
                   <div className="mx-auto mb-1.5 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gold/25 text-gold-light shadow-md">
                     <Crown className="h-6 w-6 sm:h-7 sm:w-7 text-gold" />
                   </div>

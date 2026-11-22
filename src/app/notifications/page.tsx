@@ -45,7 +45,7 @@ export default async function NotificationsPage() {
         <header className="mb-6">
           <h1 className="text-2xl font-extrabold text-zinc-50">الإشعارات</h1>
           <p className="mt-1.5 text-sm leading-6 text-zinc-400">
-            كل رسائل اللجنة المهمة وروابط الجروبات والمهام — تبقى هنا دائمًا وترجع إليها وقتما تشاء.
+            كل رسائل المنصة المهمة وروابط الجروبات والمهام — تبقى هنا دائمًا وترجع إليها وقتما تشاء.
           </p>
         </header>
         <NotificationsList notifications={items} />

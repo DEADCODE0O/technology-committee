@@ -74,7 +74,7 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
       {/* ── هيدر القائمة الجانبية ── */}
       <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-gold/30 bg-gold/10 shadow-xs">
-          <Image src="/images/logo.png" alt="شعار اللجنة" width={26} height={26} className="h-6 w-6" priority />
+          <Image src="/images/logo.png" alt="شعار المنصة" width={26} height={26} className="h-6 w-6" priority />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
@@ -226,12 +226,12 @@ export function AdminSidebar({ items, userRoleLabel }: AdminSidebarProps) {
           </span>
         </Link>
         <Link
-          href="/welcome"
+          href="/activities"
           prefetch={false}
           className="flex h-8.5 items-center gap-2.5 rounded-xl px-3 text-xs font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <Globe className="h-3.5 w-3.5" />
-          <span>عرض الموقع العام</span>
+          <span>عرض الأنشطة</span>
         </Link>
       </div>
     </aside>

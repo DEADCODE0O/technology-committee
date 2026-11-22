@@ -46,7 +46,7 @@ export function JoinCta() {
               </p>
               <Link
                 href={siteConfig.joinUrl}
-                className="mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-light to-gold px-10 py-4 text-base font-extrabold text-night shadow-[0_15px_50px_-12px_rgba(201,164,92,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_-12px_rgba(201,164,92,0.85)] active:translate-y-0 sm:px-12 sm:text-lg"
+                className="mt-9 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-gold-light to-gold px-10 py-4 text-base font-extrabold text-night shadow-[0_15px_50px_-12px_rgba(34,211,238,0.7)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_-12px_rgba(34,211,238,0.85)] active:translate-y-0 sm:px-12 sm:text-lg"
               >
                 {buttonText}
                 <ArrowLeft className="h-5 w-5 rtl:rotate-0 ltr:rotate-180 transition-transform" />

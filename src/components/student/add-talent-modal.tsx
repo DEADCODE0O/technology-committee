@@ -211,7 +211,7 @@ export function AddTalentModal({ currentCount }: { currentCount: number }) {
             <Button
               type="submit"
               disabled={isPending}
-              className="h-11 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-xs font-extrabold text-night shadow-[0_4px_20px_rgba(201,164,92,0.4)]"
+              className="h-11 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-xs font-extrabold text-night shadow-[0_4px_20px_rgba(34,211,238,0.4)]"
             >
               {isPending ? (
                 <>

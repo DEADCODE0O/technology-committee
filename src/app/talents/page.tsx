@@ -1,7 +1,8 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Sparkles, Palette, Trophy, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { getTalentsSectionVisible } from "@/lib/platform";
 import { SitePageShell, EmptyState } from "@/components/platform/site-page-shell";
 import { talentLabel, TALENT_CATEGORY_LABELS, GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
@@ -17,6 +18,9 @@ export const dynamic = "force-dynamic";
 // ═══════════════════════════════════════════════════════════════
 
 export default async function TalentsPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?returnTo=/talents");
+
   const sectionVisible = await getTalentsSectionVisible();
 
   // القسم موقوف → الصفحة غير موجودة نهائيًا (404 كاملة)
@@ -32,7 +36,7 @@ export default async function TalentsPage() {
   return (
     <SitePageShell
       title="المواهب المميزة"
-      subtitle="طلاب من مجتمعنا — مواهبهم مختارة بعناية من إدارة اللجنة."
+      subtitle="أعضاء من مجتمعنا — مواهبهم مختارة بعناية من إدارة المنصة."
     >
       {talents.length === 0 ? (
         <EmptyState
@@ -107,7 +111,7 @@ export default async function TalentsPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-1.5 text-[11px] text-zinc-600">
                       <Trophy className="h-3.5 w-3.5 text-gold/50" />
-                      موهبة موثّقة من إدارة اللجنة
+                      موهبة موثّقة من إدارة المنصة
                     </div>
                     {t.portfolioUrl && (
                       <a

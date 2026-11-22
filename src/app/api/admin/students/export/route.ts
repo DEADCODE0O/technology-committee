@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
   const dynamicKeys = Array.from(new Set(students.flatMap((s) => s.studentData.map((d) => d.label))));
   const headers = ["#", "الاسم", "البريد", "الهاتف", "الفرقة", "الشعبة", "الجنس", "كود الطالب", "الحالة", "مصدر التعارف", "أسباب الانضمام", "النقاط", "المستوى", "المواهب", ...dynamicKeys];
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Technology Committee Platform";
+  wb.creator = "The End & The Beginning Platform";
   const ws = wb.addWorksheet("الطلاب", { views: [{ rightToLeft: true, state: "frozen", ySplit: 1 }] });
   ws.addRow(headers);
   ws.columns = headers.map((header) => ({ header, width: Math.max(13, Math.min(34, header.length * 1.8)) }));
@@ -124,7 +124,7 @@ function styleHeaderLocal(ws: ExcelJS.Worksheet, headers: string[]) {
     const c = row.getCell(i);
     c.font = { name: "Cairo", size: 11, bold: true, color: { argb: "FF111111" } };
     c.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6CB8B" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF67E8F9" } };
   }
   row.height = 30;
 }

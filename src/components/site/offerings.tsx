@@ -79,7 +79,7 @@ export function Offerings() {
                   className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-gold/25 bg-gold/[0.08] text-gold-deep dark:text-gold-light sm:h-12 sm:w-12 ${
                     isOther
                       ? "lg:mx-0"
-                      : "transition-all duration-300 group-hover:border-gold/50 group-hover:shadow-[0_0_24px_-6px_rgba(201,164,92,0.45)]"
+                      : "transition-all duration-300 group-hover:border-gold/50 group-hover:shadow-[0_0_24px_-6px_rgba(34,211,238,0.45)]"
                   }`}
                 >
                   <Icon className="h-5 w-5 sm:h-[22px] sm:w-[22px]" strokeWidth={1.8} />

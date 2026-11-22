@@ -48,29 +48,29 @@ export default async function RegisterVerifyPage({
       <div className="relative z-10 w-full max-w-md">
         {/* الشعار */}
         <Link
-          href="/welcome"
+          href="/"
           className="mb-8 flex items-center justify-center gap-3"
-          aria-label="اللجنة التكنولوجية"
+          aria-label="النهاية والبداية"
         >
           <Image
             src="/images/logo.png"
-            alt="شعار اللجنة التكنولوجية"
+            alt="شعار النهاية والبداية"
             width={56}
             height={56}
             className="h-14 w-14"
             priority
           />
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-extrabold text-zinc-100">اللجنة التكنولوجية</span>
+            <span className="text-lg font-extrabold text-zinc-100">النهاية والبداية</span>
             <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold/70">
-              TECHNOLOGY COMMITTEE
+              THE END &amp; THE BEGINNING
             </span>
           </span>
         </Link>
 
         <div className="rounded-3xl border border-white/[0.08] bg-surface/90 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] backdrop-blur-xl sm:p-8">
           <div className="mb-6 text-center">
-            <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.08] text-gold shadow-[0_0_20px_rgba(201,164,92,0.15)]">
+            <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.08] text-gold shadow-[0_0_20px_rgba(34,211,238,0.15)]">
               <ShieldCheck className="h-6 w-6" />
             </span>
             <h1 className="text-2xl font-extrabold text-zinc-50">تأكيد البريد الإلكتروني</h1>

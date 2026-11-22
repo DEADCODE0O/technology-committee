@@ -7,7 +7,7 @@ import { logAudit } from "@/lib/platform";
 import { MODULES } from "@/lib/permissions";
 
 const TEAM_COLORS = [
-  "#c9a45c", "#3b82f6", "#10b981", "#8b5cf6", "#f59e0b",
+  "#22d3ee", "#3b82f6", "#10b981", "#8b5cf6", "#f59e0b",
   "#ec4899", "#06b6d4", "#ef4444", "#14b8a6", "#6366f1"
 ];
 

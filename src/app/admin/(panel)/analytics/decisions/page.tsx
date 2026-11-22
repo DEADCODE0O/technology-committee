@@ -5,7 +5,7 @@ import { DecisionTradeoffTool } from "@/components/analytics/decision-tradeoff-t
 import { Scale, BookOpen, Sparkles, CheckCircle2, Calculator } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "محاكي المفاضلة والقرارات | إدارة اللجنة التكنولوجية",
+  title: "محاكي المفاضلة والقرارات | إدارة منصة النهاية والبداية",
 };
 
 export default function DecisionsAnalyticsPage() {
@@ -48,7 +48,7 @@ export default function DecisionsAnalyticsPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 text-xs">
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-2">
-            <span className="font-bold text-foreground block">1. مؤشر صحة اللجنة (CHS / 100)</span>
+            <span className="font-bold text-foreground block">1. مؤشر صحة المنصة (CHS / 100)</span>
             <p className="text-muted-foreground leading-relaxed">
               معادلة وزنية مركبة:
               <br />

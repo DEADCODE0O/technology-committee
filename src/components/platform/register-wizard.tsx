@@ -159,7 +159,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
           );
           return;
         }
-        toast.success("أهلاً بيك في اللجنة! 🎉");
+        toast.success("أهلاً بيك في النهاية والبداية! 🎉");
         const safeTarget = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("/admin") ? returnTo : "/panel";
         window.location.href = safeTarget;
       } else {
@@ -179,7 +179,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
                 i < step
                   ? "border-gold/50 bg-gold/15 text-gold"
                   : i === step
-                    ? "border-gold bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_6px_20px_-6px_rgba(201,164,92,0.5)]"
+                    ? "border-gold bg-gradient-to-b from-gold-light to-gold text-night shadow-[0_6px_20px_-6px_rgba(34,211,238,0.5)]"
                     : "border-white/10 bg-white/[0.03] text-zinc-600"
               }`}
             >
@@ -273,7 +273,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
                       onClick={() => setGender(g.value)}
                       className={`flex h-12 cursor-pointer items-center justify-center gap-2.5 rounded-xl border text-sm font-bold transition-colors select-none ${
                         gender === g.value
-                          ? "border-gold/60 bg-gold/[0.1] text-gold-light shadow-[0_0_15px_-3px_rgba(201,164,92,0.3)]"
+                          ? "border-gold/60 bg-gold/[0.1] text-gold-light shadow-[0_0_15px_-3px_rgba(34,211,238,0.3)]"
                           : "border-white/[0.08] bg-white/[0.02] text-zinc-200 hover:border-gold/30 hover:bg-white/[0.05]"
                       }`}
                     >
@@ -323,7 +323,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
             <>
               <StepIntro icon={<HelpCircle className="h-5 w-5" />} title="بيانات تساعدنا" hint="اختيارية — لكنها تصنع فرقًا في تطوير تجربتك" />
               <div className="space-y-2">
-                <Label className="text-sm font-bold text-zinc-200">إزاي عرفت عن اللجنة؟</Label>
+                <Label className="text-sm font-bold text-zinc-200">إزاي عرفت عن المنصة؟</Label>
                 <Select dir="rtl" value={discoverySource} onValueChange={setDiscoverySource}>
                   <SelectTrigger className="h-12 w-full rounded-xl"><SelectValue placeholder="اختر (اختياري)" /></SelectTrigger>
                   <SelectContent>
@@ -397,7 +397,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
           <Button
             type="button"
             onClick={goNext}
-            className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+            className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]"
           >
             التالي
             <ChevronLeft className="h-5 w-5" />
@@ -407,7 +407,7 @@ export function RegisterWizard({ codeConfig, returnTo }: { codeConfig: CodeConfi
             type="button"
             onClick={submit}
             disabled={pending}
-            className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+            className="h-12 flex-1 rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]"
           >
             {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <PartyPopper className="h-5 w-5" />}
             {pending ? "جاري إنشاء حسابك..." : "إكمال التسجيل والدخول إلى المنصة"}

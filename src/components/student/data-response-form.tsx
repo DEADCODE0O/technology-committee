@@ -50,7 +50,7 @@ export function DataResponseForm({
       <div className="rounded-3xl border border-gold/30 bg-gold/[0.06] p-8 text-center">
         <CheckCircle2 className="mx-auto h-10 w-10 text-gold" />
         <p className="mt-3 text-lg font-extrabold text-gold-light">تم إرسال بياناتك</p>
-        <p className="mt-1.5 text-sm text-zinc-400">شكرًا لك — بياناتك وصلت لإدارة اللجنة</p>
+        <p className="mt-1.5 text-sm text-zinc-400">شكرًا لك — بياناتك وصلت لإدارة المنصة</p>
       </div>
     );
   }

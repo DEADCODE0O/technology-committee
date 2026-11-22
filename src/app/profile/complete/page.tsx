@@ -48,20 +48,20 @@ export default async function CompleteProfilePage({
 
       <div className="relative z-10 w-full max-w-2xl">
         {/* الشعار */}
-        <Link href="/welcome" className="mb-8 flex items-center justify-center gap-3" aria-label="اللجنة التكنولوجية">
-          <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={56} height={56} className="h-14 w-14" priority />
+        <Link href="/" className="mb-8 flex items-center justify-center gap-3" aria-label="النهاية والبداية">
+          <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={56} height={56} className="h-14 w-14" priority />
           <span className="flex flex-col leading-tight">
-            <span className="text-lg font-extrabold text-foreground">اللجنة التكنولوجية</span>
-            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold-deep dark:text-gold/70">TECHNOLOGY COMMITTEE</span>
+            <span className="text-lg font-extrabold text-foreground">النهاية والبداية</span>
+            <span className="font-latin text-[9px] font-medium tracking-[0.28em] text-gold-deep dark:text-gold/70">THE END &amp; THE BEGINNING</span>
           </span>
         </Link>
 
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-extrabold text-foreground sm:text-3xl">
-            إكمال بيانات حسابك <span className="text-gold-gradient">في اللجنة</span>
+            إكمال بيانات حسابك <span className="text-gold-gradient">في النهاية والبداية</span>
           </h1>
           <p className="mt-2 text-sm leading-7 text-muted-foreground font-medium">
-            دقيقة واحدة تفصلك عن تجربة جامعية مختلفة — ورش، نقاط، إنجازات، ومواهبك
+            دقيقة واحدة تفصلك عن تجربة متكاملة — ورش، نقاط، إنجازات، ومواهبك
           </p>
         </div>
 

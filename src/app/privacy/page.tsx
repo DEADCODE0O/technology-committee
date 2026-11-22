@@ -3,13 +3,13 @@ import Image from "next/image";
 import { ArrowRight, ShieldCheck, Lock, UserCheck, Trash2, Mail } from "lucide-react";
 
 export const metadata = {
-  title: "سياسة الخصوصية | اللجنة التكنولوجية",
-  description: "سياسة الخصوصية وحماية بيانات المستخدمين في منصة اللجنة التكنولوجية",
+  title: "سياسة الخصوصية | النهاية والبداية",
+  description: "سياسة الخصوصية وحماية بيانات المستخدمين في منصة النهاية والبداية",
 };
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-[#0d0f12] text-zinc-200 selection:bg-gold/30 selection:text-white">
+    <div className="min-h-screen bg-[#050a18] text-zinc-200 selection:bg-gold/30 selection:text-white">
       {/* Glow Layer */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="gold-glow-bg absolute -top-40 left-1/2 h-96 w-full -translate-x-1/2 opacity-40 blur-3xl" />
@@ -17,11 +17,11 @@ export default function PrivacyPage() {
 
       <header className="relative z-10 border-b border-white/[0.08] bg-black/40 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/welcome" className="flex items-center gap-3">
-            <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-10 w-10" />
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={40} height={40} className="h-10 w-10" />
             <div>
-              <span className="block text-sm font-extrabold text-white">اللجنة التكنولوجية</span>
-              <span className="block text-[9px] font-medium tracking-widest text-gold/80">TECHNOLOGY COMMITTEE</span>
+              <span className="block text-sm font-extrabold text-white">النهاية والبداية</span>
+              <span className="block text-[9px] font-medium tracking-widest text-gold/80">THE END &amp; THE BEGINNING</span>
             </div>
           </Link>
           <Link
@@ -50,7 +50,7 @@ export default function PrivacyPage() {
               <h2>1. مقدمة والتزام بالخصوصية</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              نحن في <strong>اللجنة التكنولوجية (Technology Committee)</strong> نلتزم التزامًا تامًا بحماية خصوصية بيانات الطلاب والزوار. توضح هذه السياسة كيف نجمع ونستخدم ونحمي بياناتك عند استخدامك لمنصتنا أو تسجيل الدخول عبر الخدمات المعتمدة مثل Google أو Facebook.
+              نحن في <strong>منصة النهاية والبداية (The End &amp; The Beginning)</strong> نلتزم التزامًا تامًا بحماية خصوصية بيانات الأعضاء والزوار. توضح هذه السياسة كيف نجمع ونستخدم ونحمي بياناتك عند استخدامك لمنصتنا أو تسجيل الدخول عبر الخدمات المعتمدة مثل Google أو Facebook.
             </p>
           </section>
 
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-inside list-disc space-y-2 text-sm text-zinc-300 pr-2">
               <li><strong>الاسم الأساسي:</strong> لتخصيص تجربتك والتعرف عليك داخل المنصة والأنشطة.</li>
-              <li><strong>البريد الإلكتروني:</strong> للتحقق من هوية صاحب الحساب واسترجاع كلمة المرور وإرسال الإشعارات الأكاديمية.</li>
+              <li><strong>البريد الإلكتروني:</strong> للتحقق من هوية صاحب الحساب واسترجاع كلمة المرور وإرسال الإشعارات المهمة.</li>
               <li><strong>الصورة الشخصية (Avatar):</strong> لعرضها في الملف الشخصي ولوحة المتصدرين.</li>
               <li><strong>معرّف الحساب الموحد (Provider ID):</strong> لربط تسجيلك المستقبلي بنفس الحساب بأمان.</li>
             </ul>
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
               <h2>3. كيف نستخدم بياناتك</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              تُستخدم البيانات المجمعة حصريًا للأغراض الأكاديمية والأنشطة الطلابية داخل المعهد:
+              تُستخدم البيانات المجمعة حصريًا لتشغيل الخدمات التعليمية والأنشطة داخل المنصة:
             </p>
             <ul className="list-inside list-disc space-y-2 text-sm text-zinc-300 pr-2">
               <li>إدارة التسجيل في الورش التدريبية والفعاليات والمسابقات.</li>
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
         </div>
 
         <div className="mt-8 text-center text-xs text-zinc-500">
-          © 2026 اللجنة التكنولوجية — Technology Committee. جميع الحقوق محفوظة.
+          © 2026 النهاية والبداية — The End &amp; The Beginning. جميع الحقوق محفوظة.
         </div>
       </main>
     </div>

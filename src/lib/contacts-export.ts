@@ -158,7 +158,7 @@ export function buildFormattedContacts(
       if (gradeLabel) noteParts.push(`الفرقة: ${gradeLabel}`);
       if (sectionLabel) noteParts.push(`الشعبة: ${sectionLabel}`);
       if (studentCode) noteParts.push(`كود الطالب: ${studentCode}`);
-      noteParts.push("منصة اللجنة التكنولوجية");
+      noteParts.push("منصة النهاية والبداية");
 
       return {
         id: s.id,
@@ -199,7 +199,7 @@ export function generateVCardString(contacts: FormattedContact[]): string {
       lines.push(`EMAIL;TYPE=INTERNET:${cleanEmail}`);
     }
 
-    lines.push("ORG;CHARSET=UTF-8:اللجنة التكنولوجية");
+    lines.push("ORG;CHARSET=UTF-8:النهاية والبداية");
 
     if (cleanNote) {
       lines.push(`NOTE;CHARSET=UTF-8:${cleanNote}`);
@@ -233,7 +233,7 @@ export function generateGoogleContactsCsv(contacts: FormattedContact[]): string 
       escapeCsv(c.phone),
       escapeCsv(c.email),
       escapeCsv(c.note),
-      escapeCsv("اللجنة التكنولوجية"),
+      escapeCsv("النهاية والبداية"),
     ].join(",");
   });
 

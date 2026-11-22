@@ -125,7 +125,7 @@ export async function submitSessionEvaluation(input: SubmitEvaluationInput) {
   return {
     success: true,
     evaluationId: evaluation.id,
-    message: "شكراً لك! تم استلام تقييمك وملاحظاتك بسرية تامة وتوجيهها لإدارة اللجنة لتطوير جودة الورش.",
+    message: "شكراً لك! تم استلام تقييمك وملاحظاتك بسرية تامة وتوجيهها لإدارة المنصة لتطوير جودة الورش.",
   };
 }
 

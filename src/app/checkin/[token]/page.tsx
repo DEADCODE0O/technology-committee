@@ -120,10 +120,10 @@ function CheckinLayout({ children }: { children: React.ReactNode }) {
       <div className="gold-glow-bg pointer-events-none absolute inset-x-0 top-0 h-64 opacity-70" aria-hidden="true" />
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-3">
-          <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={44} height={44} className="h-11 w-11" />
+          <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={44} height={44} className="h-11 w-11" />
           <div className="flex flex-col leading-tight">
             <span className="text-sm font-extrabold text-zinc-100">تسجيل حضور</span>
-            <span className="font-latin text-[8px] tracking-[0.25em] text-gold/60">TECHNOLOGY COMMITTEE</span>
+            <span className="font-latin text-[8px] tracking-[0.25em] text-gold/60">THE END & THE BEGINNING</span>
           </div>
         </div>
         {children}

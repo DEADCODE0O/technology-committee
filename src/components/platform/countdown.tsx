@@ -137,13 +137,13 @@ export function Countdown({
       ? "border-rose-300/80 dark:border-rose-500/40 bg-gradient-to-b from-rose-50 via-white to-white dark:from-rose-950/40 dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(190,18,60,0.18)] dark:shadow-[0_0_35px_rgba(244,63,94,0.18)]"
       : isSuccess
       ? "border-emerald-300/80 dark:border-emerald-500/40 bg-gradient-to-b from-emerald-50 via-white to-white dark:from-emerald-950/35 dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(5,120,85,0.16)] dark:shadow-[0_0_35px_rgba(16,185,129,0.15)]"
-      : "border-amber-300/80 dark:border-gold/35 bg-gradient-to-b from-amber-50/60 via-white to-white dark:from-gold/[0.1] dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(150,113,31,0.2)] dark:shadow-[0_0_35px_rgba(201,164,92,0.15)]";
+      : "border-amber-300/80 dark:border-gold/35 bg-gradient-to-b from-amber-50/60 via-white to-white dark:from-gold/[0.1] dark:via-night/95 dark:to-night/95 shadow-[0_14px_35px_-12px_rgba(150,113,31,0.2)] dark:shadow-[0_0_35px_rgba(34,211,238,0.15)]";
 
     const digitBoxTheme = isUrgent
       ? "border-rose-300 bg-white text-rose-700 dark:border-rose-500/40 dark:bg-zinc-900/90 dark:text-rose-300 dark:[text-shadow:0_0_15px_rgba(244,63,94,0.5)] shadow-sm"
       : isSuccess
       ? "border-emerald-300 bg-white text-emerald-800 dark:border-emerald-500/40 dark:bg-zinc-900/90 dark:text-emerald-300 dark:[text-shadow:0_0_15px_rgba(16,185,129,0.5)] shadow-sm"
-      : "border-amber-300 bg-white text-amber-900 dark:border-gold/40 dark:bg-zinc-900/90 dark:text-amber-200 dark:[text-shadow:0_0_15px_rgba(201,164,92,0.5)] shadow-sm";
+      : "border-amber-300 bg-white text-amber-900 dark:border-gold/40 dark:bg-zinc-900/90 dark:text-amber-200 dark:[text-shadow:0_0_15px_rgba(34,211,238,0.5)] shadow-sm";
 
     const badgeLabel = isLess3h
       ? "🔥 فرصة أخيرة — يغلق التسجيل بعد قليل!"

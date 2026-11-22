@@ -3,13 +3,13 @@ import Image from "next/image";
 import { ArrowRight, Trash2, ShieldCheck, Mail, CheckCircle2 } from "lucide-react";
 
 export const metadata = {
-  title: "تعليمات حذف البيانات | اللجنة التكنولوجية",
-  description: "تعليمات وإرشادات طلب حذف بيانات المستخدم وحساب فيسبوك من منصة اللجنة التكنولوجية",
+  title: "تعليمات حذف البيانات | النهاية والبداية",
+  description: "تعليمات وإرشادات طلب حذف بيانات المستخدم وحساب فيسبوك من منصة النهاية والبداية",
 };
 
 export default function DataDeletionPage() {
   return (
-    <div className="min-h-screen bg-[#0d0f12] text-zinc-200 selection:bg-gold/30 selection:text-white">
+    <div className="min-h-screen bg-[#050a18] text-zinc-200 selection:bg-gold/30 selection:text-white">
       {/* Glow Layer */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="gold-glow-bg absolute -top-40 left-1/2 h-96 w-full -translate-x-1/2 opacity-40 blur-3xl" />
@@ -17,11 +17,11 @@ export default function DataDeletionPage() {
 
       <header className="relative z-10 border-b border-white/[0.08] bg-black/40 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/welcome" className="flex items-center gap-3">
-            <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-10 w-10" />
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={40} height={40} className="h-10 w-10" />
             <div>
-              <span className="block text-sm font-extrabold text-white">اللجنة التكنولوجية</span>
-              <span className="block text-[9px] font-medium tracking-widest text-gold/80">TECHNOLOGY COMMITTEE</span>
+              <span className="block text-sm font-extrabold text-white">النهاية والبداية</span>
+              <span className="block text-[9px] font-medium tracking-widest text-gold/80">THE END &amp; THE BEGINNING</span>
             </div>
           </Link>
           <Link
@@ -50,7 +50,7 @@ export default function DataDeletionPage() {
               <h2>حقك في حذف البيانات وخصوصيتك</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              وفقًا لسياسات خصوصية Meta / Facebook ولوائح حماية البيانات العامة، يحق لأي مستخدم مسجل عبر Facebook Login طلب إزالة كافة بياناته وحذف ارتباط حسابه بمنصة اللجنة التكنولوجية في أي وقت.
+              وفقًا لسياسات خصوصية Meta / Facebook ولوائح حماية البيانات العامة، يحق لأي مستخدم مسجل عبر Facebook Login طلب إزالة كافة بياناته وحذف ارتباط حسابه بمنصة النهاية والبداية في أي وقت.
             </p>
           </section>
 
@@ -63,7 +63,7 @@ export default function DataDeletionPage() {
               <li>افتح حسابك على تطبيق أو موقع <strong>Facebook</strong>.</li>
               <li>انتقل إلى <strong>الإعدادات والخصوصية (Settings & Privacy)</strong> ثم اختر <strong>الإعدادات (Settings)</strong>.</li>
               <li>ابحث عن قسم <strong>التطبيقات ومواقع الويب (Apps and Websites)</strong>.</li>
-              <li>ابحث عن تطبيق <strong>TECHNOLOGY COMMITTEE</strong> في قائمة التطبيقات النشطة.</li>
+              <li>ابحث عن تطبيق المنصة في قائمة التطبيقات النشطة.</li>
               <li>انقر على زر <strong>إزالة (Remove)</strong>.</li>
               <li>يمكنك اختيار إرسال طلب حذف كافة البيانات التي تم مشاركتها مع التطبيق من خلال خيار <strong>View Removed Apps & Request Data Deletion</strong>.</li>
             </ol>
@@ -90,7 +90,7 @@ export default function DataDeletionPage() {
         </div>
 
         <div className="mt-8 text-center text-xs text-zinc-500">
-          © 2026 اللجنة التكنولوجية — Technology Committee. جميع الحقوق محفوظة.
+          © 2026 النهاية والبداية — The End &amp; The Beginning. جميع الحقوق محفوظة.
         </div>
       </main>
     </div>

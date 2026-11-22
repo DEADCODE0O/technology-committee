@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { cookies } from "next/headers";
-import { Cairo, Outfit } from "next/font/google";
 import { Toaster } from "sonner";
 import { getSiteTheme } from "@/lib/site-themes";
 import { SITE_THEMES } from "@/lib/site-theme-defs";
@@ -14,49 +12,34 @@ import { getCurrentUser } from "@/lib/auth";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import "./globals.css";
 
-// الخط العربي الأساسي للموقع
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  variable: "--font-cairo",
-  display: "swap",
-});
-
-// خط لاتيني أنيق للتفاصيل البصرية الصغيرة (TECHNOLOGY COMMITTEE ...)
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-outfit",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
-  title: "اللجنة التكنولوجية | تجربة جامعية مختلفة",
+  title: "النهاية والبداية | منصة الأنشطة والورش",
   description:
-    "خُض تجربة جديدة وعِش حياة جامعية بشكل مختلف — كورسات، ورش، ندوات، رحلات، حفلات ومسابقات. جميع برامجنا وأنشطتنا مجانية للطلاب.",
+    "منصة النهاية والبداية — مساحة مستقلة للورش التطبيقية، البرامج التعليمية، المسارات الإبداعية وتنمية المهارات.",
   keywords: [
-    "اللجنة التكنولوجية",
-    "Technology Committee",
-    "أنشطة طلابية",
-    "كورسات مجانية",
+    "النهاية والبداية",
+    "THE END & THE BEGINNING",
     "ورش عمل",
-    "تجربة جامعية",
+    "برامج تعليمية",
+    "تطوير المهارات",
+    "منصة تعليمية",
   ],
   icons: {
     icon: "/images/logo.png",
     apple: "/images/logo.png",
   },
   openGraph: {
-    title: "اللجنة التكنولوجية — TECHNOLOGY COMMITTEE",
+    title: "النهاية والبداية — THE END & THE BEGINNING",
     description:
-      "خُض تجربة جديدة وعِش حياة جامعية بشكل مختلف. جميع برامجنا وأنشطتنا مجانية للطلاب.",
+      "منصة النهاية والبداية — مساحة مستقلة للورش التطبيقية والبرامج التعليمية وتنمية المهارات.",
     type: "website",
     images: ["/images/logo.png"],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#09090b",
+  themeColor: "#050a18",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -93,7 +76,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${cairo.variable} ${outfit.variable} font-sans antialiased bg-background text-foreground transition-colors duration-200`}
+        className="font-sans antialiased bg-background text-foreground transition-colors duration-200"
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <LanguageProvider defaultLocale="ar">

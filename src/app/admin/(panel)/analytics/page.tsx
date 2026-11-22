@@ -10,7 +10,7 @@ import { AnalyticsNavTabs } from "@/components/analytics/analytics-nav-tabs";
 import { Users, Ticket, CheckCircle, Star, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "منظومة الاستخبارات ودعم اتخاذ القرار | إدارة اللجنة التكنولوجية",
+  title: "منظومة الاستخبارات ودعم اتخاذ القرار | إدارة منصة النهاية والبداية",
 };
 
 export default async function AnalyticsDashboardPage() {
@@ -93,7 +93,7 @@ export default async function AnalyticsDashboardPage() {
         </div>
       </div>
 
-      {/* العداد الرئيسي لمؤشر صحة اللجنة */}
+      {/* العداد الرئيسي لمؤشر صحة المنصة */}
       <HealthScoreDial health={data.healthScore} />
 
       {/* رادار وتنبيهات الإنذار المبكر */}

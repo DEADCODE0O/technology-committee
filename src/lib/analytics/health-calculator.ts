@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//  حساب مؤشر صحة اللجنة الشامل (Committee Health Score - CHS / 100)
+//  حساب مؤشر صحة المنصة الشامل (Committee Health Score - CHS / 100)
 // ═══════════════════════════════════════════════════════════════
 
 import { CommitteeHealthScore, HealthLevel, MomentumState } from './types';

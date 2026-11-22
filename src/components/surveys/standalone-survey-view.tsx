@@ -334,7 +334,7 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
                   <span className="text-[11px] font-black uppercase tracking-wider text-gold-deep dark:text-gold flex items-center gap-1">
                     <Sparkles className="h-3 w-3" /> استطلاع رأي رسمي
                   </span>
-                  <span className="text-[11px] text-muted-foreground">اللجنة التكنولوجية</span>
+                  <span className="text-[11px] text-muted-foreground">النهاية والبداية</span>
                 </div>
               </div>
 
@@ -754,10 +754,10 @@ export function StandaloneSurveyView({ survey }: StandaloneSurveyViewProps) {
         {/* ── تذييل الاستبيان الرسمي ── */}
         <div className="text-center pt-8 border-t border-border/60 text-xs text-muted-foreground space-y-1">
           <p className="font-bold">
-            استطلاع رأي تنفيذي معتمد من اللجنة التكنولوجية - اتحاد طلاب الكلية
+            استطلاع رأي معتمد من منصة النهاية والبداية
           </p>
           <p className="text-[11px]">
-            يتم حفظ كافة الأصوات بسرية وشفافية لخدمة المصلحة الطلابية وصناع القرار.
+            يتم حفظ كافة الأصوات بسرية وشفافية لخدمة الأعضاء وتطوير التجربة.
           </p>
         </div>
       </div>

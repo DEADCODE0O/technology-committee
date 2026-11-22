@@ -96,7 +96,7 @@ export async function sendPhoneOtp(): Promise<SendOtpResult> {
       },
     });
 
-    const sms = await sendSms(phone, `كود توثيق هاتفك في منصة اللجنة التكنولوجية: ${code} — صالح ${CODE_TTL_MIN} دقائق`);
+    const sms = await sendSms(phone, `كود توثيق هاتفك في منصة النهاية والبداية: ${code} — صالح ${CODE_TTL_MIN} دقائق`);
     if (!sms.ok) return { ok: false, error: sms.error ?? "تعذر إرسال الرسالة" };
 
     await logAudit({

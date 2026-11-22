@@ -55,7 +55,7 @@ export function QrCheckinButton({ token, title }: { token: string; title: string
       <Button
         onClick={submit}
         disabled={pending}
-        className="h-14 w-full rounded-2xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+        className="h-14 w-full rounded-2xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]"
       >
         {pending ? <Loader2 className="h-6 w-6 animate-spin" /> : <ScanLine className="h-6 w-6" />}
         {pending ? "جاري التسجيل..." : "سجّل حضورك الآن"}

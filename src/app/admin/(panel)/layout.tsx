@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="hidden lg:flex items-center gap-2.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs font-extrabold text-muted-foreground">
-              لوحة الإدارة التنفيذية — منصة اللجنة التكنولوجية
+              لوحة الإدارة التنفيذية — منصة النهاية والبداية
             </span>
           </div>
 

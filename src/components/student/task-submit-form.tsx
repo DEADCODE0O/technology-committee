@@ -256,7 +256,7 @@ export function TaskSubmitForm({ taskId, submissionType, needsVariant, pool, can
       <button
         type="submit"
         disabled={pending || uploading || (needsVariant && variant === null)}
-        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night shadow-[0_10px_25px_-8px_rgba(201,164,92,0.5)] transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 sm:w-auto sm:px-8"
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night shadow-[0_10px_25px_-8px_rgba(34,211,238,0.5)] transition-all hover:brightness-110 active:scale-[0.99] disabled:opacity-50 sm:w-auto sm:px-8"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         {canResubmit ? "أعد التسليم" : "سلّم التكليف الآن"}

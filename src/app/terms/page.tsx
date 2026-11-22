@@ -3,13 +3,13 @@ import Image from "next/image";
 import { ArrowRight, FileText, CheckCircle2, AlertTriangle, ShieldCheck } from "lucide-react";
 
 export const metadata = {
-  title: "شروط الخدمة والاستخدام | اللجنة التكنولوجية",
-  description: "شروط وضوابط استخدام منصة اللجنة التكنولوجية للأنشطة الطلابية",
+  title: "شروط الخدمة والاستخدام | النهاية والبداية",
+  description: "شروط وضوابط استخدام منصة النهاية والبداية للأنشطة والورش",
 };
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#0d0f12] text-zinc-200 selection:bg-gold/30 selection:text-white">
+    <div className="min-h-screen bg-[#050a18] text-zinc-200 selection:bg-gold/30 selection:text-white">
       {/* Glow Layer */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
         <div className="gold-glow-bg absolute -top-40 left-1/2 h-96 w-full -translate-x-1/2 opacity-40 blur-3xl" />
@@ -17,11 +17,11 @@ export default function TermsPage() {
 
       <header className="relative z-10 border-b border-white/[0.08] bg-black/40 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link href="/welcome" className="flex items-center gap-3">
-            <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-10 w-10" />
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={40} height={40} className="h-10 w-10" />
             <div>
-              <span className="block text-sm font-extrabold text-white">اللجنة التكنولوجية</span>
-              <span className="block text-[9px] font-medium tracking-widest text-gold/80">TECHNOLOGY COMMITTEE</span>
+              <span className="block text-sm font-extrabold text-white">النهاية والبداية</span>
+              <span className="block text-[9px] font-medium tracking-widest text-gold/80">THE END &amp; THE BEGINNING</span>
             </div>
           </Link>
           <Link
@@ -50,17 +50,17 @@ export default function TermsPage() {
               <h2>1. قبول الشروط</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              باستخدامك لمنصة اللجنة التكنولوجية أو تسجيل الدخول عبر وسائل التسجيل المعتمدة (مثل Facebook أو Google)، فإنك توافق على الالتزام بجميع القواعد والشروط الأكاديمية والتنظيمية الموضحة هنا.
+              باستخدامك لمنصة النهاية والبداية أو تسجيل الدخول عبر وسائل التسجيل المعتمدة (مثل Facebook أو Google)، فإنك توافق على الالتزام بجميع القواعد والشروط التنظيمية الموضحة هنا.
             </p>
           </section>
 
           <section className="space-y-3">
             <div className="flex items-center gap-2.5 text-lg font-bold text-gold">
               <ShieldCheck className="h-5 w-5" />
-              <h2>2. الاستخدام الأكاديمي والطلابي</h2>
+              <h2>2. الاستخدام التعليمي والتدريبي</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              المنصة مخصصة لدعم المسار التعليمي والأنشطة الطلابية والتدريبية بالمعهد. يُشترط أن تكون جميع البيانات المدخلة صحيحة ومطابقة لبيانات الطالب الأكاديمية.
+              المنصة مخصصة لدعم المسار التعليمي والأنشطة والورش التدريبية. يُشترط أن تكون جميع البيانات المدخلة صحيحة.
             </p>
           </section>
 
@@ -70,7 +70,7 @@ export default function TermsPage() {
               <h2>3. قواعد السلوك والانضباط</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              يُحظر تمامًا استخدام المنصة في أي سلوك مسيء أو نشر محتوى غير لائق أو مخالف للقيم الأكاديمية واللوائح الجامعية. تحتفظ إدارة اللجنة بالحق الكامل في تعليق أو حظر أي حساب يخالف هذه المعايير.
+              يُحظر تمامًا استخدام المنصة في أي سلوك مسيء أو نشر محتوى غير لائق أو مخالف للقيم والأعراف. تحتفظ إدارة المنصة بالحق الكامل في تعليق أو حظر أي حساب يخالف هذه المعايير.
             </p>
           </section>
 
@@ -80,13 +80,13 @@ export default function TermsPage() {
               <h2>4. حقوق الملكية الفكرية</h2>
             </div>
             <p className="text-sm leading-7 text-zinc-300">
-              جميع محتويات المنصة من تصاميم وهوية وشعارات ومواد تدريبية هي ملك للجنة التكنولوجية، ولا يجوز إعادة نشرها أو استخدامها لأغراض تجارية دون إذن رسمي مسبق.
+              جميع محتويات المنصة من تصاميم وهوية وشعارات ومواد تدريبية هي ملك لمنصة النهاية والبداية، ولا يجوز إعادة نشرها أو استخدامها لأغراض تجارية دون إذن مسبق.
             </p>
           </section>
         </div>
 
         <div className="mt-8 text-center text-xs text-zinc-500">
-          © 2026 اللجنة التكنولوجية — Technology Committee. جميع الحقوق محفوظة.
+          © 2026 النهاية والبداية — The End &amp; The Beginning. جميع الحقوق محفوظة.
         </div>
       </main>
     </div>

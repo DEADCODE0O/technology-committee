@@ -126,7 +126,7 @@ export async function getExecutiveDashboardData(): Promise<ExecutiveDashboardDat
 
   const averageSatisfaction = allRatings.length > 0 ? round(mean(allRatings), 1) : 4.2;
 
-  // 3. حساب مؤشر صحة اللجنة الشامل (CHS)
+  // 3. حساب مؤشر صحة المنصة الشامل (CHS)
   const healthScore = computeCommitteeHealthScore({
     actualAttendanceRate: overallAttendanceRate,
     averageQualityRating: averageSatisfaction,

@@ -30,14 +30,14 @@ export default function ErrorPage({
       <div className="gold-glow-bg pointer-events-none absolute inset-x-0 top-0 h-72 opacity-70" aria-hidden="true" />
 
       <div className="relative z-10 w-full max-w-md text-center">
-        <Image src="/images/logo.png" alt="شعار اللجنة التكنولوجية" width={64} height={64} className="mx-auto h-16 w-16" />
+        <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={64} height={64} className="mx-auto h-16 w-16" />
         <span className="mx-auto mt-6 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/25 bg-gold/[0.08] text-gold">
           <AlertTriangle className="h-7 w-7" />
         </span>
         <h1 className="text-2xl font-extrabold text-zinc-50">حدث خطأ غير متوقع</h1>
         <p className="mt-2 text-sm leading-7 text-zinc-500">
-          اعتذرًا — ظهر خلل مؤقت أثناء تحميل الصفحة. جرّب التحديث مرة أخرى،
-          ولو استمر الخطأ تواصل مع إدارة اللجنة.
+          عذرًا — ظهر خلل مؤقت أثناء تحميل الصفحة. جرّب التحديث مرة أخرى،
+          ولو استمر الخطأ تواصل مع إدارة المنصة.
         </p>
 
         {/* تفاصيل الخطأ الفنية إن وُجدت */}
@@ -64,13 +64,13 @@ export default function ErrorPage({
         <div className="mt-6 flex flex-col gap-2.5">
           <Button
             onClick={reset}
-            className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+            className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.5)]"
           >
             <RotateCcw className="h-5 w-5" />
             إعادة المحاولة
           </Button>
           <Link
-            href="/welcome"
+            href="/"
             className="flex h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-sm font-bold text-zinc-300 transition-colors hover:border-gold/30"
           >
             <Home className="h-5 w-5" />

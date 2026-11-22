@@ -71,10 +71,10 @@ export function StudentShell({
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/panel" className="flex items-center gap-2.5" aria-label="لوحة الطالب">
-            <Image src="/images/logo.png" alt="شعار اللجنة" width={40} height={40} className="h-9 w-9" />
+            <Image src="/images/logo.png" alt="شعار النهاية والبداية" width={40} height={40} className="h-9 w-9" />
             <span className="flex flex-col leading-tight">
-              <span className="text-sm font-extrabold text-foreground">منصتي</span>
-              <span className="font-latin text-[8px] tracking-[0.25em] text-gold">TECHNOLOGY COMMITTEE</span>
+              <span className="text-sm font-extrabold text-foreground">النهاية والبداية</span>
+              <span className="font-latin text-[8px] tracking-[0.25em] text-gold">THE END &amp; THE BEGINNING</span>
             </span>
           </Link>
 
@@ -225,7 +225,7 @@ export function StudentShell({
                     <span
                       className={`relative flex h-8 w-11 items-center justify-center rounded-2xl transition-all duration-200 ${
                         isActive
-                          ? "bg-gold/[0.16] shadow-[0_0_14px_rgba(201,164,92,0.3)] text-gold-deep dark:text-gold-light"
+                          ? "bg-gold/[0.16] shadow-[0_0_14px_rgba(34,211,238,0.3)] text-gold-deep dark:text-gold-light"
                           : "hover:bg-muted/50"
                       }`}
                     >
@@ -245,7 +245,7 @@ export function StudentShell({
                       {n.label}
                     </span>
                     {isActive && (
-                      <span className="absolute top-0 inset-x-2 h-0.5 rounded-full bg-gradient-to-r from-transparent via-gold to-transparent shadow-[0_0_8px_rgba(201,164,92,0.9)]" />
+                      <span className="absolute top-0 inset-x-2 h-0.5 rounded-full bg-gradient-to-r from-transparent via-gold to-transparent shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
                     )}
                   </Link>
                 </li>

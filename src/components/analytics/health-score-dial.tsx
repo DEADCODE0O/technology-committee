@@ -1,7 +1,7 @@
 "use client";
 
 // ═══════════════════════════════════════════════════════════════
-//  عداد مؤشر صحة اللجنة الشامل (Committee Health Score Card)
+//  عداد مؤشر صحة المنصة الشامل (Committee Health Score Card)
 // ═══════════════════════════════════════════════════════════════
 
 import React from "react";
@@ -32,7 +32,7 @@ export function HealthScoreDial({ health }: HealthScoreDialProps) {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/10 text-gold-deep dark:text-gold">
               <ShieldCheck className="h-4 w-4" />
             </span>
-            <h3 className="font-heading text-lg font-bold text-foreground">مؤشر صحة اللجنة الشامل (CHS)</h3>
+            <h3 className="font-heading text-lg font-bold text-foreground">مؤشر صحة المنصة الشامل (CHS)</h3>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             مؤشر رياضي مركب يجمع بين الحضور، الجودة، التفاعل، والنمو

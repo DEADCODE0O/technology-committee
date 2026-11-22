@@ -33,7 +33,7 @@ export function Footer() {
         <div className="flex flex-col items-center gap-3">
           <Image
             src={siteConfig.logo}
-            alt="شعار اللجنة التكنولوجية"
+            alt="شعار النهاية والبداية"
             width={96}
             height={96}
             sizes="48px"
@@ -41,7 +41,7 @@ export function Footer() {
           />
           <div className="text-center">
             <p className="text-base font-extrabold text-foreground">
-              اللجنة التكنولوجية
+              النهاية والبداية
             </p>
             <p className="mt-1 font-latin text-[9px] font-medium tracking-[0.32em] text-gold">
               {siteConfig.nameEn}
@@ -49,9 +49,11 @@ export function Footer() {
           </div>
         </div>
 
-        {/* وسائل التواصل بألوانها الحقيقية */}
+        {/* وسائل التواصل */}
         <div className="flex items-center gap-3">
-          {socialLinks.map((social) => (
+          {socialLinks
+            .filter((social) => Boolean(social.url))
+            .map((social) => (
             <a
               key={social.label}
               href={social.url}
@@ -68,7 +70,7 @@ export function Footer() {
         <div className="gold-hairline w-40" aria-hidden="true" />
 
         <p className="text-center text-xs text-muted-foreground">
-          © 2026 اللجنة التكنولوجية — اتحاد الطلاب — جميع الحقوق محفوظة
+          © 2026 النهاية والبداية — جميع الحقوق محفوظة
         </p>
       </div>
     </footer>

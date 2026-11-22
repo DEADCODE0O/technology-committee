@@ -297,7 +297,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
 
           {upcoming[0] && (
             <Link href={`/sessions/${upcoming[0].id}`}
-              className="block rounded-3xl border border-emerald-300/80 dark:border-gold/35 bg-gradient-to-b from-emerald-50 via-white to-white dark:from-gold/[0.1] dark:via-surface dark:to-surface p-5 shadow-[0_12px_32px_-14px_rgba(5,120,85,0.25)] dark:shadow-none transition-all hover:border-emerald-400 dark:hover:border-gold/60 hover:shadow-[0_18px_40px_-14px_rgba(5,120,85,0.35)] dark:hover:shadow-[0_15px_35px_-10px_rgba(201,164,92,0.3)]">
+              className="block rounded-3xl border border-emerald-300/80 dark:border-gold/35 bg-gradient-to-b from-emerald-50 via-white to-white dark:from-gold/[0.1] dark:via-surface dark:to-surface p-5 shadow-[0_12px_32px_-14px_rgba(5,120,85,0.25)] dark:shadow-none transition-all hover:border-emerald-400 dark:hover:border-gold/60 hover:shadow-[0_18px_40px_-14px_rgba(5,120,85,0.35)] dark:hover:shadow-[0_15px_35px_-10px_rgba(34,211,238,0.3)]">
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-gold/20 px-2.5 py-0.5 text-[10px] font-black text-emerald-700 dark:text-gold-light">
                 ⭐ أقرب {sessionWord === "محاضرة" ? "محاضرة" : "موعد"}
               </span>

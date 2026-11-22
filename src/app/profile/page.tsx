@@ -16,7 +16,7 @@ import { GRADE_LABELS, SECTION_LABELS } from "@/lib/constants";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "الملف الشخصي للطالب | مجتمع اللجنة التكنولوجية",
+  title: "الملف الشخصي للطالب | مجتمع النهاية والبداية",
   description: "ملف الطالب الشخصي والإنجازات والتقدمات والمنشورات",
 };
 
@@ -212,7 +212,7 @@ export default async function ProfilePage() {
             <div>
               <p className="font-extrabold text-amber-600 dark:text-amber-400">تنبيه: أولوية القبول في الورش مقيدة مؤقتاً</p>
               <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                نظراً لتسجيل 3 غيابات بدون عذر مسبق، يتم إدراج تسجيلاتك القادمة في قائمة الانتظار تلقائياً لإعطاء الأولوية للطلاب الملتزمين. يمكنك التوجه لمسؤول اللجنة لتقديم عذر رسمي لرفع التقييد.
+                نظراً لتسجيل 3 غيابات بدون عذر مسبق، يتم إدراج تسجيلاتك القادمة في قائمة الانتظار تلقائياً لإعطاء الأولوية للأعضاء الملتزمين. يمكنك التواصل مع إدارة المنصة لتقديم عذر لرفع التقييد.
               </p>
             </div>
           </div>

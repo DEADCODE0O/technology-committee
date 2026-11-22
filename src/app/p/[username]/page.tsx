@@ -48,8 +48,8 @@ export async function generateMetadata(props: { params: Promise<{ username: stri
 
   const name = target?.displayName || target?.profile?.fullName || clean;
   return {
-    title: `${name} (@${target?.username || clean}) — مجتمع اللجنة التكنولوجية`,
-    description: `الملف الشخصي للطالب ${name} في منصة اللجنة التكنولوجية.`,
+    title: `${name} (@${target?.username || clean}) — مجتمع النهاية والبداية`,
+    description: `الملف الشخصي للطالب ${name} في منصة النهاية والبداية.`,
   };
 }
 
@@ -320,7 +320,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
         <section className="rounded-3xl border border-border bg-card p-6">
           <h2 className="text-base font-extrabold text-foreground flex items-center gap-2 mb-4">
             <Calendar className="h-4 w-4 text-gold" />
-            سجل المشاركة في أنشطة وورش اللجنة
+            سجل المشاركة في الأنشطة والورش
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {targetUser.registrations.map((reg) => (
@@ -369,7 +369,7 @@ export default async function PublicProfilePage(props: { params: Promise<{ usern
     <div className="min-h-screen bg-background text-foreground py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto mb-6 flex items-center justify-between">
         <Link
-          href="/welcome"
+          href="/"
           className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-gold transition-colors"
         >
           <ArrowRight className="h-4 w-4" />

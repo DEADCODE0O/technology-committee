@@ -167,7 +167,7 @@ export function TalentManager({
         <Button
           onClick={() => (formOpen && !editingId ? setFormOpen(false) : openCreate())}
           disabled={pending}
-          className="h-11 rounded-xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]"
+          className="h-11 rounded-xl bg-gradient-to-b from-gold-light to-gold text-sm font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]"
         >
           <Plus className="h-4 w-4" />
           إضافة موهبة
@@ -345,7 +345,7 @@ export function TalentManager({
             <Switch checked={v.featured} onCheckedChange={(chk) => setV((p) => ({ ...p, featured: chk }))} />
           </div>
 
-          <Button onClick={submit} disabled={pending} className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(201,164,92,0.6)]">
+          <Button onClick={submit} disabled={pending} className="h-12 w-full rounded-xl bg-gradient-to-b from-gold-light to-gold text-base font-extrabold text-night hover:shadow-[0_10px_35px_-10px_rgba(34,211,238,0.6)]">
             {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
             {editingId ? "حفظ التعديلات" : "إضافة الموهبة"}
           </Button>

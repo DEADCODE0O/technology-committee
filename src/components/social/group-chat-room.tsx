@@ -553,7 +553,7 @@ export function GroupChatRoom({
       });
 
       if (res.ok) {
-        toast.success("تم إرسال البلاغ لإدارة اللجنة لمراجعته");
+        toast.success("تم إرسال البلاغ لإدارة المنصة لمراجعته");
         setReportMessageId(null);
         setReportDetails("");
       } else {
@@ -685,7 +685,7 @@ export function GroupChatRoom({
         <div className="bg-gold/10 border-b border-gold/20 p-3 text-xs text-foreground flex items-start gap-2.5 shrink-0 animate-in fade-in duration-150">
           <ShieldAlert className="h-4 w-4 text-gold shrink-0 mt-0.5" />
           <div className="flex-1 space-y-1">
-            <p className="font-black text-gold">ميثاق المحادثة في مجتمع اللجنة:</p>
+            <p className="font-black text-gold">ميثاق المحادثة في مجتمع المنصة:</p>
             <ul className="list-disc list-inside text-[11px] text-muted-foreground space-y-0.5">
               <li>الاحترام المتبادل والابتعاد عن النقاشات غير اللائقة.</li>
               <li>الرسائل مراقبة ومفلترة آلياً لحماية جميع الطلاب والطالبات.</li>
@@ -713,7 +713,7 @@ export function GroupChatRoom({
               {searchQuery ? "لا توجد رسائل تطابق بحثك" : `لا توجد رسائل بعد في ${room.name}`}
             </h4>
             <p className="text-xs text-muted-foreground mt-1.5 max-w-xs leading-relaxed">
-              كن أول من يبدأ المحادثة ويرحب بالزملاء وأعضاء اللجنة التكنولوجية!
+              كن أول من يبدأ المحادثة ويرحب بالزملاء وأعضاء منصة النهاية والبداية!
             </p>
           </div>
         ) : (

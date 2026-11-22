@@ -8,7 +8,7 @@ import { AnalyticsNavTabs } from "@/components/analytics/analytics-nav-tabs";
 import { Compass, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "بوصلة الرغبات والتوجهات | إدارة اللجنة التكنولوجية",
+  title: "بوصلة الرغبات والتوجهات | إدارة منصة النهاية والبداية",
 };
 
 export default async function DemandsAnalyticsPage() {

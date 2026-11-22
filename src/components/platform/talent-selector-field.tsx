@@ -192,7 +192,7 @@ export function TalentSelectorField({
           onClick={() => setActiveTab("ALL")}
           className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-extrabold transition-all ${
             activeTab === "ALL"
-              ? "bg-gold text-night shadow-[0_4px_15px_-4px_rgba(201,164,92,0.6)]"
+              ? "bg-gold text-night shadow-[0_4px_15px_-4px_rgba(34,211,238,0.6)]"
               : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-gold/30 hover:bg-white/[0.06]"
           }`}
         >
@@ -209,7 +209,7 @@ export function TalentSelectorField({
               onClick={() => setActiveTab(cat.value)}
               className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-extrabold transition-all ${
                 isActive
-                  ? "bg-gold text-night shadow-[0_4px_15px_-4px_rgba(201,164,92,0.6)]"
+                  ? "bg-gold text-night shadow-[0_4px_15px_-4px_rgba(34,211,238,0.6)]"
                   : "border border-white/[0.08] bg-white/[0.03] text-zinc-300 hover:border-gold/30 hover:bg-white/[0.06]"
               }`}
             >
@@ -253,7 +253,7 @@ export function TalentSelectorField({
                   onClick={() => handleToggleOption(opt.category, opt.value)}
                   className={`flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-xs font-bold transition-all select-none ${
                     checked
-                      ? "border border-gold/70 bg-gradient-to-r from-gold/25 to-gold/10 text-gold-light shadow-[0_0_15px_-3px_rgba(201,164,92,0.35)] ring-1 ring-gold/40 scale-[1.02]"
+                      ? "border border-gold/70 bg-gradient-to-r from-gold/25 to-gold/10 text-gold-light shadow-[0_0_15px_-3px_rgba(34,211,238,0.35)] ring-1 ring-gold/40 scale-[1.02]"
                       : "border border-white/[0.08] bg-white/[0.02] text-zinc-300 hover:border-gold/30 hover:bg-white/[0.06] hover:text-zinc-100"
                   }`}
                 >

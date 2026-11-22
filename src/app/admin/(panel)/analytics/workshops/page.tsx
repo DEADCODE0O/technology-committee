@@ -8,7 +8,7 @@ import { ConfidentialCommentsViewer } from "@/components/analytics/confidential-
 import { Layers, ChevronDown, Award, TrendingDown, ArrowDownRight, MessageSquare } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "تشريح الورش والتقييم السري | إدارة اللجنة التكنولوجية",
+  title: "تشريح الورش والتقييم السري | إدارة منصة النهاية والبداية",
 };
 
 interface PageProps {

@@ -45,7 +45,7 @@ export function ConfidentialCommentsViewer({ comments, sessionTitle }: Confident
             </h3>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            ملاحظات غير معلنة تظهر حصرياً لقيادة اللجنة لاكتشاف العيوب الحقيقية لـ:{" "}
+            ملاحظات غير معلنة تظهر حصرياً لإدارة المنصة لاكتشاف العيوب الحقيقية لـ:{" "}
             <span className="font-bold text-foreground">{sessionTitle}</span>
           </p>
         </div>

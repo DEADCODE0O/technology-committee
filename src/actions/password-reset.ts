@@ -54,7 +54,7 @@ export async function requestPasswordReset(rawEmail: string): Promise<ResetReque
         ok: true,
         devNotice: true,
         message:
-          "استعادة كلمة السر بالبريد تعمل بعد ربط المنصة بـ Supabase (دليل DEPLOY.md). حاليًا: تواصل مع إدارة اللجنة وسيعيدونها لك من لوحة المشرفين.",
+          "استعادة كلمة السر بالبريد تعمل بعد ربط المنصة بـ Supabase (دليل DEPLOY.md). حاليًا: تواصل مع إدارة المنصة وسيعيدونها لك من لوحة المشرفين.",
       };
     }
 

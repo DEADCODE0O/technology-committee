@@ -108,7 +108,7 @@ export async function voteDemandPoll(pollId: string, optionId: string, customSug
   });
 
   revalidatePath("/admin/analytics/demands");
-  revalidatePath("/welcome");
+  revalidatePath("/");
   return { success: true, message: "تم تسجيل تصويتكم بنجاح" };
 }
 

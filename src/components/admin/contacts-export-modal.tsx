@@ -164,8 +164,8 @@ export function ContactsExportModal({ currentFilters }: ContactsExportModalProps
   const defaultPreviewSamples = [
     {
       id: "preview-1",
-      fullName: "احمد محمد محمود",
-      phone: "01552370838",
+      fullName: "عضو تجريبي",
+      phone: "01115322803",
       grade: "FOURTH",
       section: "IS",
       gender: "MALE",

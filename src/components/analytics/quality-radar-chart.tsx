@@ -81,8 +81,8 @@ export function QualityRadarChart({ radarData }: QualityRadarChartProps) {
               <Radar
                 name="درجة التقييم"
                 dataKey="score"
-                stroke="#c9a45c"
-                fill="#c9a45c"
+                stroke="#22d3ee"
+                fill="#22d3ee"
                 fillOpacity={0.4}
               />
               <Tooltip

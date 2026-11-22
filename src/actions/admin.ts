@@ -388,7 +388,7 @@ export async function createTalentAdmin(input: TalentAdminInput): Promise<{ ok: 
     });
     revalidatePath("/admin/talents");
     revalidatePath("/talents");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     return { ok: true, id: talent.id };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -415,7 +415,7 @@ export async function updateTalentAdmin(input: TalentAdminInput & { id: string }
     });
     revalidatePath("/admin/talents");
     revalidatePath("/talents");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -439,7 +439,7 @@ export async function deleteTalentAdmin(talentId: string): Promise<{ ok: boolean
     });
     revalidatePath("/admin/talents");
     revalidatePath("/talents");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -462,7 +462,7 @@ export async function setTalentsSectionVisibleAction(visible: boolean): Promise<
     revalidatePath("/admin/settings");
     revalidatePath("/admin/talents");
     revalidatePath("/talents");
-    revalidatePath("/welcome");
+    revalidatePath("/");
     revalidatePath("/");
     return { ok: true };
   } catch (err) {
@@ -787,7 +787,7 @@ export async function changeMyPassword(currentPassword: string, newPassword: str
   try {
     const user = await getCurrentUser();
     if (!user) return { ok: false, error: "انتهت الجلسة — سجّل دخولك مرة أخرى" };
-    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة اللجنة" };
+    if (user.status === "SUSPENDED") return { ok: false, error: "حسابك معلق — تواصل مع إدارة المنصة" };
 
     // حماية من تخمين كلمة السر الحالية (5 محاولات لكل 15 دقيقة)
     const limit = rateLimit(`change-pw:${user.id}`, 5, 15 * 60 * 1000);
