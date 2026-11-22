@@ -15,8 +15,9 @@ import { rateLimit, clientIp, waitMessage } from "@/lib/rate-limit";
 import { isValidArabicFullName, normalizePhone } from "@/lib/validation";
 import { decideRegistration, waitlistAvailable, getSessionState } from "@/lib/activities";
 
-function refresh(sessionId: string, activityId?: string) {
+function refresh(sessionId: string, activityId?: string, externalToken?: string | null) {
   revalidatePath(`/sessions/${sessionId}`);
+  if (externalToken) revalidatePath(`/r/${externalToken}`);
   if (activityId) revalidatePath(`/activities/${activityId}`);
   revalidatePath("/panel");
   revalidatePath("/activities");
@@ -374,7 +375,7 @@ export async function addManualRegistration(
       details: { sessionId: input.sessionId, overCapacity: txResult.overCapacity, registeredBefore: txResult.registered, seats: session.seats },
     });
 
-    refresh(input.sessionId, session.activityId);
+    refresh(input.sessionId, session.activityId, session.externalToken);
     return { ok: true, waitlisted: false };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
@@ -385,6 +386,7 @@ export async function addManualRegistration(
 
 export type GuestRegistrationInput = {
   sessionId: string;
+  externalToken?: string;
   fullName: string;
   phone: string;
   email?: string;
@@ -407,16 +409,25 @@ export async function guestRegisterToSession(
       include: { activity: { include: { formFields: { orderBy: { order: "asc" } } } } },
     });
     if (!session) return { ok: false, error: "الجلسة غير موجودة" };
-    if (session.activity.publish !== "PUBLISHED") return { ok: false, error: "هذا النشاط غير متاح حاليًا" };
-    if (!session.allowGuests) return { ok: false, error: "هذه الجلسة للأعضاء المسجلين فقط" };
 
-    // لو مسجل دخوله كعضو — سجّل بحسابك بدل ضيف
-    const user = await getCurrentUser();
-    if (user) {
-      if (user.role === "STUDENT") {
-        return { ok: false, error: "أنت عضو لدينا — سجّل بحسابك من نموذج العضو أعلاه" };
+    const viaExternalLink = Boolean(
+      input.externalToken && session.externalToken && input.externalToken === session.externalToken
+    );
+    const publishAllowed = viaExternalLink
+      ? session.activity.publish === "PUBLISHED" || session.activity.publish === "UNLISTED"
+      : session.activity.publish === "PUBLISHED";
+    if (!publishAllowed) return { ok: false, error: "هذا النشاط غير متاح حاليًا" };
+    if (!viaExternalLink && !session.allowGuests) return { ok: false, error: "هذه الجلسة للأعضاء المسجلين فقط" };
+
+    // في الرابط العام على المنصة (غير المستقل): لو مسجل دخوله كعضو يسجّل بحسابه
+    if (!viaExternalLink) {
+      const user = await getCurrentUser();
+      if (user) {
+        if (user.role === "STUDENT") {
+          return { ok: false, error: "أنت عضو لدينا — سجّل بحسابك من نموذج العضو أعلاه" };
+        }
+        return { ok: false, error: "أنت داخل بحساب — استخدم نموذج التسجيل بحسابك" };
       }
-      return { ok: false, error: "أنت داخل بحساب — استخدم نموذج التسجيل بحسابك" };
     }
 
     const fullName = (input.fullName || "").trim().replace(/\s+/g, " ");
@@ -519,7 +530,7 @@ export async function guestRegisterToSession(
       },
     });
 
-    refresh(input.sessionId, session.activityId);
+    refresh(input.sessionId, session.activityId, session.externalToken);
     return { ok: true, waitlisted: txResult.isFull };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };

@@ -23,13 +23,20 @@ export function GuestRegisterForm({
   fields,
   isFull,
   seatsLeft,
+  externalToken,
+  whatsappUrl,
+  telegramUrl,
 }: {
   sessionId: string;
   sessionTitle: string;
   fields: DynField[];
   isFull: boolean;
   seatsLeft: number;
+  externalToken?: string;
+  whatsappUrl?: string | null;
+  telegramUrl?: string | null;
 }) {
+  const isStandalone = Boolean(externalToken);
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<"registered" | "waitlisted" | null>(null);
@@ -46,13 +53,41 @@ export function GuestRegisterForm({
       <div className="rounded-3xl border border-gold/30 bg-gold/[0.06] p-6 text-center">
         <PartyPopper className="mx-auto h-10 w-10 text-gold" />
         <p className="mt-3 text-lg font-extrabold text-gold-light">
-          {result === "waitlisted" ? "تم إضافتك لقائمة الانتظار!" : "تم حجز مقعدك كضيف!"}
+          {result === "waitlisted"
+            ? "تم إضافتك لقائمة الانتظار!"
+            : isStandalone
+            ? "تم تأكيد تسجيلك بنجاح!"
+            : "تم حجز مقعدك كضيف!"}
         </p>
         <p className="mt-2 text-sm leading-7 text-zinc-400">
           {result === "waitlisted"
             ? "هيتم الترقية تلقائيًا لو اتفسح مقعد."
-            : `بنتشوفك في «${sessionTitle}» — اعرض هذا الرقم عند الدخول.`}
+            : `بنتشوفك في «${sessionTitle}» — احتفظ برقم هاتفك لتأكيد الحضور عند الوصول.`}
         </p>
+        {result === "registered" && (whatsappUrl || telegramUrl) && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:bg-[#20bd5a]"
+              >
+                انضم لجروب واتساب الخاص بالورشة
+              </a>
+            )}
+            {telegramUrl && (
+              <a
+                href={telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#229ED9] px-4 py-2.5 text-xs font-black text-white shadow-sm transition hover:bg-[#1e8ec3]"
+              >
+                انضم لقناة تليجرام
+              </a>
+            )}
+          </div>
+        )}
       </div>
     );
   }
@@ -62,7 +97,11 @@ export function GuestRegisterForm({
     if (file.size > 8 * 1024 * 1024) { toast.error("الملف يجب أن يكون حتى 8MB"); return; }
     setFileBusy(fieldId);
     try {
-      const fd = new FormData(); fd.append("sessionId", sessionId); fd.append("fieldId", fieldId); fd.append("file", file);
+      const fd = new FormData();
+      fd.append("sessionId", sessionId);
+      fd.append("fieldId", fieldId);
+      if (externalToken) fd.append("externalToken", externalToken);
+      fd.append("file", file);
       const res = await fetch("/api/sessions/upload-answer", { method: "POST", body: fd });
       const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
       if (!res.ok || !json.ok || !json.url) throw new Error(json.error || "تعذر رفع الملف");
@@ -102,6 +141,7 @@ export function GuestRegisterForm({
     startTransition(async () => {
       const res = await guestRegisterToSession({
         sessionId,
+        externalToken,
         fullName: values.fullName,
         phone: values.phone,
         email: values.email || undefined,
@@ -127,8 +167,12 @@ export function GuestRegisterForm({
           <UserRound className="h-4.5 w-4.5" />
         </span>
         <div>
-          <h3 className="text-base font-extrabold text-foreground">التسجيل كضيف</h3>
-          <p className="text-[11px] text-muted-foreground">بدون حساب — بياناتك تظهر للإدارة في قائمة المشاركين</p>
+          <h3 className="text-base font-extrabold text-foreground">
+            {isStandalone ? "استمارة التسجيل" : "التسجيل كضيف"}
+          </h3>
+          <p className="text-[11px] text-muted-foreground">
+            {isStandalone ? "أكمل بياناتك لتأكيد حجز مقعدك" : "بدون حساب — بياناتك تظهر للإدارة في قائمة المشاركين"}
+          </p>
         </div>
       </div>
 
@@ -250,6 +294,30 @@ export function GuestRegisterForm({
                     </SelectContent>
                   </Select>
                 )}
+                {f.type === "CHECKBOX" && f.options.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {f.options.map((o) => {
+                      const arr = Array.isArray(answers[f.id]) ? (answers[f.id] as string[]) : [];
+                      const checked = arr.includes(o);
+                      return (
+                        <button
+                          key={o}
+                          type="button"
+                          onClick={() =>
+                            setAnswer(f.id, checked ? arr.filter((x) => x !== o) : [...arr, o])
+                          }
+                          className={`rounded-xl border px-3 py-1.5 text-xs font-bold transition-colors ${
+                            checked
+                              ? "border-gold/60 bg-gold/15 text-gold-deep dark:text-gold-light"
+                              : "border-border bg-background text-muted-foreground hover:border-gold/30"
+                          }`}
+                        >
+                          {checked ? "✓ " : ""}{o}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -261,11 +329,19 @@ export function GuestRegisterForm({
           className="h-12 w-full rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 border border-emerald-500/50 text-base font-extrabold text-white shadow-[0_8px_25px_-8px_rgba(5,150,105,0.55)] hover:shadow-[0_12px_35px_-8px_rgba(5,150,105,0.7)] hover:from-emerald-300 hover:to-emerald-500 transition-all"
         >
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-          {pending ? "جاري التسجيل..." : isFull ? "انضم لقائمة الانتظار" : `احجز مقعدك كضيف${seatsLeft > 0 ? ` (${seatsLeft} متبقٍ)` : ""}`}
+          {pending
+            ? "جاري التسجيل..."
+            : isFull
+            ? "انضم لقائمة الانتظار"
+            : isStandalone
+            ? `تأكيد التسجيل وحجز المقعد${seatsLeft > 0 ? ` (${seatsLeft} متبقٍ)` : ""}`
+            : `احجز مقعدك كضيف${seatsLeft > 0 ? ` (${seatsLeft} متبقٍ)` : ""}`}
         </Button>
-        <p className="text-center text-[11px] leading-5 text-muted-foreground">
-          الضيوف يظهرون في قائمة المشاركين والحضور — النقاط والشارات خاصة بالأعضاء
-        </p>
+        {!isStandalone && (
+          <p className="text-center text-[11px] leading-5 text-muted-foreground">
+            الضيوف يظهرون في قائمة المشاركين والحضور — النقاط والشارات خاصة بالأعضاء
+          </p>
+        )}
       </div>
     </div>
   );

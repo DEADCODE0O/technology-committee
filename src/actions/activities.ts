@@ -5,6 +5,7 @@
 //  Activity (كورس/ورشة/فعالية) → Session (محاضرة/موعد = وحدة التسجيل)
 // ═══════════════════════════════════════════════════════════════
 
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { purgeCacheTag } from "@/lib/cache/data-cache";
 import { db } from "@/lib/db";
@@ -20,7 +21,11 @@ const levelValues = ACTIVITY_LEVELS.map((l) => l.value as string);
 const fieldTypeValues = FORM_FIELD_TYPES.map((f) => f.value as string);
 const CLOSING_MODE_VALUES = ["BY_DATE", "BY_CAPACITY", "EITHER", "MANUAL", "OPEN_UNLIMITED"];
 
-function refreshAll(ids?: { activityId?: string; sessionId?: string }) {
+function makeExternalToken() {
+  return randomBytes(9).toString("base64url");
+}
+
+function refreshAll(ids?: { activityId?: string; sessionId?: string; externalTokens?: (string | null | undefined)[] }) {
   purgeCacheTag("activities");
   purgeCacheTag("programs");
   if (ids?.activityId) purgeCacheTag(`activity-${ids.activityId}`);
@@ -33,6 +38,9 @@ function refreshAll(ids?: { activityId?: string; sessionId?: string }) {
   if (ids?.sessionId) {
     revalidatePath(`/sessions/${ids.sessionId}`);
     revalidatePath(`/admin/sessions/${ids.sessionId}`);
+  }
+  for (const tok of ids?.externalTokens ?? []) {
+    if (tok) revalidatePath(`/r/${tok}`);
   }
 }
 
@@ -284,6 +292,7 @@ export type SessionInput = {
   allowAdminOverride?: boolean;
   excelTemplateUrl?: string;
   excelTemplateName?: string;
+  generateExternalLink?: boolean;
 };
 
 export async function saveSession(input: SessionInput): Promise<{ ok: boolean; id?: string; error?: string }> {
@@ -351,7 +360,14 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
         return { ok: false, error: `لا يمكن تقليص المقاعد إلى ${seats} — يوجد ${activeCount} مسجلاً بالفعل` };
       }
 
-      await db.session.update({ where: { id: input.id }, data });
+      const nextExternalToken =
+        input.generateExternalLink === true
+          ? existing.externalToken || makeExternalToken()
+          : input.generateExternalLink === false
+          ? null
+          : existing.externalToken;
+
+      await db.session.update({ where: { id: input.id }, data: { ...data, externalToken: nextExternalToken } });
       await logAudit({
         actor: admin,
         action: "SESSION_SAVED",
@@ -370,7 +386,7 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
           },
         },
       });
-      refreshAll({ activityId: existing.activityId, sessionId: input.id });
+      refreshAll({ activityId: existing.activityId, sessionId: input.id, externalTokens: [existing.externalToken, nextExternalToken] });
       return { ok: true, id: input.id };
     }
 
@@ -381,9 +397,11 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
     const order = (await db.session.count({ where: { activityId: activity.id } })) + 1;
     // عنوان تلقائي عند غيابه: كورس → «المحاضرة N» · غيره → عنوان النشاط نفسه
     const finalTitle = title || (activity.type === "COURSE" ? `المحاضرة ${order}` : activity.title);
+    const shouldCreateExternal = input.generateExternalLink ?? activity.publish === "UNLISTED";
+    const externalToken = shouldCreateExternal ? makeExternalToken() : null;
 
     const session = await db.session.create({
-      data: { ...data, title: finalTitle, activityId: activity.id, order },
+      data: { ...data, title: finalTitle, activityId: activity.id, order, externalToken },
     });
     await logAudit({
       actor: admin,
@@ -392,8 +410,53 @@ export async function saveSession(input: SessionInput): Promise<{ ok: boolean; i
       entityId: session.id,
       summary: `إضافة «${finalTitle}» إلى «${activity.title}» — ${seats} مقعدًا`,
     });
-    refreshAll({ activityId: activity.id, sessionId: session.id });
+    refreshAll({ activityId: activity.id, sessionId: session.id, externalTokens: [externalToken] });
     return { ok: true, id: session.id };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
+  }
+}
+
+// إنشاء / تجديد / إلغاء رابط التسجيل المستقل (بدون دخول للمنصة)
+export async function manageSessionExternalLink(
+  sessionId: string,
+  mode: "generate" | "regenerate" | "revoke"
+): Promise<{ ok: boolean; externalToken?: string | null; error?: string }> {
+  try {
+    const admin = await requireActionUser(MODULES.WORKSHOPS, "manage");
+    const session = await db.session.findUnique({
+      where: { id: sessionId },
+      include: { activity: { select: { id: true, title: true } } },
+    });
+    if (!session) return { ok: false, error: "الجلسة غير موجودة" };
+
+    const oldToken = session.externalToken;
+    const nextToken =
+      mode === "revoke"
+        ? null
+        : mode === "generate" && oldToken
+        ? oldToken
+        : makeExternalToken();
+
+    await db.session.update({
+      where: { id: sessionId },
+      data: { externalToken: nextToken },
+    });
+
+    await logAudit({
+      actor: admin,
+      action: "SESSION_EXTERNAL_LINK_UPDATED",
+      entity: "SESSION",
+      entityId: sessionId,
+      summary: `${mode === "revoke" ? "إلغاء" : mode === "regenerate" ? "تجديد" : "إنشاء"} رابط التسجيل المستقل — «${session.title}» (${session.activity.title})`,
+    });
+
+    refreshAll({
+      activityId: session.activityId,
+      sessionId,
+      externalTokens: [oldToken, nextToken],
+    });
+    return { ok: true, externalToken: nextToken };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "خطأ غير متوقع" };
   }

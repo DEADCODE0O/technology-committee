@@ -34,7 +34,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
 
   const activity = await getCachedActivityById(id);
 
-  if (!activity || activity.publish === "DRAFT" || activity.publish === "ARCHIVED") notFound();
+  if (!activity || activity.publish !== "PUBLISHED") notFound();
 
   const typeWord = ACTIVITY_TYPE_LABELS[activity.type] ?? "نشاط";
   const sessionWord = ACTIVITY_TYPE_SESSION_WORD[activity.type] ?? "جلسة";

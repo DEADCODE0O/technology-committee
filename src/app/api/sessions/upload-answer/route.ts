@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
   try { form = await req.formData(); } catch { return NextResponse.json({ error: "طلب غير صالح" }, { status: 400 }); }
   const sessionId = String(form.get("sessionId") || "");
   const fieldId = String(form.get("fieldId") || "");
+  const externalToken = String(form.get("externalToken") || "");
   const file = form.get("file");
   if (!sessionId || !fieldId || !file || typeof file === "string") {
     return NextResponse.json({ error: "ملف أو بيانات الرفع ناقصة" }, { status: 400 });
@@ -53,11 +54,15 @@ export async function POST(req: NextRequest) {
     select: {
       startsAt: true, endsAt: true, registrationOpen: true,
       registrationOpensAt: true, registrationClosesAt: true,
-      closingMode: true, allowAdminOverride: true,
+      closingMode: true, allowAdminOverride: true, externalToken: true,
       activity: { select: { publish: true, id: true } },
       registrations: { where: { status: "REGISTERED" }, select: { id: true } } },
   });
-  if (!session || session.activity.publish !== "PUBLISHED") return NextResponse.json({ error: "النشاط غير متاح" }, { status: 400 });
+  const viaExternal = Boolean(externalToken && session?.externalToken && externalToken === session.externalToken);
+  const canUploadForPublish =
+    session?.activity.publish === "PUBLISHED" ||
+    (viaExternal && session?.activity.publish === "UNLISTED");
+  if (!session || !canUploadForPublish) return NextResponse.json({ error: "النشاط غير متاح" }, { status: 400 });
 
   const user = await getCurrentUser();
   const decision = decideRegistration({

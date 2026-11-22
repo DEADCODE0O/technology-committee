@@ -1,6 +1,13 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { type SiteThemeDefinition } from "@/lib/site-theme-defs";
 
 export function SeasonalDecorations({ theme }: { theme: SiteThemeDefinition }) {
+  const pathname = usePathname();
+  if (pathname === "/r" || pathname?.startsWith("/r/")) {
+    return null;
+  }
   if (theme.id === "default" || theme.decorations === "none") {
     return null;
   }

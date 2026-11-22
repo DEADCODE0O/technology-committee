@@ -120,6 +120,7 @@ export default async function AdminActivitiesPage({
                       </Link>
                       <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${
                         a.publish === "PUBLISHED" ? "border border-emerald-400/25 bg-emerald-400/[0.07] text-emerald-300"
+                        : a.publish === "UNLISTED" ? "border border-violet-400/25 bg-violet-400/[0.08] text-violet-300"
                         : a.publish === "DRAFT" ? "border border-white/10 bg-white/[0.03] text-zinc-400"
                         : "border border-white/10 bg-white/[0.02] text-zinc-500"
                       }`}>

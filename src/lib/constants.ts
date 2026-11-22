@@ -261,8 +261,9 @@ export const ACTIVITY_TYPE_SESSION_WORD: Record<string, string> = Object.fromEnt
 
 // ─── حالة نشر النشاط (فقط — دورة الحياة تُشتق من تواريخ التنفيذ) ─
 export const ACTIVITY_PUBLISH = [
-  { value: "DRAFT", label: "مسودة — مخفية عن الطلاب" },
-  { value: "PUBLISHED", label: "منشور — ظاهر للطلاب" },
+  { value: "PUBLISHED", label: "منشور — ظاهر للطلاب في المنصة" },
+  { value: "UNLISTED", label: "بالرابط الخاص فقط — مخفي عن المنصة" },
+  { value: "DRAFT", label: "مسودة — مخفية عن الجميع" },
   { value: "ARCHIVED", label: "مؤرشف — خارج الفهارس" },
 ] as const;
 

@@ -305,10 +305,14 @@ export function ResetPasswordButton({
   };
 
   const handleCopy = () => {
-    const textToCopy = `بيانات الدخول للجنة التكنولوجية:
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://end-and-beginning.vercel.app";
+    const textToCopy = `بيانات الدخول للمنصة:
 البريد: ${studentEmail || "—"}
 كلمة السر: ${result}
-رابط المنصة: https://technology-committee-website.vercel.app/login`;
+رابط المنصة: ${origin}/login`;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     toast.success("تم نسخ بيانات الدخول إلى الحافظة!");

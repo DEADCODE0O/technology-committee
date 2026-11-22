@@ -8,8 +8,8 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck, Maximize2, Download, Eye, Image as ImageIcon, MessageCircle } from "lucide-react";
-import { saveSession, deleteSession, toggleSessionRegistration } from "@/actions/activities";
+import { Loader2, Plus, Pencil, Trash2, QrCode, Link2, Printer, Users, ShieldCheck, Maximize2, Download, Eye, Image as ImageIcon, MessageCircle, Copy, Check, ExternalLink, RefreshCw, Unlink } from "lucide-react";
+import { saveSession, deleteSession, toggleSessionRegistration, manageSessionExternalLink } from "@/actions/activities";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export type AdminSession = {
   telegramUrl?: string | null;
   status: string;
   qrToken: string;
+  externalToken?: string | null;
   // التسجيل
   seats: number;
   registrationOpensAt: string | null;
@@ -76,12 +77,14 @@ type FormState = {
   registrationOpen: boolean;
   allowGuests: boolean;
   allowAdminOverride: boolean;
+  generateExternalLink: boolean;
 };
 
 export function SessionManager({
   activityId,
   activityType,
   activityTitle,
+  activityPublish,
   sessions,
   canManage,
   defaultLocation,
@@ -89,6 +92,7 @@ export function SessionManager({
   activityId: string;
   activityType: string;
   activityTitle: string;
+  activityPublish?: string;
   sessions: AdminSession[];
   canManage: boolean;
   defaultLocation: string;
@@ -99,6 +103,8 @@ export function SessionManager({
   const [adding, setAdding] = useState(false);
   const [qrFor, setQrFor] = useState<string | null>(null);
   const [previewImg, setPreviewImg] = useState<{ src: string; title: string } | null>(null);
+  const [copiedExtId, setCopiedExtId] = useState<string | null>(null);
+  const [extBusyId, setExtBusyId] = useState<string | null>(null);
 
   const sessionWord = ACTIVITY_TYPE_SESSION_WORD[activityType] ?? "جلسة";
   const isCourse = activityType === "COURSE";
@@ -132,6 +138,7 @@ export function SessionManager({
       registrationOpen: true,
       allowGuests: true,
       allowAdminOverride: true,
+      generateExternalLink: activityPublish === "UNLISTED",
     };
   };
 
@@ -168,6 +175,7 @@ export function SessionManager({
       registrationOpen: s.registrationOpen,
       allowGuests: s.allowGuests,
       allowAdminOverride: s.allowAdminOverride,
+      generateExternalLink: Boolean(s.externalToken),
     });
   };
 
@@ -199,6 +207,7 @@ export function SessionManager({
         registrationOpen: form.registrationOpen,
         allowGuests: form.allowGuests,
         allowAdminOverride: form.allowAdminOverride,
+        generateExternalLink: form.generateExternalLink,
       });
       if (res.ok) {
         toast.success(editing ? "تم حفظ الجلسة" : isCourse ? "تمت إضافة المحاضرة" : "تم تحديد موعد الورشة");
@@ -219,6 +228,54 @@ export function SessionManager({
   };
 
   const sessionQrUrl = (token: string) => (publicOrigin ? `${publicOrigin}/checkin/${token}` : null);
+  const sessionExternalUrl = (token: string) => (publicOrigin ? `${publicOrigin}/r/${token}` : `/r/${token}`);
+
+  const copyExternalUrl = async (sessionId: string, token: string) => {
+    const url = `${window.location.origin}/r/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedExtId(sessionId);
+      toast.success("تم نسخ رابط التسجيل المستقل");
+      setTimeout(() => setCopiedExtId((curr) => (curr === sessionId ? null : curr)), 2000);
+    } catch {
+      toast.error("تعذر النسخ تلقائيًا، انسخ الرابط يدويًا");
+    }
+  };
+
+  const handleExternalLink = (s: AdminSession, mode: "generate" | "regenerate" | "revoke") => {
+    if (
+      mode === "regenerate" &&
+      !confirm("تجديد الرابط المستقل؟ سيتوقف الرابط القديم عن العمل فورًا ولن يفتح لأي شخص.")
+    ) {
+      return;
+    }
+    if (
+      mode === "revoke" &&
+      !confirm("إلغاء الرابط المستقل لهذه الجلسة؟ سيتوقف الرابط عن العمل تمامًا.")
+    ) {
+      return;
+    }
+    setExtBusyId(s.id);
+    startTransition(async () => {
+      try {
+        const res = await manageSessionExternalLink(s.id, mode);
+        if (res.ok) {
+          toast.success(
+            mode === "generate"
+              ? "تم إنشاء رابط التسجيل المستقل"
+              : mode === "regenerate"
+                ? "تم تجديد رابط التسجيل المستقل"
+                : "تم إلغاء رابط التسجيل المستقل"
+          );
+          router.refresh();
+        } else {
+          toast.error(res.error || "تعذر تحديث الرابط المستقل");
+        }
+      } finally {
+        setExtBusyId((curr) => (curr === s.id ? null : curr));
+      }
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -326,6 +383,94 @@ export function SessionManager({
                 )}
               </div>
             </div>
+
+            {/* رابط التسجيل المستقل (معزول عن المنصة) */}
+            {(s.externalToken || canManage) && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-violet-400/20 bg-violet-500/[0.05] px-3 py-2.5">
+                {s.externalToken ? (
+                  <>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p className="flex flex-wrap items-center gap-1.5 text-[11px] font-extrabold text-violet-200">
+                        <Link2 className="h-3.5 w-3.5 text-violet-300 shrink-0" />
+                        <span>رابط تسجيل مستقل (بدون دخول أو ظهور للمنصة)</span>
+                      </p>
+                      <p
+                        dir="ltr"
+                        className="truncate rounded-lg border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[11px] text-zinc-300 select-all"
+                      >
+                        {sessionExternalUrl(s.externalToken)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => copyExternalUrl(s.id, s.externalToken!)}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-400/35 bg-violet-500/15 px-2.5 text-[11px] font-extrabold text-violet-100 hover:bg-violet-500/25"
+                      >
+                        {copiedExtId === s.id ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedExtId === s.id ? "تم النسخ" : "نسخ الرابط"}
+                      </button>
+                      <a
+                        href={sessionExternalUrl(s.externalToken)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 text-[11px] font-bold text-zinc-200 hover:border-violet-400/35 hover:text-violet-200"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        معاينة
+                      </a>
+                      {canManage && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={pending || extBusyId === s.id}
+                            onClick={() => handleExternalLink(s, "regenerate")}
+                            title="تغيير الرابط وإيقاف القديم"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 text-[11px] font-bold text-zinc-300 hover:border-amber-400/35 hover:text-amber-200 disabled:opacity-50"
+                          >
+                            {extBusyId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                            تجديد
+                          </button>
+                          <button
+                            type="button"
+                            disabled={pending || extBusyId === s.id}
+                            onClick={() => handleExternalLink(s, "revoke")}
+                            title="إلغاء وإيقاف الرابط المستقل"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-red-400/20 bg-red-500/[0.06] px-2.5 text-[11px] font-bold text-red-300 hover:bg-red-500/15 disabled:opacity-50"
+                          >
+                            <Unlink className="h-3.5 w-3.5" />
+                            إلغاء
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-zinc-300">
+                        رابط تسجيل مستقل (خارج المنصة):{" "}
+                        <span className="text-zinc-500">غير مفعّل</span>
+                      </p>
+                      <p className="text-[10px] text-zinc-500">
+                        أنشئ رابطًا مباشرًا يرسل للمشاركين للتسجيل بدون تسجيل دخول أو أي إشارة للمنصة.
+                      </p>
+                    </div>
+                    {canManage && (
+                      <button
+                        type="button"
+                        disabled={pending || extBusyId === s.id}
+                        onClick={() => handleExternalLink(s, "generate")}
+                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-500/15 px-3 text-[11px] font-extrabold text-violet-100 hover:bg-violet-500/25 disabled:opacity-50"
+                      >
+                        {extBusyId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Link2 className="h-3.5 w-3.5" />}
+                        إنشاء رابط تسجيل مستقل
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
             {/* QR الجلسة */}
             {qrFor === s.id && sessionQrUrl(s.qrToken) && (
@@ -503,6 +648,27 @@ export function SessionManager({
                 <Switch checked={form.allowAdminOverride} onCheckedChange={(chk) => setForm((p) => ({ ...p, allowAdminOverride: chk }))} />
               </div>
             </div>
+            {(!editing || !editing.externalToken) ? (
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-violet-400/20 bg-violet-500/[0.05] px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className="flex items-center gap-1.5 text-xs font-bold text-violet-200">
+                    <Link2 className="h-3.5 w-3.5 text-violet-300" />
+                    إنشاء رابط تسجيل مستقل (بدون دخول للمنصة)
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-5 text-zinc-400">
+                    يفتح استمارة تسجيل معزولة تمامًا بدون تسجيل دخول أو إنشاء حساب أو شعار للمنصة.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.generateExternalLink}
+                  onCheckedChange={(chk) => setForm((p) => ({ ...p, generateExternalLink: chk }))}
+                />
+              </div>
+            ) : (
+              <p className="rounded-xl border border-violet-400/20 bg-violet-500/[0.05] px-3 py-2 text-[11px] font-bold text-violet-200">
+                ✓ الرابط المستقل مفعّل لهذه الجلسة — يمكنك نسخه أو تجديده أو إلغاؤه مباشرة من بطاقة الجلسة.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

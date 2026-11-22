@@ -282,6 +282,7 @@ model Session {
   excelTemplateUrl  String?
   excelTemplateName String?
   qrToken           String   @unique @default(cuid()) // QR حضور خاص بالجلسة
+  externalToken     String?  @unique // رابط تسجيل مستقل خارجي (بدون دخول للمنصة)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

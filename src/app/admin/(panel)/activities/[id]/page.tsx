@@ -105,6 +105,7 @@ export default async function AdminActivityDetailPage({
       telegramUrl: s.telegramUrl,
       status: s.status,
       qrToken: s.qrToken,
+      externalToken: s.externalToken,
       seats: s.seats,
       registrationOpensAt: s.registrationOpensAt ? s.registrationOpensAt.toISOString() : null,
       registrationClosesAt: s.registrationClosesAt ? s.registrationClosesAt.toISOString() : null,
@@ -201,10 +202,16 @@ export default async function AdminActivityDetailPage({
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xl">{ACTIVITY_TYPE_ICONS[activity.type]}</span>
               <h1 className="text-2xl font-extrabold text-zinc-50">{activity.title}</h1>
-            <Link href={`/activities/${activity.id}`} target="_blank"
-              className="rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-[10px] font-extrabold text-gold-light hover:bg-gold/[0.12]">
-              عرض صفحة الطلاب ↗
-            </Link>
+            {activity.publish === "UNLISTED" ? (
+              <span className="rounded-full border border-violet-400/30 bg-violet-400/[0.1] px-3 py-1 text-[10px] font-extrabold text-violet-200">
+                مخفية عن المنصة (بالرابط الخاص فقط)
+              </span>
+            ) : (
+              <Link href={`/activities/${activity.id}`} target="_blank"
+                className="rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-[10px] font-extrabold text-gold-light hover:bg-gold/[0.12]">
+                عرض صفحة الطلاب ↗
+              </Link>
+            )}
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
             <span>{ACTIVITY_TYPE_LABELS[activity.type]}{activity.program ? ` · ${activity.program.icon} ${activity.program.name}` : " · مستقل"}</span>
@@ -255,6 +262,7 @@ export default async function AdminActivityDetailPage({
             activityId={activity.id}
             activityType={activity.type}
             activityTitle={activity.title}
+            activityPublish={activity.publish}
             sessions={sessions}
             canManage={canManage}
             defaultLocation={sessions[0]?.location ?? ""}

@@ -171,6 +171,7 @@ export default async function AdminSessionPage({
     telegramUrl: session.telegramUrl,
     status: session.status,
     qrToken: session.qrToken,
+    externalToken: session.externalToken,
     seats: session.seats,
     registrationOpensAt: session.registrationOpensAt ? session.registrationOpensAt.toISOString() : null,
     registrationClosesAt: session.registrationClosesAt ? session.registrationClosesAt.toISOString() : null,
@@ -215,10 +216,26 @@ export default async function AdminSessionPage({
             }`}>
               {state === "ONGOING" ? "جارية الآن" : state === "UPCOMING" ? "قادمة" : "منتهية"}
             </span>
-            <Link href={`/sessions/${session.id}`} target="_blank"
-              className="rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-[10px] font-extrabold text-gold-light hover:bg-gold/[0.12]">
-              صفحة الطلاب ↗
-            </Link>
+            {activity.publish === "UNLISTED" ? (
+              <span className="rounded-full border border-violet-400/30 bg-violet-400/[0.1] px-3 py-1 text-[10px] font-extrabold text-violet-200">
+                مخفية عن المنصة (بالرابط الخاص فقط)
+              </span>
+            ) : (
+              <Link href={`/sessions/${session.id}`} target="_blank"
+                className="rounded-full border border-gold/25 bg-gold/[0.06] px-3 py-1 text-[10px] font-extrabold text-gold-light hover:bg-gold/[0.12]">
+                صفحة الطلاب ↗
+              </Link>
+            )}
+            {session.externalToken && (
+              <a
+                href={`/r/${session.externalToken}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-violet-400/35 bg-violet-500/[0.12] px-3 py-1 text-[10px] font-extrabold text-violet-200 hover:bg-violet-500/20"
+              >
+                رابط التسجيل المستقل ↗
+              </a>
+            )}
           </div>
           <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
             <span>{formatCairoDate(session.startsAt, { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}</span>
@@ -307,6 +324,7 @@ export default async function AdminSessionPage({
             activityId={activity.id}
             activityType={activity.type}
             activityTitle={activity.title}
+            activityPublish={activity.publish}
             sessions={[adminSession]}
             canManage={canManage}
             defaultLocation={session.location ?? ""}

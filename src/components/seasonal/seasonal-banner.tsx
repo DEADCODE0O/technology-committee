@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { X, Sparkles } from "lucide-react";
 
 export function SeasonalBanner({
@@ -12,9 +13,10 @@ export function SeasonalBanner({
   icon?: string;
   accentColor?: string;
 }) {
+  const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
 
-  if (dismissed || !text) return null;
+  if (dismissed || !text || pathname?.startsWith("/r/") || pathname === "/r") return null;
 
   return (
     <aside
